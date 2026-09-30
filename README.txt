@@ -1,17 +1,9 @@
-SUIVI DE CLASSE — PWA iPAD V3
+Suivi de classe — PWA iPad V7
 
-Cette version fonctionne comme une application Web progressive (PWA).
+Nouveautés :
+- Bouton « Sauvegarder » pour exporter toute la base dans un fichier JSON.
+- Bouton « Importer » pour restaurer cette base sur un autre appareil.
+- L’import demande une confirmation avant de remplacer les données locales.
+- Compatible avec les fonctions précédentes : comportements personnalisés, rapports et tirage aléatoire.
 
-INSTALLATION SUR IPAD
-1. Publier ce dossier sur un hébergement HTTPS (GitHub Pages, Cloudflare Pages, Netlify, etc.).
-2. Ouvrir l'adresse dans Safari sur l'iPad.
-3. Appuyer sur Partager.
-4. Choisir « Sur l'écran d'accueil ».
-5. Ouvrir ensuite l'icône « Suivi classe » comme une application.
-
-IMPORTANT
-- Aucun Mac n'est nécessaire.
-- Les données sont stockées localement sur l'iPad.
-- Utiliser « Données > Exporter JSON » pour faire des sauvegardes régulières.
-- Le service worker permet le fonctionnement hors connexion après le premier chargement.
-- Pour que le mode PWA fonctionne correctement, le site doit être servi en HTTPS.
+Pour GitHub Pages : remplacer les fichiers existants à la racine du dépôt par ceux de ce dossier.
