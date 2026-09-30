@@ -5,6 +5,28 @@ const DEFAULT_BEHAVIORS=[
 let data=load(); let currentClassId=data.classes[0]?.id||null; let tab='class'; let search=''; let todayOnly=false; let sort='name'; let lastEvents=[];
 function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x){x.behaviors??=DEFAULT_BEHAVIORS; x.classes??=[]; x.events??=[]; x.alerts??=[]; x.alerts.forEach(a=>{if(a.viewed===undefined)a.viewed=false}); return x}}catch(e){} return {classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'} }
 function save(){localStorage.setItem(KEY,JSON.stringify(data));applyTheme()}
+function playSound(kind){
+ try{
+  const C=window.AudioContext||window.webkitAudioContext; if(!C)return;
+  const ctx=window.__audioCtx||(window.__audioCtx=new C());
+  if(ctx.state==='suspended')ctx.resume();
+  const patterns={
+   bonus:[[523.25,0],[659.25,.09]],
+   malus:[[220,0],[165,.11]],
+   alert:[[880,0],[659.25,.13],[880,.26],[659.25,.39]]
+  };
+  const notes=patterns[kind]||patterns.bonus;
+  const now=ctx.currentTime;
+  notes.forEach(([freq,offset])=>{
+   const o=ctx.createOscillator(),g=ctx.createGain();
+   o.type=kind==='alert'?'square':'sine'; o.frequency.value=freq;
+   g.gain.setValueAtTime(0.0001,now+offset);
+   g.gain.exponentialRampToValueAtTime(kind==='alert'?0.075:0.045,now+offset+0.012);
+   g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.12);
+   o.connect(g);g.connect(ctx.destination);o.start(now+offset);o.stop(now+offset+0.14);
+  });
+ }catch(e){}
+}
 function applyTheme(){let dark=data.theme==='dark'||(data.theme==='automatic'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',dark)}
 function currentClass(){return data.classes.find(c=>c.id===currentClassId)}
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -50,9 +72,9 @@ function confirmAddClass(){const name=document.getElementById('mName').value.tri
 function addStudents(){openModal(`<h2>Ajouter des élèves</h2><textarea id="mStudents" rows="9" placeholder="Un élève par ligne"></textarea><div class="row"><button class="primary" onclick="confirmAddStudents()">Ajouter</button><button onclick="closeModal()">Annuler</button></div>`) }
 function confirmAddStudents(){const c=currentClass();if(!c)return;const names=document.getElementById('mStudents').value.split(/\n|;/).map(x=>x.trim()).filter(Boolean);c.students.push(...names.map(name=>({id:uid(),name})));save();closeModal();render();toast(`${names.length} élève(s) ajouté(s)`)}
 function chooseBehavior(studentId,type){const bs=data.behaviors.filter(b=>b.type===type);openModal(`<h2>${type==='bonus'?'➕ Bonus':'➖ Malus'}</h2>${bs.map(b=>`<button style="width:100%;text-align:left;margin:5px 0" onclick="applyBehavior('${studentId}','${b.id}')">${b.emoji} ${esc(b.label)}</button>`).join('')}<button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
-function applyBehavior(studentId,behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;const e={id:uid(),studentId,classId:c.id,behaviorId,type:b.type,label:b.label,emoji:b.emoji,date:new Date().toISOString()};data.events.push(e);lastEvents=[e.id];let alert=null;if(b.type==='malus')alert=checkAlert(studentId);save();closeModal();render();if(alert){showAlert(alert)}else{toast(`${b.emoji} ${b.label}`)}}
+function applyBehavior(studentId,behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;const e={id:uid(),studentId,classId:c.id,behaviorId,type:b.type,label:b.label,emoji:b.emoji,date:new Date().toISOString()};data.events.push(e);lastEvents=[e.id];playSound(b.type==='bonus'?'bonus':'malus');let alert=null;if(b.type==='malus')alert=checkAlert(studentId);save();closeModal();render();if(alert){playSound('alert');showAlert(alert)}else{toast(`${b.emoji} ${b.label}`)}}
 function giveAll(){const c=currentClass();if(!c||!c.students.length)return toast('Aucun élève');openModal(`<h2>Attribuer à toute la classe</h2>${data.behaviors.map(b=>`<button style="width:100%;text-align:left;margin:5px 0" onclick="applyAll('${b.id}')">${b.emoji} ${esc(b.label)}</button>`).join('')}<button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
-function applyAll(behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;lastEvents=[];const now=new Date().toISOString();let alerts=[];c.students.forEach(s=>{const e={id:uid(),studentId:s.id,classId:c.id,behaviorId:b.id,type:b.type,label:b.label,emoji:b.emoji,date:now};data.events.push(e);lastEvents.push(e.id);if(b.type==='malus'){const a=checkAlert(s.id);if(a)alerts.push(a)}});save();closeModal();render();if(alerts.length===1)showAlert(alerts[0]);else toast(`${b.emoji} appliqué à ${c.students.length} élèves${alerts.length?` · 🚨 ${alerts.length} alerte(s)`:''}`)}
+function applyAll(behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;lastEvents=[];const now=new Date().toISOString();let alerts=[];c.students.forEach(s=>{const e={id:uid(),studentId:s.id,classId:c.id,behaviorId:b.id,type:b.type,label:b.label,emoji:b.emoji,date:now};data.events.push(e);lastEvents.push(e.id);if(b.type==='malus'){const a=checkAlert(s.id);if(a)alerts.push(a)}});playSound(b.type==='bonus'?'bonus':'malus');save();closeModal();render();if(alerts.length){playSound('alert');}if(alerts.length===1)showAlert(alerts[0]);else toast(`${b.emoji} appliqué à ${c.students.length} élèves${alerts.length?` · 🚨 ${alerts.length} alerte(s)`:''}`)}
 function consecutiveMalus(studentId){
  const ev=data.events.filter(e=>e.studentId===studentId).sort((a,b)=>new Date(a.date)-new Date(b.date));
  let streak=[];
