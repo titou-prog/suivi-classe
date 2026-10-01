@@ -147,8 +147,16 @@ function backup(){
 }
 function importDatabase(){
  const input=document.createElement('input');
- input.type='file';input.accept='.json,application/json,text/json';
- input.onchange=()=>{if(input.files[0])restoreFile(input.files[0])};
+ input.type='file';
+ input.accept='.json,application/json,text/json,*/*';
+ input.style.display='none';
+ document.body.appendChild(input);
+ input.onchange=()=>{
+  const file=input.files&&input.files[0];
+  input.remove();
+  if(file) restoreFile(file);
+ };
+ input.oncancel=()=>input.remove();
  input.click();
 }
 function normalizeImportedData(x){
@@ -168,18 +176,36 @@ function normalizeImportedData(x){
 }
 function restoreFile(file){
  if(!file)return;
- const r=new FileReader();
- r.onload=()=>{
+ const done=(text)=>{
   try{
-   // Retire un éventuel BOM ajouté par certains logiciels.
-   const raw=String(r.result||'').replace(/^\uFEFF/,'').trim();
-   const x=normalizeImportedData(JSON.parse(raw));
-   if(!x.classes.length) throw new Error('empty');
+   const raw=String(text||'').replace(/^\uFEFF/,'').trim();
+   if(!raw) throw new Error('empty-file');
+   const parsed=JSON.parse(raw);
+   const x=normalizeImportedData(parsed);
+   if(!x.classes.length) throw new Error('no-classes');
    if(!confirm('Importer cette base va remplacer les données actuellement présentes sur cet appareil. Continuer ?'))return;
-   data=x;currentClassId=data.classes[0]?.id||null;lastEvents=[];save();render();toast('Base importée avec succès');
-  }catch(e){console.error('Import JSON:',e);toast('Impossible de lire cette sauvegarde JSON')}
+   data=x;
+   currentClassId=data.classes[0]?.id||null;
+   lastEvents=[];
+   save();
+   render();
+   toast('Base importée avec succès');
+  }catch(e){
+   console.error('Import JSON:',e);
+   toast('JSON valide mais format de sauvegarde non reconnu');
+  }
  };
- r.readAsText(file,'utf-8');
+ try{
+  // FileReader est le mode le plus compatible avec Safari/iPad.
+  const r=new FileReader();
+  r.onload=()=>done(r.result);
+  r.onerror=()=>toast('Impossible de lire le fichier sur cet appareil');
+  r.readAsText(file,'UTF-8');
+ }catch(e){
+  // Secours pour les navigateurs récents.
+  if(typeof file.text==='function') file.text().then(done).catch(()=>toast('Impossible de lire le fichier'));
+  else toast('Lecture des fichiers non disponible');
+ }
 }
 function copyCSV(){const c=currentClass();if(!c)return;let out='Élève;Bonus;Malus;Solde\n';c.students.forEach(s=>{const k=counts(s.id);out+=`"${s.name.replaceAll('"','""')}";${k.bonus};${k.malus};${k.bonus-k.malus}\n`});navigator.clipboard?.writeText(out).then(()=>toast('CSV copié')).catch(()=>{openModal(`<h2>Bilan CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`)})}
 function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;save();render()}
