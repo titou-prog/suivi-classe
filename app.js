@@ -2,9 +2,87 @@ const KEY='suivi-classe-v1';
 const DEFAULT_BEHAVIORS=[
  {id:crypto.randomUUID(),type:'bonus',emoji:'🙋',label:"Participe à l'oral"},{id:crypto.randomUUID(),type:'bonus',emoji:'🤝',label:'Aide un camarade'},{id:crypto.randomUUID(),type:'bonus',emoji:'🎵',label:'Très bon travail'},{id:crypto.randomUUID(),type:'bonus',emoji:'✅',label:'Matériel prêt'},
  {id:crypto.randomUUID(),type:'malus',emoji:'🗣️',label:'Parle sans lever la main'},{id:crypto.randomUUID(),type:'malus',emoji:'📵',label:'Téléphone sorti'},{id:crypto.randomUUID(),type:'malus',emoji:'🎒',label:'Oubli de matériel'},{id:crypto.randomUUID(),type:'malus',emoji:'💬',label:'Bavardage'}];
-let data=load(); let currentClassId=data.classes[0]?.id||null; let tab='class'; let search=''; let todayOnly=false; let sort='name'; let lastEvents=[];
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x){x.behaviors??=DEFAULT_BEHAVIORS; x.classes??=[]; x.events??=[]; x.alerts??=[]; x.alerts.forEach(a=>{if(a.viewed===undefined)a.viewed=false}); return x}}catch(e){} return {classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'} }
-function save(){localStorage.setItem(KEY,JSON.stringify(data));applyTheme()}
+let data=emptyData(); let currentClassId=null; let blockSave=false; let tab='class'; let search=''; let todayOnly=false; let sort='name'; let lastEvents=[];
+// ===== STOCKAGE V15 : IndexedDB (bien plus large que localStorage, ~5 Mo sur Safari) =====
+const DB_NAME='suivi-classe-db',DB_STORE='kv',DB_KEY='data';
+let dbPromise=null,saveTimer=null,saving=Promise.resolve(),storageMode='idb';
+function emptyData(){return {classes:[],behaviors:DEFAULT_BEHAVIORS.map(b=>({...b})),events:[],alerts:[],theme:'automatic'}}
+function openDB(){
+ if(dbPromise)return dbPromise;
+ dbPromise=new Promise((res,rej)=>{
+  if(!('indexedDB' in window))return rej(new Error('no-idb'));
+  let r;try{r=indexedDB.open(DB_NAME,1)}catch(e){return rej(e)}
+  r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(DB_STORE))r.result.createObjectStore(DB_STORE)};
+  r.onsuccess=()=>{const db=r.result;db.onversionchange=()=>{db.close();dbPromise=null};res(db)};
+  r.onerror=()=>rej(r.error||new Error('idb-open'));
+  r.onblocked=()=>rej(new Error('idb-blocked'));
+ });
+ dbPromise.catch(()=>{dbPromise=null});
+ return dbPromise;
+}
+function idbGet(){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(DB_STORE,'readonly');const q=tx.objectStore(DB_STORE).get(DB_KEY);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)}))}
+function idbPut(v){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(v,DB_KEY);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error||new Error('idb-write'));tx.onabort=()=>rej(tx.error||new Error('idb-abort'))}))}
+async function writeStore(d){
+ try{await idbPut(d);storageMode='idb'}
+ catch(e){
+  // Secours : localStorage (utile seulement si IndexedDB est indisponible, par ex. navigation privée)
+  try{localStorage.setItem(KEY,JSON.stringify(d));storageMode='ls'}
+  catch(e2){throw (e&&e.name==='QuotaExceededError')?e:e2}
+ }
+}
+function persistNow(){
+ clearTimeout(saveTimer);saveTimer=null;
+ if(blockSave)return Promise.reject(new Error('save-blocked'));
+ const p=saving.catch(()=>{}).then(()=>writeStore(data));
+ saving=p;return p;
+}
+function save(){
+ applyTheme();
+ clearTimeout(saveTimer);
+ if(blockSave)return;
+ saveTimer=setTimeout(()=>{persistNow().catch(reportSaveError)},150);
+}
+function flushSave(){if(saveTimer)persistNow().catch(()=>{})}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave()});
+window.addEventListener('pagehide',flushSave);
+function explainStorageError(e){
+ const n=e&&e.name||'',m=String(e&&e.message||'');
+ if(n==='QuotaExceededError'||/quota/i.test(m))return 'Stockage de l’iPad plein ou limité : libère de la place (Réglages › Général › Stockage de l’iPad) puis réessaie.';
+ if(m==='save-blocked')return 'Enregistrement bloqué : les données locales n’ont pas pu être lues. Importe une sauvegarde pour repartir sur une base saine.';
+ return 'Impossible d’enregistrer sur cet appareil ('+(n||m||'erreur inconnue')+').';
+}
+function reportSaveError(e){console.error('Enregistrement local:',e);toast(explainStorageError(e),6000)}
+async function updateStorageInfo(){
+ const el=document.getElementById('storageInfo');if(!el)return;
+ const photos=data.classes.reduce((n,c)=>n+c.students.filter(s=>s.photo).length,0),students=data.classes.reduce((n,c)=>n+c.students.length,0);
+ let txt=`${data.classes.length} classe(s) · ${students} élève(s) · ${photos} photo(s) · ${data.events.length} événement(s)`;
+ try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();txt+=` — Stockage utilisé : ${(e.usage/1048576).toFixed(1)} Mo`+(e.quota?` sur ${Math.round(e.quota/1048576)} Mo disponibles`:'')}}catch(_){}
+ txt+=storageMode==='idb'?' · Mode : IndexedDB ✅':' · Mode : secours localStorage ⚠️ (limité à ~5 Mo)';
+ const el2=document.getElementById('storageInfo');if(el2)el2.textContent=txt;
+}
+async function init(){
+ let loaded=null,source='',readFailed=false;
+ try{loaded=await idbGet();if(loaded)source='idb'}catch(e){console.warn('IndexedDB indisponible :',e);storageMode='ls'}
+ if(!loaded){
+  try{const raw=localStorage.getItem(KEY);if(raw){loaded=JSON.parse(raw);source='ls'}}
+  catch(e){console.warn('Lecture localStorage :',e);readFailed=true}
+ }
+ if(loaded){
+  try{data=normalizeImportedData(loaded)}
+  catch(e){console.error('Données locales illisibles :',e);data=emptyData();blockSave=true;readFailed=true}
+ }
+ currentClassId=data.classes[0]?.id||null;
+ applyTheme();render();
+ if(readFailed)toast('Données locales illisibles : rien n’a été écrasé. Importe une sauvegarde pour repartir.',7000);
+ // Migration automatique depuis l'ancien stockage localStorage (versions ≤ V14)
+ if(source==='ls'&&storageMode==='idb'&&!blockSave){
+  try{
+   await idbPut(data);const back=await idbGet();
+   if(back&&Array.isArray(back.classes)&&back.classes.length===data.classes.length){localStorage.removeItem(KEY);toast('Données migrées vers le nouveau stockage ✅',3500)}
+  }catch(e){console.warn('Migration impossible :',e)}
+ }
+ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(_){}
+}
 function playSound(kind){
  try{
   const C=window.AudioContext||window.webkitAudioContext; if(!C)return;
@@ -37,7 +115,7 @@ function isToday(d){const a=new Date(d),b=new Date();return a.toDateString()===b
 function eventsFor(id){return data.events.filter(e=>e.studentId===id && (!todayOnly||isToday(e.date)))}
 function counts(id){return eventsFor(id).reduce((r,e)=>(e.type==='bonus'?r.bonus++:r.malus++,r),{bonus:0,malus:0})}
 function setTab(t){tab=t;render()}
-function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():dataView();}
+function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():dataView();if(tab==='data')updateStorageInfo();}
 function classView(){const c=currentClass(); if(!c)return `<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Tu peux créer une classe ou importer directement une base existante.</p><div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="addClass()">➕ Créer une classe</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="backup()">💾 Sauvegarder</button></div></div>`;
 let total=c.students.reduce((a,s)=>{const k=counts(s.id);return {b:a.b+k.bonus,m:a.m+k.malus}}, {b:0,m:0}); let students=c.students.filter(s=>s.name.toLowerCase().includes(search.toLowerCase()));students.sort((a,b)=>sort==='bonus'?counts(b.id).bonus-counts(a.id).bonus:sort==='malus'?counts(b.id).malus-counts(a.id).malus:a.name.localeCompare(b.name,'fr'));
 return `<div class="panel"><div class="row"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="addClass()">➕ Classe</button><button onclick="openClassSettings()">⚙️</button></div></div>
@@ -46,7 +124,7 @@ return `<div class="panel"><div class="row"><select class="grow" onchange="curre
 ${alertBanner()}<div class="grid students">${students.map(studentCard).join('')||'<div class="empty" style="grid-column:1/-1">Aucun élève trouvé.</div>'}</div>`}
 function studentCard(s){const k=counts(s.id);return `<article class="student"><div class="avatar" title="Appui long pour gérer l’élève" style="background:${avatarColor(s.name)}" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false">${s.photo?`<img src="${s.photo}" alt="">`:initials(s.name)}</div><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">-${k.malus}</span></div><div class="balance">Solde ${k.bonus-k.malus}</div><div class="actions"><button class="primary" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function behaviorView(){return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">Comportements</div><div class="small">Crée autant de catégories de bonus et de malus que nécessaire.</div></div><button class="primary" onclick="behaviorForm()">➕ Ajouter</button></div><div class="row" style="margin-top:10px"><button onclick="behaviorForm();document.getElementById('bType').value='bonus'">➕ Nouveau bonus</button><button onclick="behaviorForm();document.getElementById('bType').value='malus'">➖ Nouveau malus</button></div></div>${['bonus','malus'].map(type=>`<div class="panel"><div class="section-title">${type==='bonus'?'🟢 Bonus':'🔴 Malus'}</div>${data.behaviors.filter(b=>b.type===type).map(b=>`<div class="behavior ${type}"><span class="emoji">${b.emoji}</span><span class="grow">${esc(b.label)}</span><button onclick="behaviorForm('${b.id}')">✏️</button><button class="danger" onclick="deleteBehavior('${b.id}')">🗑️</button></div>`).join('')}</div>`).join('')}`}
-function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">💾 Base de données</div><p class="small">Sauvegarde toute la base de l’application dans un fichier JSON pour la transférer sur un autre appareil.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
+function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">💾 Base de données</div><p class="small">Sauvegarde toute la base de l’application dans un fichier JSON pour la transférer sur un autre appareil.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
 function reportsView(){
  const reports=data.alerts.slice().reverse();
  return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')} · ${a.streak||5} malus consécutifs</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après 5 malus consécutifs.</p></div>`}`;
@@ -160,10 +238,11 @@ function importDatabase(){
  input.click();
 }
 function normalizeImportedData(x){
- if(!x || typeof x!=='object') throw new Error('format');
+ if(!x || typeof x!=='object' || Array.isArray(x)) throw new Error('format');
  // Accepte les sauvegardes produites par les anciennes versions de l'application.
  if(x.data && typeof x.data==='object') x=x.data;
- const out={...x};
+ if(!Array.isArray(x.classes)) throw new Error('format');
+ const out={...x};delete out._format;delete out._version;
  out.classes=Array.isArray(out.classes)?out.classes:[];
  out.events=Array.isArray(out.events)?out.events:[];
  out.behaviors=Array.isArray(out.behaviors)?out.behaviors:DEFAULT_BEHAVIORS.map(b=>({...b}));
@@ -176,39 +255,46 @@ function normalizeImportedData(x){
 }
 function restoreFile(file){
  if(!file)return;
- const done=(text)=>{
+ const fail=(msg)=>toast(msg,6500);
+ const done=async(text)=>{
+  let raw=String(text||'').replace(/^\uFEFF/,'').trim();
+  if(!raw)return fail('Le fichier est vide.');
+  let parsed;
+  try{parsed=JSON.parse(raw)}
+  catch(e){console.error('Import JSON :',e);return fail('Ce fichier n’est pas un JSON valide (fichier tronqué, modifié ou autre format).')}
+  let x;
+  try{x=normalizeImportedData(parsed)}
+  catch(e){console.error('Import format :',e);return fail('JSON valide, mais ce n’est pas une sauvegarde de Suivi de classe.')}
+  if(!x.classes.length)return fail('Cette sauvegarde ne contient aucune classe : import annulé.');
+  if(x.classes.some(c=>!c||typeof c!=='object'||c.id==null||typeof c.name!=='string'))return fail('Sauvegarde endommagée : une classe n’a pas d’identifiant ou de nom.');
+  const nbStudents=x.classes.reduce((n,c)=>n+c.students.length,0),nbPhotos=x.classes.reduce((n,c)=>n+c.students.filter(s=>s&&s.photo).length,0);
+  if(!confirm(`Importer ${x.classes.length} classe(s), ${nbStudents} élève(s), ${nbPhotos} photo(s) et ${x.events.length} événement(s) ?\n\nCela remplacera les données actuellement présentes sur cet appareil.`))return;
+  const prev={data,currentClassId,lastEvents,blockSave};
+  data=x;currentClassId=data.classes[0]?.id||null;lastEvents=[];blockSave=false;
+  toast('Import en cours…',60000);
   try{
-   const raw=String(text||'').replace(/^\uFEFF/,'').trim();
-   if(!raw) throw new Error('empty-file');
-   const parsed=JSON.parse(raw);
-   const x=normalizeImportedData(parsed);
-   if(!x.classes.length) throw new Error('no-classes');
-   if(!confirm('Importer cette base va remplacer les données actuellement présentes sur cet appareil. Continuer ?'))return;
-   data=x;
-   currentClassId=data.classes[0]?.id||null;
-   lastEvents=[];
-   save();
+   await persistNow();
    render();
-   toast('Base importée avec succès');
+   toast('Base importée avec succès ✅',3500);
   }catch(e){
-   console.error('Import JSON:',e);
-   toast('JSON valide mais format de sauvegarde non reconnu');
+   console.error('Import — écriture locale :',e);
+   data=prev.data;currentClassId=prev.currentClassId;lastEvents=prev.lastEvents;blockSave=prev.blockSave;
+   render();
+   fail('Fichier correct, mais impossible de l’enregistrer. '+explainStorageError(e)+' Tes données précédentes sont conservées.');
   }
  };
  try{
-  // FileReader est le mode le plus compatible avec Safari/iPad.
   const r=new FileReader();
   r.onload=()=>done(r.result);
-  r.onerror=()=>toast('Impossible de lire le fichier sur cet appareil');
+  r.onerror=()=>fail('Impossible de lire le fichier sur cet appareil. Enregistre-le d’abord dans l’app Fichiers, puis réessaie.');
   r.readAsText(file,'UTF-8');
  }catch(e){
-  // Secours pour les navigateurs récents.
-  if(typeof file.text==='function') file.text().then(done).catch(()=>toast('Impossible de lire le fichier'));
-  else toast('Lecture des fichiers non disponible');
+  if(typeof file.text==='function')file.text().then(done).catch(()=>fail('Impossible de lire le fichier.'));
+  else fail('Lecture des fichiers non disponible sur ce navigateur.');
  }
 }
 function copyCSV(){const c=currentClass();if(!c)return;let out='Élève;Bonus;Malus;Solde\n';c.students.forEach(s=>{const k=counts(s.id);out+=`"${s.name.replaceAll('"','""')}";${k.bonus};${k.malus};${k.bonus-k.malus}\n`});navigator.clipboard?.writeText(out).then(()=>toast('CSV copié')).catch(()=>{openModal(`<h2>Bilan CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`)})}
-function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;save();render()}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;blockSave=false;save();render()}
+let toastTimer=null;function toast(msg,ms=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms)}
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-render();
+init();
