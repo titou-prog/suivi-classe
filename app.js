@@ -38,7 +38,7 @@ function eventsFor(id){return data.events.filter(e=>e.studentId===id && (!todayO
 function counts(id){return eventsFor(id).reduce((r,e)=>(e.type==='bonus'?r.bonus++:r.malus++,r),{bonus:0,malus:0})}
 function setTab(t){tab=t;render()}
 function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():dataView();}
-function classView(){const c=currentClass(); if(!c)return `<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Crée ta première classe pour commencer.</p><button class="primary" onclick="addClass()">➕ Créer une classe</button></div>`;
+function classView(){const c=currentClass(); if(!c)return `<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Tu peux créer une classe ou importer directement une base existante.</p><div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="addClass()">➕ Créer une classe</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="backup()">💾 Sauvegarder</button></div></div>`;
 let total=c.students.reduce((a,s)=>{const k=counts(s.id);return {b:a.b+k.bonus,m:a.m+k.malus}}, {b:0,m:0}); let students=c.students.filter(s=>s.name.toLowerCase().includes(search.toLowerCase()));students.sort((a,b)=>sort==='bonus'?counts(b.id).bonus-counts(a.id).bonus:sort==='malus'?counts(b.id).malus-counts(a.id).malus:a.name.localeCompare(b.name,'fr'));
 return `<div class="panel"><div class="row"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="addClass()">➕ Classe</button><button onclick="openClassSettings()">⚙️</button></div></div>
 <div class="grid stats"><div class="stat"><b class="plus">+${total.b}</b><span>Bonus</span></div><div class="stat"><b class="minus">-${total.m}</b><span>Malus</span></div><div class="stat"><b>${total.b-total.m}</b><span>Solde</span></div><div class="stat"><b>${c.students.length}</b><span>Élèves</span></div></div>
@@ -137,7 +137,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=12;
+ exportData._version=14;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
