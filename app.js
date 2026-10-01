@@ -135,7 +135,10 @@ function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’histori
 function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
 function backup(){
- const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const exportData=JSON.parse(JSON.stringify(data));
+ exportData._format='suivi-classe';
+ exportData._version=12;
+ const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
  a.href=URL.createObjectURL(blob);a.download=`suivi-classe-${stamp}.json`;a.click();
@@ -144,25 +147,39 @@ function backup(){
 }
 function importDatabase(){
  const input=document.createElement('input');
- input.type='file';input.accept='application/json,.json';
+ input.type='file';input.accept='.json,application/json,text/json';
  input.onchange=()=>{if(input.files[0])restoreFile(input.files[0])};
  input.click();
+}
+function normalizeImportedData(x){
+ if(!x || typeof x!=='object') throw new Error('format');
+ // Accepte les sauvegardes produites par les anciennes versions de l'application.
+ if(x.data && typeof x.data==='object') x=x.data;
+ const out={...x};
+ out.classes=Array.isArray(out.classes)?out.classes:[];
+ out.events=Array.isArray(out.events)?out.events:[];
+ out.behaviors=Array.isArray(out.behaviors)?out.behaviors:DEFAULT_BEHAVIORS.map(b=>({...b}));
+ out.alerts=Array.isArray(out.alerts)?out.alerts:[];
+ out.theme=out.theme||'automatic';
+ out.classes=out.classes.map(c=>({...c,students:Array.isArray(c.students)?c.students:[]}));
+ out.events=out.events.map(e=>{const z={...e}; if(z.classId==null && z.class) z.classId=z.class; return z});
+ out.alerts=out.alerts.map(a=>({...a,viewed:a.viewed===true}));
+ return out;
 }
 function restoreFile(file){
  if(!file)return;
  const r=new FileReader();
  r.onload=()=>{
   try{
-   const x=JSON.parse(r.result);
-   if(!x||!Array.isArray(x.classes)||!Array.isArray(x.events)||!Array.isArray(x.behaviors))throw 0;
+   // Retire un éventuel BOM ajouté par certains logiciels.
+   const raw=String(r.result||'').replace(/^\uFEFF/,'').trim();
+   const x=normalizeImportedData(JSON.parse(raw));
+   if(!x.classes.length) throw new Error('empty');
    if(!confirm('Importer cette base va remplacer les données actuellement présentes sur cet appareil. Continuer ?'))return;
-   x.alerts=Array.isArray(x.alerts)?x.alerts:[];
-   x.alerts.forEach(a=>{if(a.viewed===undefined)a.viewed=false});
-   x.theme=x.theme||'automatic';
    data=x;currentClassId=data.classes[0]?.id||null;lastEvents=[];save();render();toast('Base importée avec succès');
-  }catch(e){toast('Fichier invalide ou incompatible')}
+  }catch(e){console.error('Import JSON:',e);toast('Impossible de lire cette sauvegarde JSON')}
  };
- r.readAsText(file);
+ r.readAsText(file,'utf-8');
 }
 function copyCSV(){const c=currentClass();if(!c)return;let out='Élève;Bonus;Malus;Solde\n';c.students.forEach(s=>{const k=counts(s.id);out+=`"${s.name.replaceAll('"','""')}";${k.bonus};${k.malus};${k.bonus-k.malus}\n`});navigator.clipboard?.writeText(out).then(()=>toast('CSV copié')).catch(()=>{openModal(`<h2>Bilan CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`)})}
 function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;save();render()}
