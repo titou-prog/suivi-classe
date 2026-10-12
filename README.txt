@@ -1,10 +1,14 @@
-Suivi de classe — PWA iPad V15
+Suivi de classe — PWA iPad V17
 
-Nouveautés V15 :
-- Stockage dans IndexedDB (au lieu de localStorage, limité à ~5 Mo sur Safari) : les photos des élèves ne posent plus de problème de place.
-- Migration automatique des données existantes (V14 et antérieures) au premier lancement.
-- Import plus fiable : messages d'erreur distincts (fichier vide, JSON invalide, format inconnu, stockage plein) et retour arrière si l'enregistrement échoue.
-- Onglet Données : indicateur de stockage utilisé.
+Nouveautés V17 :
+- Bouton « ← Retour à l'accueil » sur les pages Comportements, Récap, Rapports et Données.
+- Barre de navigation du bas visible sur iPad (elle disparaissait entre 700 et 1100 px de large : plus aucun moyen de revenir en arrière).
+- Sons réparés : fichiers audio générés (ignorent le commutateur silencieux), déverrouillage au premier toucher, Web Audio en secours.
+  Réglages : interrupteur des sons + boutons de test (bonus / malus / alarme).
+- Nouvel écran « Tableau récap » : noms uniquement, sans photos, bonus / malus / solde, tri par colonne, détail par comportement, période Total / Aujourd'hui, copie CSV, impression.
+- Remise à zéro séparée des bonus et des malus (⚙️ de la classe, ou page Récap), en plus de « tout remettre à zéro ».
+  Les malus se cumulent : un bonus n'interrompt jamais le décompte vers l'alerte des 5 malus (palier à 5, 10, 15…).
+  Remettre les malus à zéro relance le décompte à 0.
 
 Pour GitHub Pages : remplacer les fichiers existants à la racine du dépôt par ceux de ce dossier.
-Sur l'iPad : fermer complètement l'application puis la rouvrir (deux fois si besoin) pour charger la V15.
+Sur l'iPad : fermer complètement l'application puis la rouvrir deux fois pour charger la V17 (la barre latérale doit afficher « V17 »).

@@ -83,27 +83,86 @@ async function init(){
  }
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(_){}
 }
-function playSound(kind){
+// ===== SONS V16 =====
+// Sur iPad : le Web Audio est coupé par le commutateur « silencieux » et reste bloqué tant qu'un geste n'a pas « déverrouillé » l'audio.
+// On génère donc de vrais fichiers WAV lus par un élément <audio> (qui ignore ce commutateur), avec le Web Audio en secours.
+const SND_RATE=22050;
+const SND_DEFS={
+ bonus:{wave:'bright',notes:[[523.25,0,.16],[659.25,.10,.16],[783.99,.20,.30]]},
+ malus:{wave:'buzz',notes:[[329.63,0,.20],[246.94,.16,.34]]},
+ alert:{wave:'buzz',notes:[[880,0,.14],[659.25,.16,.14],[880,.32,.14],[659.25,.48,.14],[880,.64,.14],[659.25,.80,.14],[880,.96,.22]]}
+};
+let sndEls=null,sndUnlocked=false,actx=null;
+function sndSample(wave,ph){
+ const t=ph%(2*Math.PI);
+ if(wave==='buzz'){let v=0;for(let h=1;h<=7;h+=2)v+=Math.sin(h*t)/h;return v*.9} // carré adouci : audible sur les petits haut-parleurs
+ return Math.sin(t)+.45*Math.sin(2*t)+.2*Math.sin(3*t); // timbre brillant
+}
+function synthWavURI(def){
+ const total=Math.max(...def.notes.map(n=>n[1]+n[2]))+.08,N=Math.ceil(total*SND_RATE),buf=new Float32Array(N);
+ def.notes.forEach(([f,st,du])=>{
+  const i0=Math.floor(st*SND_RATE),len=Math.floor(du*SND_RATE);
+  for(let i=0;i<len&&i0+i<N;i++){
+   const t=i/SND_RATE,att=Math.min(1,t/.006),dec=Math.exp(-3.2*t/du),rel=Math.min(1,(len-i)/(SND_RATE*.012));
+   buf[i0+i]+=sndSample(def.wave,2*Math.PI*f*t)*att*dec*rel;
+  }
+ });
+ let peak=0;for(let i=0;i<N;i++)peak=Math.max(peak,Math.abs(buf[i]));
+ const k=peak?0.92/peak:1,bytes=new Uint8Array(44+N*2),dv=new DataView(bytes.buffer);
+ const w=(o,str)=>{for(let i=0;i<str.length;i++)dv.setUint8(o+i,str.charCodeAt(i))};
+ w(0,'RIFF');dv.setUint32(4,36+N*2,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+ dv.setUint32(24,SND_RATE,true);dv.setUint32(28,SND_RATE*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,N*2,true);
+ for(let i=0;i<N;i++)dv.setInt16(44+i*2,Math.max(-1,Math.min(1,buf[i]*k))*32767,true);
+ let bin='';for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+ return 'data:audio/wav;base64,'+btoa(bin);
+}
+function ensureSounds(){
+ if(sndEls)return sndEls;
+ sndEls={};
+ try{for(const k in SND_DEFS){const el=new Audio(synthWavURI(SND_DEFS[k]));el.preload='auto';el.volume=1;sndEls[k]=el}}catch(e){console.warn('Sons indisponibles :',e);sndEls={}}
+ return sndEls;
+}
+function unlockAudio(){
+ if(sndUnlocked)return;
+ sndUnlocked=true;
+ try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(_){}
  try{
-  const C=window.AudioContext||window.webkitAudioContext; if(!C)return;
-  const ctx=window.__audioCtx||(window.__audioCtx=new C());
-  if(ctx.state==='suspended')ctx.resume();
-  const patterns={
-   bonus:[[523.25,0],[659.25,.09]],
-   malus:[[220,0],[165,.11]],
-   alert:[[880,0],[659.25,.13],[880,.26],[659.25,.39]]
+  const els=ensureSounds();
+  for(const k in els){const el=els[k];el.muted=true;const p=el.play();
+   if(p&&p.then)p.then(()=>{el.pause();el.currentTime=0;el.muted=false}).catch(()=>{el.muted=false;sndUnlocked=false});
+   else{el.pause();el.muted=false}}
+ }catch(_){sndUnlocked=false}
+ try{const C=window.AudioContext||window.webkitAudioContext;if(C){if(!actx||actx.state==='closed')actx=new C();if(actx.state!=='running')actx.resume()}}catch(_){}
+}
+['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+function webAudioPlay(kind){
+ try{
+  const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+  if(!actx||actx.state==='closed')actx=new C();
+  const go=()=>{
+   const def=SND_DEFS[kind]||SND_DEFS.bonus,now=actx.currentTime+.02;
+   def.notes.forEach(([f,st,du])=>{
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=def.wave==='buzz'?'square':'triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,now+st);g.gain.exponentialRampToValueAtTime(.35,now+st+.01);g.gain.exponentialRampToValueAtTime(.0001,now+st+du);
+    o.connect(g);g.connect(actx.destination);o.start(now+st);o.stop(now+st+du+.02);
+   });
   };
-  const notes=patterns[kind]||patterns.bonus;
-  const now=ctx.currentTime;
-  notes.forEach(([freq,offset])=>{
-   const o=ctx.createOscillator(),g=ctx.createGain();
-   o.type=kind==='alert'?'square':'sine'; o.frequency.value=freq;
-   g.gain.setValueAtTime(0.0001,now+offset);
-   g.gain.exponentialRampToValueAtTime(kind==='alert'?0.075:0.045,now+offset+0.012);
-   g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.12);
-   o.connect(g);g.connect(ctx.destination);o.start(now+offset);o.stop(now+offset+0.14);
-  });
+  if(actx.state==='running')go();else actx.resume().then(go).catch(()=>{});
+ }catch(e){console.warn('Web Audio :',e)}
+}
+function playSound(kind){
+ if(data.soundOn===false)return;
+ try{
+  const el=ensureSounds()[kind];
+  if(el){
+   el.muted=false;el.currentTime=0;
+   const p=el.play();
+   if(p&&p.catch)p.catch(()=>webAudioPlay(kind));
+   return;
+  }
  }catch(e){}
+ webAudioPlay(kind);
 }
 function applyTheme(){let dark=data.theme==='dark'||(data.theme==='automatic'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',dark)}
 function currentClass(){return data.classes.find(c=>c.id===currentClassId)}
@@ -112,24 +171,70 @@ function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.
 function initials(name){return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
 function avatarColor(name){let n=0;for(const c of name)n=(n*31+c.charCodeAt(0))>>>0;return `hsl(${n%360} 55% 48%)`}
 function isToday(d){const a=new Date(d),b=new Date();return a.toDateString()===b.toDateString()}
-function eventsFor(id){return data.events.filter(e=>e.studentId===id && (!todayOnly||isToday(e.date)))}
+function eventsFor(id){return data.events.filter(e=>e.studentId===id && !e.cleared && (!todayOnly||isToday(e.date)))}
 function counts(id){return eventsFor(id).reduce((r,e)=>(e.type==='bonus'?r.bonus++:r.malus++,r),{bonus:0,malus:0})}
-function setTab(t){tab=t;render()}
-function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():dataView();if(tab==='data')updateStorageInfo();}
+function setTab(t){tab=t;render();window.scrollTo(0,0)}
+function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=(tab==='class'?'':'<div class="row noprint" style="margin-bottom:12px"><button class="primary" onclick="setTab(\'class\')">← Retour à l’accueil</button></div>')+(tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():tab==='recap'?recapView():dataView());if(tab==='data')updateStorageInfo();}
 function classView(){const c=currentClass(); if(!c)return `<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Tu peux créer une classe ou importer directement une base existante.</p><div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="addClass()">➕ Créer une classe</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="backup()">💾 Sauvegarder</button></div></div>`;
 let total=c.students.reduce((a,s)=>{const k=counts(s.id);return {b:a.b+k.bonus,m:a.m+k.malus}}, {b:0,m:0}); let students=c.students.filter(s=>s.name.toLowerCase().includes(search.toLowerCase()));students.sort((a,b)=>sort==='bonus'?counts(b.id).bonus-counts(a.id).bonus:sort==='malus'?counts(b.id).malus-counts(a.id).malus:a.name.localeCompare(b.name,'fr'));
 return `<div class="panel"><div class="row"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="addClass()">➕ Classe</button><button onclick="openClassSettings()">⚙️</button></div></div>
 <div class="grid stats"><div class="stat"><b class="plus">+${total.b}</b><span>Bonus</span></div><div class="stat"><b class="minus">-${total.m}</b><span>Malus</span></div><div class="stat"><b>${total.b-total.m}</b><span>Solde</span></div><div class="stat"><b>${c.students.length}</b><span>Élèves</span></div></div>
-<div class="panel"><div class="controls"><input placeholder="🔎 Rechercher un élève…" value="${esc(search)}" oninput="search=this.value;render()"><button onclick="todayOnly=!todayOnly;render()">${todayOnly?'📅 Aujourd’hui':'📊 Total'}</button><button onclick="sort=sort==='name'?'bonus':sort==='bonus'?'malus':'name';render()">↕️ ${sort==='name'?'Nom':sort==='bonus'?'Bonus':'Malus'}</button></div><div class="row" style="margin-top:9px"><button class="primary" onclick="giveAll()">👥 Toute la classe</button><button onclick="addStudents()">➕ Ajouter des élèves</button><button onclick="backup()">💾 Sauvegarder</button><button onclick="importDatabase()">📥 Importer</button><button onclick="setTab('behaviors')">⭐ Gérer les bonus/malus</button><button class="primary" onclick="randomStudent()">🎲 Aléatoire</button><button onclick="setTab('reports')">📋 Rapports</button><button onclick="undo()" ${lastEvents.length?'':'disabled'}>↩️ Annuler</button></div></div>
+<div class="panel"><div class="controls"><input placeholder="🔎 Rechercher un élève…" value="${esc(search)}" oninput="search=this.value;render()"><button onclick="todayOnly=!todayOnly;render()">${todayOnly?'📅 Aujourd’hui':'📊 Total'}</button><button onclick="sort=sort==='name'?'bonus':sort==='bonus'?'malus':'name';render()">↕️ ${sort==='name'?'Nom':sort==='bonus'?'Bonus':'Malus'}</button></div><div class="row" style="margin-top:9px"><button class="primary" onclick="giveAll()">👥 Toute la classe</button><button onclick="addStudents()">➕ Ajouter des élèves</button><button onclick="backup()">💾 Sauvegarder</button><button onclick="importDatabase()">📥 Importer</button><button onclick="setTab('behaviors')">⭐ Gérer les bonus/malus</button><button class="primary" onclick="randomStudent()">🎲 Aléatoire</button><button onclick="setTab('recap')">📊 Tableau récap</button><button onclick="setTab('reports')">📋 Rapports</button><button onclick="undo()" ${lastEvents.length?'':'disabled'}>↩️ Annuler</button></div></div>
 ${alertBanner()}<div class="grid students">${students.map(studentCard).join('')||'<div class="empty" style="grid-column:1/-1">Aucun élève trouvé.</div>'}</div>`}
 function studentCard(s){const k=counts(s.id);return `<article class="student"><div class="avatar" title="Appui long pour gérer l’élève" style="background:${avatarColor(s.name)}" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false">${s.photo?`<img src="${s.photo}" alt="">`:initials(s.name)}</div><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">-${k.malus}</span></div><div class="balance">Solde ${k.bonus-k.malus}</div><div class="actions"><button class="primary" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function behaviorView(){return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">Comportements</div><div class="small">Crée autant de catégories de bonus et de malus que nécessaire.</div></div><button class="primary" onclick="behaviorForm()">➕ Ajouter</button></div><div class="row" style="margin-top:10px"><button onclick="behaviorForm();document.getElementById('bType').value='bonus'">➕ Nouveau bonus</button><button onclick="behaviorForm();document.getElementById('bType').value='malus'">➖ Nouveau malus</button></div></div>${['bonus','malus'].map(type=>`<div class="panel"><div class="section-title">${type==='bonus'?'🟢 Bonus':'🔴 Malus'}</div>${data.behaviors.filter(b=>b.type===type).map(b=>`<div class="behavior ${type}"><span class="emoji">${b.emoji}</span><span class="grow">${esc(b.label)}</span><button onclick="behaviorForm('${b.id}')">✏️</button><button class="danger" onclick="deleteBehavior('${b.id}')">🗑️</button></div>`).join('')}</div>`).join('')}`}
 function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">💾 Base de données</div><p class="small">Sauvegarde toute la base de l’application dans un fichier JSON pour la transférer sur un autre appareil.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
 function reportsView(){
  const reports=data.alerts.slice().reverse();
- return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')} · ${a.streak||5} malus consécutifs</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après 5 malus consécutifs.</p></div>`}`;
+ return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')} · ${a.streak||5} malus cumulés</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après chaque palier de 5 malus.</p></div>`}`;
 }
 
+let recapPeriod='total',recapDetail=false,recapSort='name',recapDir=1;
+function recapRows(c){
+ const evs=data.events.filter(e=>e.classId===c.id&&!e.cleared&&(recapPeriod!=='today'||isToday(e.date)));
+ const cols=[],seen={};
+ evs.forEach(e=>{const k=e.type+'|'+e.label;if(!seen[k]){seen[k]={key:k,type:e.type,label:e.label,emoji:e.emoji};cols.push(seen[k])}});
+ cols.sort((x,y)=>(x.type===y.type?x.label.localeCompare(y.label,'fr'):(x.type==='bonus'?-1:1)));
+ const rows=c.students.map(st=>{
+  const mine=evs.filter(e=>e.studentId===st.id),by={};
+  mine.forEach(e=>{const k=e.type+'|'+e.label;by[k]=(by[k]||0)+1});
+  const b=mine.filter(e=>e.type==='bonus').length,m=mine.length-b;
+  return {id:st.id,name:st.name,b,m,solde:b-m,by};
+ });
+ const dir=recapDir;
+ rows.sort((x,y)=>recapSort==='name'?dir*x.name.localeCompare(y.name,'fr'):(dir*(y[recapSort]-x[recapSort])||x.name.localeCompare(y.name,'fr')));
+ return {rows,cols};
+}
+function setRecapSort(k){if(recapSort===k)recapDir=-recapDir;else{recapSort=k;recapDir=1}render()}
+function recapView(){
+ const c=currentClass();
+ if(!c)return `<div class="panel empty"><div style="font-size:45px">📊</div><h2>Aucune classe</h2><p>Crée ou importe une classe pour afficher le tableau récapitulatif.</p></div>`;
+ const {rows,cols}=recapRows(c),T=rows.reduce((t,r)=>({b:t.b+r.b,m:t.m+r.m}),{b:0,m:0});
+ const arrow=k=>recapSort===k?(recapDir===1?' ▲':' ▼'):'';
+ const cell=(v,cls)=>v?`<span class="${cls||''}">${v}</span>`:'<span class="small">–</span>';
+ const head=`<th onclick="setRecapSort('name')" style="cursor:pointer">Élève${arrow('name')}</th>`
+  +(recapDetail?cols.map(x=>`<th title="${esc(x.label)}" class="${x.type==='bonus'?'plus':'minus'}"><span style="font-size:18px">${esc(x.emoji||'')}</span><br><span class="small">${esc(x.label)}</span></th>`).join(''):'')
+  +`<th onclick="setRecapSort('b')" style="cursor:pointer" class="plus">🟢 Bonus${arrow('b')}</th><th onclick="setRecapSort('m')" style="cursor:pointer" class="minus">🔴 Malus${arrow('m')}</th><th onclick="setRecapSort('solde')" style="cursor:pointer">Solde${arrow('solde')}</th>`;
+ const body=rows.map(r=>`<tr><td><b>${esc(r.name)}</b></td>`
+  +(recapDetail?cols.map(x=>`<td>${cell(r.by[x.key]||0,x.type==='bonus'?'plus':'minus')}</td>`).join(''):'')
+  +`<td>${cell(r.b,'plus')}</td><td>${cell(r.m,'minus')}</td><td><b>${r.solde>0?'+':''}${r.solde}</b></td></tr>`).join('');
+ const foot=`<tr><td><b>Total classe</b></td>`+(recapDetail?cols.map(x=>`<td><b>${rows.reduce((n,r)=>n+(r.by[x.key]||0),0)}</b></td>`).join(''):'')+`<td><b class="plus">${T.b}</b></td><td><b class="minus">${T.m}</b></td><td><b>${T.b-T.m>0?'+':''}${T.b-T.m}</b></td></tr>`;
+ return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📊 Récapitulatif · ${esc(c.name)}</div><div class="small">${rows.length} élève(s) · ${recapPeriod==='today'?'aujourd’hui':'total'} · noms uniquement, sans photos</div></div></div>
+ <div class="row noprint" style="margin-top:10px"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="recapPeriod=recapPeriod==='total'?'today':'total';render()">${recapPeriod==='today'?'📅 Aujourd’hui':'📊 Total'}</button><button onclick="recapDetail=!recapDetail;render()">${recapDetail?'🔽 Masquer le détail':'🔎 Détail par comportement'}</button></div>
+ <div class="row noprint" style="margin-top:9px"><button class="primary" onclick="copyRecapCSV()">📋 Copier (CSV)</button><button onclick="window.print()">🖨️ Imprimer</button><button onclick="resetType('bonus')">🟢 Bonus à zéro</button><button onclick="resetType('malus')">🔴 Malus à zéro</button></div></div>
+ <div class="panel" style="padding:6px"><div style="overflow-x:auto"><table class="recap"><thead><tr>${head}</tr></thead><tbody>${body||`<tr><td colspan="9" class="small">Aucun élève dans cette classe.</td></tr>`}</tbody><tfoot>${foot}</tfoot></table></div></div>`;
+}
+function recapCSVText(c){
+ const {rows,cols}=recapRows(c),q=v=>`"${String(v).replaceAll('"','""')}"`;
+ let out=['Élève'].concat(recapDetail?cols.map(x=>(x.type==='bonus'?'+ ':'- ')+x.label):[],['Bonus','Malus','Solde']).map(q).join(';')+'\n';
+ rows.forEach(r=>{out+=[q(r.name)].concat(recapDetail?cols.map(x=>r.by[x.key]||0):[],[r.b,r.m,r.solde]).join(';')+'\n'});
+ return out;
+}
+function copyRecapCSV(){
+ const c=currentClass();if(!c)return;const out=recapCSVText(c);
+ const fallback=()=>openModal(`<h2>Récapitulatif CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`);
+ try{navigator.clipboard.writeText(out).then(()=>toast('Tableau copié (CSV)')).catch(fallback)}catch(e){fallback()}
+}
 function randomStudent(){
  const c=currentClass();
  if(!c||!c.students.length)return toast('Aucun élève dans la classe');
@@ -150,17 +255,12 @@ function confirmAddClass(){const name=document.getElementById('mName').value.tri
 function addStudents(){openModal(`<h2>Ajouter des élèves</h2><textarea id="mStudents" rows="9" placeholder="Un élève par ligne"></textarea><div class="row"><button class="primary" onclick="confirmAddStudents()">Ajouter</button><button onclick="closeModal()">Annuler</button></div>`) }
 function confirmAddStudents(){const c=currentClass();if(!c)return;const names=document.getElementById('mStudents').value.split(/\n|;/).map(x=>x.trim()).filter(Boolean);c.students.push(...names.map(name=>({id:uid(),name})));save();closeModal();render();toast(`${names.length} élève(s) ajouté(s)`)}
 function chooseBehavior(studentId,type){const bs=data.behaviors.filter(b=>b.type===type);openModal(`<h2>${type==='bonus'?'➕ Bonus':'➖ Malus'}</h2>${bs.map(b=>`<button style="width:100%;text-align:left;margin:5px 0" onclick="applyBehavior('${studentId}','${b.id}')">${b.emoji} ${esc(b.label)}</button>`).join('')}<button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
-function applyBehavior(studentId,behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;const e={id:uid(),studentId,classId:c.id,behaviorId,type:b.type,label:b.label,emoji:b.emoji,date:new Date().toISOString()};data.events.push(e);lastEvents=[e.id];playSound(b.type==='bonus'?'bonus':'malus');let alert=null;if(b.type==='malus')alert=checkAlert(studentId);save();closeModal();render();if(alert){playSound('alert');showAlert(alert)}else{toast(`${b.emoji} ${b.label}`)}}
+function applyBehavior(studentId,behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;const e={id:uid(),studentId,classId:c.id,behaviorId,type:b.type,label:b.label,emoji:b.emoji,date:new Date().toISOString()};data.events.push(e);lastEvents=[e.id];let alert=null;if(b.type==='malus')alert=checkAlert(studentId);playSound(alert?'alert':(b.type==='bonus'?'bonus':'malus'));save();closeModal();render();if(alert){showAlert(alert)}else{toast(`${b.emoji} ${b.label}`)}}
 function giveAll(){const c=currentClass();if(!c||!c.students.length)return toast('Aucun élève');openModal(`<h2>Attribuer à toute la classe</h2>${data.behaviors.map(b=>`<button style="width:100%;text-align:left;margin:5px 0" onclick="applyAll('${b.id}')">${b.emoji} ${esc(b.label)}</button>`).join('')}<button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
-function applyAll(behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;lastEvents=[];const now=new Date().toISOString();let alerts=[];c.students.forEach(s=>{const e={id:uid(),studentId:s.id,classId:c.id,behaviorId:b.id,type:b.type,label:b.label,emoji:b.emoji,date:now};data.events.push(e);lastEvents.push(e.id);if(b.type==='malus'){const a=checkAlert(s.id);if(a)alerts.push(a)}});playSound(b.type==='bonus'?'bonus':'malus');save();closeModal();render();if(alerts.length){playSound('alert');}if(alerts.length===1)showAlert(alerts[0]);else toast(`${b.emoji} appliqué à ${c.students.length} élèves${alerts.length?` · 🚨 ${alerts.length} alerte(s)`:''}`)}
+function applyAll(behaviorId){const b=data.behaviors.find(x=>x.id===behaviorId),c=currentClass();if(!b||!c)return;lastEvents=[];const now=new Date().toISOString();let alerts=[];c.students.forEach(s=>{const e={id:uid(),studentId:s.id,classId:c.id,behaviorId:b.id,type:b.type,label:b.label,emoji:b.emoji,date:now};data.events.push(e);lastEvents.push(e.id);if(b.type==='malus'){const a=checkAlert(s.id);if(a)alerts.push(a)}});playSound(alerts.length?'alert':(b.type==='bonus'?'bonus':'malus'));save();closeModal();render();if(alerts.length===1)showAlert(alerts[0]);else toast(`${b.emoji} appliqué à ${c.students.length} élèves${alerts.length?` · 🚨 ${alerts.length} alerte(s)`:''}`)}
 function consecutiveMalus(studentId){
- const ev=data.events.filter(e=>e.studentId===studentId).sort((a,b)=>new Date(a.date)-new Date(b.date));
- let streak=[];
- for(let i=ev.length-1;i>=0;i--){
-   if(ev[i].type!=='malus') break;
-   streak.unshift(ev[i]);
- }
- return streak;
+ // Tous les malus de l'élève s'additionnent : les bonus n'interrompent jamais la série.
+ return data.events.filter(e=>e.studentId===studentId&&e.type==='malus'&&!e.cleared).sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 function checkAlert(studentId){
  const streak=consecutiveMalus(studentId);
@@ -177,7 +277,7 @@ function showAlert(alert){
  if(!alert)return;
  if(!alert.viewed){alert.viewed=true;save();render();}
  const items=(alert.items||[]).map((x,i)=>`<div class="checkrow"><span style="font-size:20px">${x.emoji||'🔴'}</span><span class="grow"><b>${i+1}. ${esc(x.label)}</b><br><span class="small">${new Date(x.date).toLocaleString('fr-FR')}</span></span></div>`).join('');
- openModal(`<div style="text-align:center;padding:8px 0 14px"><div style="font-size:42px">🚨</div><h2 style="margin:4px 0">Alerte : 5 malus d'affilée</h2><p><b>${esc(alert.studentName)}</b> · ${esc(alert.className)}</p><p class="small">Un rapport récapitulatif a été créé.</p></div><div class="panel" style="margin:0 0 12px"><div class="section-title">Rapport des 5 derniers malus</div>${items}</div><div class="row"><button class="primary grow" onclick="copyAlert('${alert.id}')">📋 Copier le rapport</button><button onclick="closeModal()">Fermer</button></div>`);
+ openModal(`<div style="text-align:center;padding:8px 0 14px"><div style="font-size:42px">🚨</div><h2 style="margin:4px 0">Alerte : 5 malus atteints</h2><p><b>${esc(alert.studentName)}</b> · ${esc(alert.className)}</p><p class="small">Un rapport récapitulatif a été créé.</p></div><div class="panel" style="margin:0 0 12px"><div class="section-title">Rapport des 5 derniers malus</div>${items}</div><div class="row"><button class="primary grow" onclick="copyAlert('${alert.id}')">📋 Copier le rapport</button><button onclick="closeModal()">Fermer</button></div>`);
 }
 function alertBanner(){
  const recent=data.alerts.filter(a=>a.className===currentClass()?.name&&!a.viewed).slice(-3).reverse();
@@ -192,7 +292,7 @@ function deleteAlert(id){
 }
 function copyAlert(id){
  const a=data.alerts.find(x=>x.id===id); if(!a)return;
- const text=`ALERTE — 5 MALUS D'AFFILÉE\nÉlève : ${a.studentName}\nClasse : ${a.className}\nDate : ${new Date(a.date).toLocaleString('fr-FR')}\n\n${(a.items||[]).map((x,i)=>`${i+1}. ${x.label} — ${new Date(x.date).toLocaleString('fr-FR')}`).join('\n')}`;
+ const text=`ALERTE — 5 MALUS ATTEINTS\nÉlève : ${a.studentName}\nClasse : ${a.className}\nDate : ${new Date(a.date).toLocaleString('fr-FR')}\n\n${(a.items||[]).map((x,i)=>`${i+1}. ${x.label} — ${new Date(x.date).toLocaleString('fr-FR')}`).join('\n')}`;
  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(()=>toast('Rapport copié')).catch(()=>fallbackCopy(text)); else fallbackCopy(text);
 }
 function fallbackCopy(text){openModal(`<h2>Rapport</h2><textarea rows="12">${esc(text)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`);}
@@ -203,14 +303,25 @@ function renameStudent(id){const s=currentClass().students.find(x=>x.id===id);s.
 function removeStudent(id){if(!confirm('Supprimer cet élève et son historique ?'))return;const c=currentClass();c.students=c.students.filter(s=>s.id!==id);data.events=data.events.filter(e=>e.studentId!==id);save();closeModal();render()}
 let studentPressTimer=null,studentPressFired=false;function startStudentPress(e,id){if(e.pointerType==='mouse'&&e.button!==0)return;studentPressFired=false;clearTimeout(studentPressTimer);studentPressTimer=setTimeout(()=>{studentPressFired=true;navigator.vibrate?.(30);studentMenu(id)},550)}function endStudentPress(e,id){clearTimeout(studentPressTimer);if(studentPressFired)e.preventDefault()}function cancelStudentPress(){clearTimeout(studentPressTimer)}
 function setPhoto(id,file){if(!file)return;const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const W=360,H=480,can=document.createElement('canvas');can.width=W;can.height=H;const target=W/H,src=img.width/img.height;let sw,sh,sx,sy;if(src>target){sh=img.height;sw=sh*target;sx=(img.width-sw)/2;sy=Math.max(0,(img.height-sh)*0.28)}else{sw=img.width;sh=sw/target;sx=Math.max(0,(img.width-sw)*0.5);sy=0}const ctx=can.getContext('2d');ctx.drawImage(img,sx,sy,sw,sh,0,0,W,H);const s=currentClass().students.find(x=>x.id===id);s.photo=can.toDataURL('image/jpeg',.82);save();closeModal();render();toast('Photo enregistrée')};img.src=r.result};r.readAsDataURL(file)}
-function openClassSettings(){const c=currentClass();openModal(`<h2>Classe</h2><input id="className" value="${esc(c.name)}"><div class="row" style="margin-top:9px"><button class="primary" onclick="renameClass()">Renommer</button><button onclick="resetClass()">Réinitialiser les compteurs</button></div><button class="danger" style="width:100%;margin-top:8px" onclick="deleteClass()">Supprimer la classe</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`) }
+function openClassSettings(){const c=currentClass();openModal(`<h2>Classe</h2><input id="className" value="${esc(c.name)}"><div class="row" style="margin-top:9px"><button class="primary" onclick="renameClass()">Renommer</button></div><div class="section-title" style="margin-top:14px">Remise à zéro</div><div class="row" style="margin-top:6px"><button class="grow" onclick="resetType('bonus')">🟢 Remettre les bonus à zéro</button><button class="grow" onclick="resetType('malus')">🔴 Remettre les malus à zéro</button></div><button class="danger" style="width:100%;margin-top:8px" onclick="resetClass()">♻️ Tout remettre à zéro (bonus + malus)</button><button class="danger" style="width:100%;margin-top:8px" onclick="deleteClass()">Supprimer la classe</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`) }
 function renameClass(){const c=currentClass();c.name=document.getElementById('className').value.trim()||c.name;save();closeModal();render()}
-function resetClass(){if(!confirm('Effacer tous les bonus/malus de cette classe ?'))return;const c=currentClass();data.events=data.events.filter(e=>e.classId!==c.id);data.alerts=data.alerts.filter(a=>a.className!==c.name);save();closeModal();render();toast('Compteurs réinitialisés')}
+function classAlertFilter(c){const ids=new Set(c.students.map(x=>x.id));return a=>!(ids.has(a.studentId)||a.className===c.name)}
+function resetType(type){
+ const c=currentClass();if(!c)return;
+ const label=type==='bonus'?'bonus':'malus',other=type==='bonus'?'malus':'bonus';
+ const n=data.events.filter(e=>e.classId===c.id&&e.type===type&&!e.cleared).length;
+ if(!n)return toast(`Aucun ${label} à remettre à zéro dans ${c.name}`);
+ if(!confirm(`Remettre à zéro les ${n} ${label} de la classe ${c.name} ?\n\nLes ${other} sont conservés. Pense à sauvegarder la base avant : cette action est définitive.`))return;
+ if(type==='bonus'){data.events=data.events.filter(e=>!(e.classId===c.id&&e.type==='bonus'))}
+ else{data.events=data.events.filter(e=>!(e.classId===c.id&&e.type==='malus'));data.alerts=data.alerts.filter(classAlertFilter(c))}
+ lastEvents=[];save();closeModal();render();toast(`${n} ${label} remis à zéro · les ${other} sont conservés`);
+}
+function resetClass(){if(!confirm('Effacer TOUS les bonus ET les malus de cette classe ? Cette action est définitive.'))return;const c=currentClass();data.events=data.events.filter(e=>e.classId!==c.id);data.alerts=data.alerts.filter(classAlertFilter(c));lastEvents=[];save();closeModal();render();toast('Compteurs réinitialisés')}
 function deleteClass(){if(!confirm('Supprimer définitivement cette classe ?'))return;const id=currentClass().id;data.classes=data.classes.filter(c=>c.id!==id);data.events=data.events.filter(e=>e.classId!==id);currentClassId=data.classes[0]?.id||null;save();closeModal();render()}
 function behaviorForm(id){const b=id?data.behaviors.find(x=>x.id===id):null;openModal(`<h2>${b?'Modifier':'Nouveau'} comportement</h2><select id="bType"><option value="bonus" ${b?.type==='bonus'?'selected':''}>Bonus</option><option value="malus" ${b?.type==='malus'?'selected':''}>Malus</option></select><input id="bEmoji" value="${esc(b?.emoji||'⭐')}" placeholder="Emoji"><input id="bLabel" value="${esc(b?.label||'')}" placeholder="Libellé"><button class="primary" style="width:100%;margin-top:8px" onclick="saveBehavior('${id||''}')">Enregistrer</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
 function saveBehavior(id){const type=document.getElementById('bType').value,emoji=document.getElementById('bEmoji').value.trim()||'⭐',label=document.getElementById('bLabel').value.trim();if(!label)return toast('Indique un libellé');if(id){const b=data.behaviors.find(x=>x.id===id);Object.assign(b,{type,emoji,label})}else data.behaviors.push({id:uid(),type,emoji,label});save();closeModal();render()}
 function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’historique déjà enregistré sera conservé.'))return;data.behaviors=data.behaviors.filter(b=>b.id!==id);save();render()}
-function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
+function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
