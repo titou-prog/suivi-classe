@@ -1,4 +1,14 @@
-Suivi de classe — PWA iPad V21
+Suivi de classe — PWA iPad V22
+
+Nouveautés V22 : mot de passe et « mode classe »
+- Réglages (⚙️) › « 🔐 Mot de passe & mode classe » : créer le mot de passe et noter le code de secours.
+- À l'ouverture de l'appli (et au retour après X minutes hors de l'appli) : écran de mot de passe, aucune donnée visible avant.
+- Mode classe : sur la page Élèves, bonus, malus, toute la classe, aléatoire et annuler restent libres.
+  Tout le reste (réglages, données, récap, rapports, comportements, fiche élève, classe, Progression) demande le mot de passe.
+- Bouton 🔓/🔒 en haut : « Accès complet » puis « Verrouiller ». L'accès complet se referme seul après X minutes sans toucher l'écran.
+- Mot de passe oublié : code de secours. Le mot de passe n'est jamais stocké en clair.
+
+V21
 
 Nouveautés V21 :
 - Progression › Réglages › « Emploi du temps Pronote (iCal) » : import du fichier .ics de Pronote (établissement reconnu automatiquement).
@@ -25,7 +35,7 @@ Nouveautés V19 : module « Progression des classes » (progression.html)
 - Semaine, historique par classe, progressions par classe ou par niveau (CSV, impression/PDF), archives annuelles et fil conducteur.
 - Export des cours vers le Calendrier (.ics) avec alerte avant chaque cours.
 
-Mise à jour : déposer index.html, app.js, sw.js, progression.html et README.txt à la racine du dépôt (remplacer les anciens).
+Mise à jour : déposer index.html, app.js, verrou.js, sw.js, progression.html et README.txt à la racine du dépôt (remplacer les anciens).
 Sur l'iPad : fermer complètement l'application puis la rouvrir deux fois (la barre latérale doit afficher la dernière version).
 
 — Historique —

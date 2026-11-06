@@ -358,12 +358,12 @@ function deleteClass(){if(!confirm('Supprimer définitivement cette classe ?'))r
 function behaviorForm(id){const b=id?data.behaviors.find(x=>x.id===id):null;openModal(`<h2>${b?'Modifier':'Nouveau'} comportement</h2><select id="bType"><option value="bonus" ${b?.type==='bonus'?'selected':''}>Bonus</option><option value="malus" ${b?.type==='malus'?'selected':''}>Malus</option></select><input id="bEmoji" value="${esc(b?.emoji||'⭐')}" placeholder="Emoji"><input id="bLabel" value="${esc(b?.label||'')}" placeholder="Libellé"><button class="primary" style="width:100%;margin-top:8px" onclick="saveBehavior('${id||''}')">Enregistrer</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
 function saveBehavior(id){const type=document.getElementById('bType').value,emoji=document.getElementById('bEmoji').value.trim()||'⭐',label=document.getElementById('bLabel').value.trim();if(!label)return toast('Indique un libellé');if(id){const b=data.behaviors.find(x=>x.id===id);Object.assign(b,{type,emoji,label})}else data.behaviors.push({id:uid(),type,emoji,label});save();closeModal();render()}
 function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’historique déjà enregistré sera conservé.'))return;data.behaviors=data.behaviors.filter(b=>b.id!==id);save();render()}
-function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
+function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><button style="width:100%;margin:6px 0 10px" onclick="lockSettings()">🔐 Mot de passe & mode classe${data.lock&&data.lock.hash?' (activé)':''}</button><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=21;
+ exportData._version=22;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -442,7 +442,7 @@ function restoreFile(file){
  }
 }
 function copyCSV(){const c=currentClass();if(!c)return;let out='Élève;Bonus;Malus;Solde\n';c.students.forEach(s=>{const k=counts(s.id);out+=`"${s.name.replaceAll('"','""')}";${k.bonus};${k.malus};${k.bonus-k.malus}\n`});navigator.clipboard?.writeText(out).then(()=>toast('CSV copié')).catch(()=>{openModal(`<h2>Bilan CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`)})}
-function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;blockSave=false;save();render()}
+function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic',...(data.lock?{lock:data.lock}:{})};currentClassId=null;blockSave=false;save();render()}
 let toastTimer=null;function toast(msg,ms=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms)}
 // ===== V19 : LIEN AVEC LE MODULE « PROGRESSION » (emploi du temps, séance précédente, devoirs) =====
 // L'appli s'ouvre sur la classe du cours en cours (ou du prochain), d'après l'emploi du temps saisi dans progression.html.
@@ -512,7 +512,7 @@ async function edtAutoSelect(reason){
 function edtMove(dir){if(!edtFocus||!edtFocus.slot.start)return;const n=edtNeighbor(edtFocus,dir);if(!n)return toast('Aucun autre cours');edtFocus=n;edtManual=true;const sc=edtSuiviClass(edtClass(n.slot.classId));if(sc)currentClassId=sc.id;else toast('Classe non reliée : choisis-la dans Progression › Réglages › Classes',4500);render()}
 function edtBack(){edtAutoKey='';edtAutoSelect('resume').then(render)}
 function edtBanner(){
- if(!edt||!edtFocus)return `<div class="panel tight noprint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small grow">📅 Relie l’emploi du temps pour ouvrir automatiquement la bonne classe et voir la séance précédente.</span><button onclick="location.href='progression.html'">📅 Progression</button></div>`;
+ if(!edt||!edtFocus)return `<div class="panel tight noprint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small grow">📅 Relie l’emploi du temps pour ouvrir automatiquement la bonne classe et voir la séance précédente.</span><button onclick="goProgression('progression.html')">📅 Progression</button></div>`;
  const pc=edtClass(edtFocus.slot.classId);if(!pc)return '';
  const e=edtEtab(pc.etab),d=edtFocus.date,t=edtYmd(new Date());
  const ses=(edt.sessions||[]).filter(s=>s.classId===pc.id&&!s.skipped);
@@ -529,10 +529,70 @@ function edtBanner(){
   <div style="border:1px solid var(--line);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">⏮ SÉANCE PRÉCÉDENTE${prev?' · '+esc(edtParse(prev.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})):''}</div><div style="margin-top:3px">${prev?(prev.title?'<b>'+esc(prev.title)+'</b> — ':'')+short(prev.contenu):'<span class="small">Aucune séance saisie</span>'}</div></div>
   <div style="border:1px solid rgba(79,70,229,.35);background:rgba(79,70,229,.07);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">📒 TRAVAIL POUR CETTE SÉANCE</div><div style="margin-top:3px">${due.length?due.map(s=>short(s.devoirs)).join('<br>'):'<span class="small">Rien de prévu</span>'}</div></div>
  </div>
- <div class="row" style="margin-top:8px"><button class="primary" onclick="location.href='progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}&saisir=1'">🎤 Fin de cours : dicter la séance</button><button onclick="location.href='progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}'">📅 Détails & historique</button></div>
+ <div class="row" style="margin-top:8px"><button class="primary" onclick="goProgression('progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}&saisir=1')">🎤 Fin de cours : dicter la séance</button><button onclick="goProgression('progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}')">📅 Détails & historique</button></div>
  </div>`;
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')edtAutoSelect('resume')});
 setInterval(()=>{if(document.visibilityState==='visible')edtAutoSelect('tick')},60000);
+// ===== V22 : MOT DE PASSE & MODE CLASSE (voir verrou.js) =====
+// Sur la page Élèves, seules les fonctions de cours restent libres. Tout le reste passe par Verrou.requireAdmin().
+const _orig={setTab,openSettings,openMore,addClass,openClassSettings,studentMenu,behaviorForm,addStudents,backup,importDatabase,wipe};
+function guarded(name,label){return function(...a){Verrou.requireAdmin(()=>_orig[name].apply(this,a),label)}}
+setTab=function(t){if(t==='class')return _orig.setTab(t);Verrou.requireAdmin(()=>_orig.setTab(t),({behaviors:'Comportements',recap:'Tableau récap',reports:'Rapports',data:'Données'})[t]||'')};
+openSettings=function(){Verrou.requireAdmin(()=>_orig.openSettings(),'Réglages')};
+openMore=guarded('openMore','Plus d’actions');addClass=guarded('addClass','Nouvelle classe');openClassSettings=guarded('openClassSettings','Réglages de la classe');
+studentMenu=guarded('studentMenu','Fiche élève');behaviorForm=guarded('behaviorForm','Comportements');addStudents=guarded('addStudents','Ajouter des élèves');
+backup=guarded('backup','Sauvegarde');importDatabase=guarded('importDatabase','Import');wipe=guarded('wipe','Effacer');
+function goProgression(url){Verrou.requireAdmin(()=>{flushSave();location.href=url||'progression.html'},'Progression')}
+function lockClassMode(){Verrou.lockNow();closeModal();_orig.setTab('class');toast('🔒 Mode classe : seuls les bonus et malus sont accessibles',3500)}
+function updateLockUI(){
+ const tb=document.querySelector('.topbar');if(!tb)return;
+ let b=document.getElementById('lockBtn');
+ if(!Verrou.protectOn()){if(b)b.remove();document.getElementById('lockPill')?.remove();return}
+ if(!b){b=document.createElement('button');b.id='lockBtn';tb.appendChild(b)}
+ const admin=Verrou.isAdmin();
+ b.textContent=admin?'🔓':'🔒';b.title=admin?'Repasser en mode classe':'Accès complet (mot de passe)';
+ b.onclick=()=>admin?lockClassMode():Verrou.requireAdmin(()=>{toast('🔓 Accès complet');render()},'Accès complet');
+ let p=document.getElementById('lockPill');
+ if(admin){if(!p){p=document.createElement('button');p.id='lockPill';p.className='vr-pill noprint';p.onclick=lockClassMode;document.body.appendChild(p)}p.textContent='🔓 Accès complet · Verrouiller'}
+ else if(p)p.remove();
+}
+const _render=render;render=function(){_render();updateLockUI()};
+// fin d'accès complet (inactivité) : retour automatique en mode classe
+let lastAdmin=null;
+setInterval(()=>{if(!Verrou.protectOn())return;const a=Verrou.isAdmin();if(lastAdmin&&!a){closeModal();if(tab!=='class')_orig.setTab('class');else render();toast('🔒 Mode classe réactivé',3000)}lastAdmin=a;updateLockUI()},5000);
+
+function lockSettings(){
+ const L=data.lock&&data.lock.hash?data.lock:null;
+ const num=(id,v,min,max)=>`<input id="${id}" type="number" min="${min}" max="${max}" value="${v}" style="width:90px">`;
+ openModal(`<h2>🔐 Mot de passe</h2>
+ ${L?`<p class="small">Mot de passe actif depuis le ${new Date(L.createdAt).toLocaleDateString('fr-FR')}.</p>`:'<p class="small">Protège l’appli : mot de passe à l’ouverture et « mode classe » sur la page Élèves (bonus/malus seulement).</p>'}
+ ${L?'':`<input id="lkPw1" type="password" placeholder="Nouveau mot de passe (4 caractères minimum)" autocomplete="new-password" style="margin-top:6px"><input id="lkPw2" type="password" placeholder="Confirme le mot de passe" autocomplete="new-password" style="margin-top:8px">
+ <p class="small">Astuce : un code uniquement en chiffres affiche le pavé numérique.</p>`}
+ <label class="row" style="margin:10px 0"><input type="checkbox" id="lkStart" style="width:auto" ${!L||L.startup!==false?'checked':''}><span class="grow">Demander le mot de passe à l’ouverture de l’appli</span></label>
+ <label class="row" style="margin:10px 0"><input type="checkbox" id="lkAdmin" style="width:auto" ${!L||L.protectAdmin!==false?'checked':''}><span class="grow">Mode classe : sur la page Élèves, tout sauf les bonus/malus demande le mot de passe</span></label>
+ <div class="row" style="margin:8px 0"><span class="grow">Redemander le mot de passe après</span>${num('lkRelock',L?L.relockMin??5:5,0,240)}<span>min hors de l’appli</span></div>
+ <div class="row" style="margin:8px 0"><span class="grow">Accès complet refermé après</span>${num('lkAdminMin',L?L.adminMin??5:5,1,120)}<span>min sans toucher l’écran</span></div>
+ <div class="row" style="margin-top:12px"><button class="primary grow" onclick="saveLock()">${L?'💾 Enregistrer les options':'🔐 Activer le mot de passe'}</button></div>
+ ${L?`<div class="row" style="margin-top:8px"><button class="grow" onclick="changeLockPw()">✏️ Changer le mot de passe</button><button class="grow" onclick="regenRecovery()">🛟 Nouveau code de secours</button></div><button class="danger" style="width:100%;margin-top:8px" onclick="removeLock()">🗑️ Supprimer le mot de passe</button>`:''}
+ <button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`);
+}
+function readLockOpts(){const g=id=>document.getElementById(id);return{startup:g('lkStart').checked,protectAdmin:g('lkAdmin').checked,relockMin:Math.max(0,Number(g('lkRelock').value)||0),adminMin:Math.max(1,Number(g('lkAdminMin').value)||5)}}
+async function persistLock(){try{await persistNow()}catch(e){toast(explainStorageError(e),6000);return false}Verrou.setConfig(data.lock);Verrou.setAdmin(true);updateLockUI();return true}
+async function saveLock(){
+ const o=readLockOpts();
+ if(data.lock&&data.lock.hash){data.lock={...data.lock,...o};if(await persistLock()){closeModal();toast('Options enregistrées ✅')}return}
+ const a=document.getElementById('lkPw1').value,b=document.getElementById('lkPw2').value;
+ if(a.length<4)return toast('4 caractères minimum');if(a!==b)return toast('Les deux mots de passe sont différents');
+ const r=await Verrou.create(a,o);data.lock=r.cfg;
+ if(await persistLock())showRecovery(r.recoveryCode,true);
+}
+function showRecovery(code,first){openModal(`<h2>🛟 Code de secours</h2><p>${first?'Mot de passe activé ✅. ':''}Note ce code et garde-le hors de l’iPad (carnet, téléphone) : il sert si tu oublies le mot de passe.</p><div style="font-size:34px;font-weight:900;letter-spacing:.12em;text-align:center;padding:16px;border:2px dashed var(--line);border-radius:18px;margin:12px 0">${code}</div><p class="small">Il ne sera plus affiché ensuite. Pense aussi à faire une sauvegarde de la base.</p><button class="primary" style="width:100%" onclick="closeModal()">C’est noté</button>`)}
+function changeLockPw(){openModal(`<h2>✏️ Nouveau mot de passe</h2><input id="lkPw1" type="password" placeholder="Nouveau mot de passe" autocomplete="new-password"><input id="lkPw2" type="password" placeholder="Confirme" autocomplete="new-password" style="margin-top:8px"><div class="row" style="margin-top:12px"><button class="primary grow" onclick="confirmChangePw()">Enregistrer</button><button onclick="lockSettings()">Annuler</button></div>`)}
+async function confirmChangePw(){const a=document.getElementById('lkPw1').value,b=document.getElementById('lkPw2').value;if(a.length<4)return toast('4 caractères minimum');if(a!==b)return toast('Les deux mots de passe sont différents');data.lock=await Verrou.changePassword(data.lock,a);if(await persistLock()){closeModal();toast('Mot de passe changé ✅')}}
+async function regenRecovery(){if(!confirm('Créer un nouveau code de secours ? L’ancien ne fonctionnera plus.'))return;const r=await Verrou.newRecovery(data.lock);data.lock=r.cfg;if(await persistLock())showRecovery(r.recoveryCode,false)}
+async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s’ouvrira sans protection.'))return;delete data.lock;if(await persistLock()){closeModal();toast('Mot de passe supprimé')}}
+// conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
+const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-init();
+init().catch(e=>console.error(e)).then(()=>{Verrou.boot(data.lock,{onChange:()=>{try{updateLockUI()}catch(_){}},afterUnlock:r=>{if(r&&r.recovery){toast('Code de secours accepté : choisis un nouveau mot de passe',5000);changeLockPw()}}})});
