@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Suivi de classe">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Progression des classes</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e5e7eb;--accent:#4f46e5;--good:#15803d;--bad:#dc2626;--warn:#b45309;--nav:rgba(255,255,255,.94);--martel:#0e7490;--vayrac:#be185d;--soft:#eef2ff}
+:root.dark{--bg:#0b1020;--card:#151b2e;--text:#f4f7fb;--muted:#a8b0c0;--line:#2a3247;--nav:rgba(11,16,32,.95);--soft:#1e2442}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%}
+body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit}
+button{min-height:44px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);padding:8px 14px;cursor:pointer;touch-action:manipulation;font-weight:650}
+button:disabled{opacity:.45}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.good{background:var(--good);color:#fff;border-color:var(--good)}
+button.ghost{background:transparent}
+button.danger{color:var(--bad)}
+button.big{min-height:56px;font-size:17px;border-radius:18px}
+button.mini{min-height:34px;padding:4px 10px;font-size:13px;border-radius:10px}
+input,select,textarea{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:13px;padding:11px 12px;outline:none;font-size:16px}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+textarea{resize:vertical;line-height:1.45}
+label.lbl{display:block;font-weight:750;font-size:14px;margin:12px 0 5px}
+.app{min-height:100vh;display:flex}
+.sidebar{display:none}
+.main{width:100%;padding:14px 16px 100px;max-width:1300px;margin:auto}
+.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.title{font-size:23px;font-weight:850}
+.sub{color:var(--muted);font-size:13px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 3px 18px rgba(0,0,0,.04)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr;gap:14px}
+.section-title{font-size:18px;font-weight:850;margin:2px 0 10px}
+.small{font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:750;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);white-space:nowrap}
+.chip.ok{background:rgba(21,128,61,.12);border-color:rgba(21,128,61,.35);color:var(--good)}
+.chip.todo{background:rgba(180,83,9,.12);border-color:rgba(180,83,9,.35);color:var(--warn)}
+.chip.live{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.4);color:var(--bad)}
+.etab{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.course-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.course-name{font-size:30px;font-weight:900;line-height:1.05}
+.course-meta{font-size:15px;color:var(--muted);margin-top:4px}
+.box{border:1px solid var(--line);border-radius:18px;padding:14px;background:var(--bg)}
+.box h3{margin:0 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.box .txt{white-space:pre-wrap;font-size:16.5px;line-height:1.5}
+.box.devoirs{background:rgba(79,70,229,.07);border-color:rgba(79,70,229,.3)}
+.box.fil{background:rgba(180,83,9,.06);border-color:rgba(180,83,9,.3)}
+.seq{display:inline-block;font-size:12.5px;font-weight:800;padding:3px 10px;border-radius:999px;color:#fff;background:#64748b}
+.list .item{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.list .item:last-child{border-bottom:0}
+.empty{text-align:center;color:var(--muted);padding:26px 10px}
+.week{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px;min-height:140px}
+.day.today{border-color:var(--accent);box-shadow:0 0 0 2px rgba(79,70,229,.25)}
+.day.off{background:repeating-linear-gradient(45deg,var(--bg),var(--bg) 8px,var(--card) 8px,var(--card) 16px)}
+.day h4{margin:2px 2px 8px;font-size:14px}
+.slot{display:block;width:100%;text-align:left;margin:0 0 6px;padding:7px 8px;border-radius:12px;border-left:5px solid #64748b;min-height:56px}
+.slot b{font-size:15px}
+.slot .t{font-size:12px;color:var(--muted);font-weight:600}
+.slot .st{font-size:12px;margin-top:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{min-height:38px;padding:5px 12px;border-radius:999px}
+.tabs button.on{background:var(--text);color:var(--card);border-color:var(--text)}
+.sess{border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin-bottom:10px;background:var(--card)}
+.sess .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.sess .txt{white-space:pre-wrap;margin-top:6px;line-height:1.45}
+.sess .dv{white-space:pre-wrap;margin-top:6px;padding:8px 10px;border-radius:12px;background:rgba(79,70,229,.07)}
+table.prog{width:100%;border-collapse:collapse;font-size:14px}
+table.prog th,table.prog td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+table.prog th{font-size:12px;text-transform:uppercase;color:var(--muted)}
+table.prog td.pre{white-space:pre-wrap}
+.seqhead{margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:6px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr);gap:4px;background:var(--nav);border-top:1px solid var(--line);z-index:20;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.bottom button{border:0;background:transparent;font-size:12px;min-height:50px;padding:4px 2px;line-height:1.25}
+.bottom button.active{background:var(--soft);color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{width:100%;max-width:900px;max-height:94vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--card);border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 6px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 18px;border-radius:999px;z-index:100;display:none;max-width:92vw;text-align:center;font-size:15px}
+.toast.show{display:block}
+.mic{min-width:52px;font-size:20px}
+.mic.rec{background:var(--bad);color:#fff;border-color:var(--bad);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
+.copyblock{border:1px solid var(--line);border-radius:16px;padding:12px;margin:10px 0;background:var(--bg)}
+.copyblock .txt{white-space:pre-wrap;margin:6px 0 10px;font-size:16px}
+.alertbar{border-radius:16px;padding:12px 14px;margin-bottom:12px;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.35);font-weight:700}
+details.set{border:1px solid var(--line);border-radius:18px;margin-bottom:10px;background:var(--card)}
+details.set>summary{padding:14px 16px;font-weight:800;font-size:16px;cursor:pointer;list-style:none}
+details.set>summary::-webkit-details-marker{display:none}
+details.set>summary:after{content:"›";float:right;transform:rotate(90deg);transition:.2s}
+details.set[open]>summary:after{transform:rotate(-90deg)}
+details.set>.in{padding:0 16px 16px}
+.cfgrow{display:grid;grid-template-columns:1.2fr .9fr .9fr 1.6fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.cfgrow input,.cfgrow select{padding:8px;font-size:15px;border-radius:10px}
+.clsrow{display:grid;grid-template-columns:1fr 1.2fr .8fr 1.3fr auto;gap:6px;align-items:center;margin-bottom:6px}
+.clsrow input,.clsrow select{padding:8px;font-size:15px;border-radius:10px}
+.seqrow{display:grid;grid-template-columns:auto 1fr 54px auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.seqrow input{padding:8px;font-size:15px;border-radius:10px}
+.seqrow input[type=color]{padding:2px;height:40px}
+.weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.weeks button{min-height:52px;font-size:13px;line-height:1.2;padding:4px}
+.weeks button.Q1{background:#a16207;color:#fff;border-color:#a16207}
+.weeks button.Q2{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.weeks button.F{background:var(--bg);color:var(--muted)}
+.wt{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff}
+.wt.Q1{background:#a16207}.wt.Q2{background:#1d4ed8}.wt.F{background:#64748b}
+pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px}
+#printArea{display:none}
+@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}.main{padding:20px 24px 100px}}
+@media(max-width:700px){.week{grid-template-columns:1fr}.cfgrow{grid-template-columns:1fr 1fr 1fr}.clsrow{grid-template-columns:1fr 1fr}.course-name{font-size:25px}}
+@media(min-width:1100px){.bottom{display:none}.main{padding-bottom:30px}.sidebar{display:flex;flex-direction:column;width:230px;min-height:100vh;border-right:1px solid var(--line);background:var(--card);padding:18px 14px;position:sticky;top:0;height:100vh}.sidebtn{width:100%;text-align:left;margin:3px 0}.sidebtn.active{background:var(--soft);color:var(--accent)}.toast{bottom:30px}}
+@media print{
+ body{background:#fff;color:#000}.app,.modal,.toast{display:none!important}
+ #printArea{display:block!important;font-size:11pt}
+ #printArea table{width:100%;border-collapse:collapse}#printArea th,#printArea td{border:1px solid #999;padding:4px 6px;vertical-align:top;text-align:left}
+ #printArea td{white-space:pre-wrap}#printArea h1{font-size:16pt}#printArea h2{font-size:13pt;margin:14px 0 4px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside class="sidebar">
+  <div class="title" style="font-size:20px">📅 Progression</div>
+  <div class="sub" style="margin:4px 0 16px">Suivi de classe · <span class="ver"></span></div>
+  <button class="sidebtn" id="side-home" onclick="setTab('home')">🕘 Cours actuel</button>
+  <button class="sidebtn" id="side-week" onclick="setTab('week')">🗓️ Semaine</button>
+  <button class="sidebtn" id="side-classes" onclick="setTab('classes')">📚 Classes</button>
+  <button class="sidebtn" id="side-prog" onclick="setTab('prog')">🧭 Progressions</button>
+  <button class="sidebtn" id="side-settings" onclick="setTab('settings')">⚙️ Réglages</button>
+  <div style="flex:1"></div>
+  <button class="sidebtn" onclick="goSuivi()">👥 Suivi de classe</button>
+ </aside>
+ <main class="main">
+  <div class="topbar">
+   <div><div class="title" id="topTitle">Progression des classes</div><div class="sub" id="status">Chargement…</div></div>
+   <div class="row"><button onclick="goSuivi()" title="Revenir à Suivi de classe">👥</button><button onclick="toggleTheme()" title="Thème">🌓</button></div>
+  </div>
+  <div id="view"><div class="panel empty">Chargement des données…</div></div>
+ </main>
+</div>
+<nav class="bottom">
+ <button id="nav-home" onclick="setTab('home')">🕘<br>Cours</button>
+ <button id="nav-week" onclick="setTab('week')">🗓️<br>Semaine</button>
+ <button id="nav-classes" onclick="setTab('classes')">📚<br>Classes</button>
+ <button id="nav-prog" onclick="setTab('prog')">🧭<br>Progressions</button>
+ <button id="nav-settings" onclick="setTab('settings')">⚙️<br>Réglages</button>
+ <button onclick="goSuivi()">👥<br>Suivi</button>
+</nav>
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
+<div id="toast" class="toast"></div>
+<div id="printArea"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   PROGRESSION DES CLASSES — module de « Suivi de classe »
+   - Emploi du temps Martel (semaines Q1/Q2) + Vayrac
+   - Saisie dictée de la séance + travail à faire, reformulation Claude
+   - Copie pour Pronote, historique, progressions, archives annuelles
+   Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
+   ===================================================================== */
+const APP_VERSION='P1';
+const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
+const SUIVI_DB='suivi-classe-db';
+const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
+const JOURS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const SEQ_COLORS=['#4f46e5','#0e7490','#be185d','#15803d','#b45309','#7c3aed','#0369a1','#9f1239','#4d7c0f','#c2410c'];
+
+/* ---------- Données par défaut (tirées des captures Pronote) ---------- */
+function defaultConfig(){
+ const etabs=[
+  {id:'martel',name:'Collège de Martel',short:'Martel',color:'#0e7490',pronoteUrl:''},
+  {id:'vayrac',name:'Collège de Vayrac',short:'Vayrac',color:'#be185d',pronoteUrl:''}
+ ];
+ const C=(id,etab,name,label,niveau)=>({id,etab,name,label,niveau,suiviId:''});
+ const classes=[
+  C('m-6ea','martel','6E A','6e A','6e'),C('m-6eb','martel','6E B','6e B','6e'),
+  C('m-5ea','martel','5E A','5e A','5e'),C('m-5eb','martel','5E B','5e B','5e'),
+  C('m-4ea','martel','4E A','4e A','4e'),C('m-4eb','martel','4E B','4e B','4e'),
+  C('m-3ea','martel','3E A','3e A','3e'),C('m-3eb','martel','3E B','3e B','3e'),
+  C('m-cho','martel','Chorale','Chorale Martel','chorale'),
+  C('v-6sanson','vayrac','6SANSON','6e Sanson','6e'),C('v-6zimmer','vayrac','6ZIMMER','6e Zimmer','6e'),
+  C('v-5satie','vayrac','5SATIE','5e Satie','5e'),C('v-5simone','vayrac','5SIMONE','5e Simone','5e'),
+  C('v-4belle','vayrac','4BELLE','4e Belle','4e'),C('v-4brahms','vayrac','4BRAHMS','4e Brahms','4e'),
+  C('v-3bjork','vayrac','3BJORK','3e Björk','3e'),C('v-3goldman','vayrac','3GOLDMAN','3e Goldman','3e'),
+  C('v-cho','vayrac','CHO','Chorale Vayrac','chorale')
+ ];
+ let n=0;const S=(day,start,end,classId,weeks='all')=>({id:'s'+(++n),day,start,end,classId,weeks});
+ const slots=[
+  // ---- Martel (Q1 = semaines marron, Q2 = semaines bleues dans Pronote)
+  S(1,'14:00','14:55','m-5eb'),S(1,'16:05','17:00','m-3ea'),
+  S(3,'08:30','09:25','m-4eb','Q1'),S(3,'10:40','11:35','m-3eb'),S(3,'11:35','12:30','m-5ea'),
+  S(5,'11:35','12:30','m-6ea'),S(5,'13:00','14:00','m-cho'),
+  S(5,'14:00','14:55','m-6eb','Q1'),S(5,'14:00','14:55','m-4eb','Q2'),S(5,'14:55','15:50','m-6eb','Q2'),
+  S(5,'16:05','17:00','m-4ea'),
+  // ---- Vayrac
+  S(2,'08:30','09:30','v-4belle'),S(2,'09:30','10:30','v-5simone'),S(2,'13:00','14:00','v-cho'),
+  S(2,'14:00','15:00','v-5satie'),S(2,'15:00','16:00','v-3goldman'),S(2,'16:00','17:00','v-3bjork'),
+  S(4,'14:00','15:00','v-6sanson'),S(4,'15:00','16:00','v-6zimmer'),S(4,'16:00','17:00','v-4brahms')
+ ];
+ return {
+  schoolYear:'2026-2027',startDate:'',
+  etabs,classes,slots,
+  weekMap:buildWeekMap2026(),
+  feries:['2026-11-11','2027-03-29','2027-05-06','2027-05-07','2027-05-17'],
+  sequences:[],
+  ai:{provider:'claude',key:'',model:'claude-haiku-5-5',autoTitle:true},
+  pronote:{prefixSeq:false,openAfterSave:true},
+  notify:{minutesBefore:5,inApp:true},
+  theme:'automatic'
+ };
+}
+function wkKey(y,w){return y+'-W'+String(w).padStart(2,'0')}
+function buildWeekMap2026(){
+ const m={};
+ const put=(t,obj)=>{for(const[y,ws]of Object.entries(obj))ws.forEach(w=>m[wkKey(y,w)]=t)};
+ put('Q1',{2026:[36,38,40,42,46,48,50],2027:[1,3,5,9,11,13,17,19,21,23,25]});
+ put('Q2',{2026:[37,39,41,45,47,49,51],2027:[2,4,8,10,12,16,18,20,22,24,26]});
+ put('F',{2026:[43,44,52,53],2027:[6,7,14,15,27]});
+ return m;
+}
+function emptyState(){return {format:'progression-classe',version:1,config:defaultConfig(),sessions:[],archives:[]}}
+
+/* ---------- État ---------- */
+let S=emptyState();let cfg=S.config;
+let tab='home',focus=null,weekOffset=0,classTab=null,progMode='classe',progSel=null,progSource='current',editing=null;
+let suiviClasses=[];let lastFocusKey='';let blockSave=false;
+
+/* ---------- Stockage IndexedDB (même modèle que Suivi de classe V15+) ---------- */
+let dbP=null,saveTimer=null,saving=Promise.resolve(),storageMode='idb';
+function openDB(name=DB_NAME,create=true){
+ if(name===DB_NAME&&dbP)return dbP;
+ const p=new Promise((res,rej)=>{
+  if(!('indexedDB' in window))return rej(new Error('no-idb'));
+  let r;try{r=create?indexedDB.open(name,1):indexedDB.open(name)}catch(e){return rej(e)}
+  r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(DB_STORE))r.result.createObjectStore(DB_STORE)};
+  r.onsuccess=()=>{const db=r.result;db.onversionchange=()=>{db.close();if(name===DB_NAME)dbP=null};res(db)};
+  r.onerror=()=>rej(r.error||new Error('idb-open'));
+  r.onblocked=()=>rej(new Error('idb-blocked'));
+ });
+ if(name===DB_NAME){dbP=p;p.catch(()=>{dbP=null})}
+ return p;
+}
+function idbGet(name=DB_NAME){return openDB(name).then(db=>new Promise((res,rej)=>{
+ if(!db.objectStoreNames.contains(DB_STORE))return res(null);
+ const tx=db.transaction(DB_STORE,'readonly');const q=tx.objectStore(DB_STORE).get(DB_KEY);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)}))}
+function idbPut(v){return openDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(v,DB_KEY);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error||new Error('idb-put'))}))}
+async function writeStore(d){
+ try{await idbPut(d);storageMode='idb'}
+ catch(e){try{localStorage.setItem(LS_KEY,JSON.stringify(d));storageMode='ls'}catch(e2){throw e}}
+}
+function persistNow(){clearTimeout(saveTimer);saveTimer=null;if(blockSave)return Promise.reject(new Error('save-blocked'));const p=saving.catch(()=>{}).then(()=>writeStore(S));saving=p;return p}
+function save(){clearTimeout(saveTimer);if(blockSave)return;saveTimer=setTimeout(()=>persistNow().catch(e=>{console.error(e);toast('⚠️ Enregistrement impossible : '+(e&&e.name||e),6000)}),150)}
+function flushSave(){if(saveTimer)persistNow().catch(()=>{})}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave();else{autoFocusRefresh(true)}});
+window.addEventListener('pagehide',flushSave);
+function normalizeState(x){
+ if(!x||typeof x!=='object')throw new Error('format');
+ const d=emptyState();
+ const out={format:'progression-classe',version:1,config:Object.assign(d.config,x.config||{}),sessions:Array.isArray(x.sessions)?x.sessions:[],archives:Array.isArray(x.archives)?x.archives:[]};
+ const c=out.config;
+ c.ai=Object.assign(defaultConfig().ai,c.ai||{});c.pronote=Object.assign(defaultConfig().pronote,c.pronote||{});c.notify=Object.assign(defaultConfig().notify,c.notify||{});
+ ['etabs','classes','slots','sequences','feries'].forEach(k=>{if(!Array.isArray(c[k]))c[k]=defaultConfig()[k]});
+ if(!c.weekMap||typeof c.weekMap!=='object')c.weekMap={};
+ return out;
+}
+async function loadSuiviClasses(){
+ try{
+  const d=await new Promise((res)=>{
+   let r;try{r=indexedDB.open(SUIVI_DB)}catch(e){return res(null)}
+   r.onupgradeneeded=()=>{try{r.transaction.abort()}catch(_){};res(null)};
+   r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains(DB_STORE)){db.close();return res(null)}
+    const q=db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).get(DB_KEY);q.onsuccess=()=>{db.close();res(q.result||null)};q.onerror=()=>{db.close();res(null)}};
+   r.onerror=()=>res(null);
+  });
+  suiviClasses=d&&Array.isArray(d.classes)?d.classes.map(c=>({id:c.id,name:c.name})):[];
+ }catch(e){suiviClasses=[]}
+}
+
+/* ---------- Utilitaires ---------- */
+function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function pad(n){return String(n).padStart(2,'0')}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function parseYmd(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function addDays(s,n){const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d)}
+function toMin(t){const[h,m]=String(t).split(':').map(Number);return h*60+(m||0)}
+function fmtT(t){const[h,m]=String(t).split(':');return Number(h)+'h'+m}
+function fmtLong(s){return parseYmd(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
+function fmtShort(s){return parseYmd(s).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}
+function fmtNum(s){const d=parseYmd(s);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()}
+function cap(s){s=String(s||'');return s.charAt(0).toUpperCase()+s.slice(1)}
+function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+function todayYmd(){return ymd(new Date())}
+function norm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/^(\d)e(?=[a-z])/,'$1').replace(/^(\d)eme/,'$1')}
+function isoWeek(date){const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));const day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);const y=d.getUTCFullYear();const w=Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7);return{year:y,week:w,key:wkKey(y,w)}}
+
+/* ---------- Calendrier & emploi du temps ---------- */
+function weekTypeOf(s){
+ const d=typeof s==='string'?parseYmd(s):s;const k=isoWeek(d).key;
+ if(cfg.weekMap[k])return cfg.weekMap[k];
+ const m=d.getMonth();if(m===7||(m===6&&d.getDate()>4))return 'F';
+ return isoWeek(d).week%2===0?'Q1':'Q2';
+}
+function isOffDay(s){const d=parseYmd(s);const wd=d.getDay();return wd===0||wd===6||weekTypeOf(s)==='F'||cfg.feries.includes(s)}
+function offReason(s){const d=parseYmd(s);if(d.getDay()===0||d.getDay()===6)return 'Week-end';if(weekTypeOf(s)==='F')return 'Vacances';if(cfg.feries.includes(s))return 'Jour férié / sans cours';return ''}
+function slotsOn(s){
+ if(isOffDay(s))return[];
+ const wd=parseYmd(s).getDay(),wt=weekTypeOf(s);
+ return cfg.slots.filter(x=>x.day===wd&&(x.weeks==='all'||x.weeks===wt)&&classById(x.classId)).sort((a,b)=>toMin(a.start)-toMin(b.start));
+}
+function occKey(o){return o?o.date+'|'+o.slot.id:''}
+function occFind(date,slotId){const sl=cfg.slots.find(x=>x.id===slotId);return sl?{date,slot:sl}:null}
+function nextOcc(classId,afterYmd,limit=150){for(let i=1;i<=limit;i++){const d=addDays(afterYmd,i);const sl=slotsOn(d).find(x=>x.classId===classId);if(sl)return{date:d,slot:sl}}return null}
+function prevOcc(classId,beforeYmd,limit=150){for(let i=1;i<=limit;i++){const d=addDays(beforeYmd,-i);const sl=slotsOn(d).find(x=>x.classId===classId);if(sl)return{date:d,slot:sl}}return null}
+function occOfClassOn(classId,date){const sl=slotsOn(date).find(x=>x.classId===classId);return sl?{date,slot:sl}:null}
+/* cours chronologiquement voisin (toutes classes) */
+function neighborOcc(o,dir){
+ const list=slotsOn(o.date);const i=list.findIndex(x=>x.id===o.slot.id);
+ if(i>=0&&list[i+dir])return{date:o.date,slot:list[i+dir]};
+ for(let k=1;k<=60;k++){const d=addDays(o.date,dir*k);const l=slotsOn(d);if(l.length)return{date:d,slot:dir>0?l[0]:l[l.length-1]}}
+ return null;
+}
+/* cours actuel / prochain */
+function courseNow(){
+ const t=todayYmd(),m=nowMin(),list=slotsOn(t);
+ const before=Math.max(0,Number(cfg.notify.minutesBefore)||5);
+ let cur=list.find(x=>m>=toMin(x.start)-Math.max(before,10)&&m<toMin(x.end));
+ if(cur)return{occ:{date:t,slot:cur},state:m<toMin(cur.start)?'soon':'live'};
+ // juste terminé (≤ 15 min) et pas encore saisi : on reste dessus pour la saisie
+ const ended=[...list].reverse().find(x=>m>=toMin(x.end)&&m-toMin(x.end)<=15);
+ if(ended&&!sessFor(ended.classId,t))return{occ:{date:t,slot:ended},state:'ended'};
+ const nx=list.find(x=>toMin(x.start)>m);
+ if(nx)return{occ:{date:t,slot:nx},state:'next'};
+ for(let k=1;k<=60;k++){const d=addDays(t,k);const l=slotsOn(d);if(l.length)return{occ:{date:d,slot:l[0]},state:'later'}}
+ return null;
+}
+function occState(o){
+ const t=todayYmd(),m=nowMin();
+ if(o.date<t)return 'past';if(o.date>t)return 'later';
+ const a=toMin(o.slot.start),b=toMin(o.slot.end);
+ if(m<a-10)return 'next';if(m<a)return 'soon';if(m<b)return 'live';return 'past';
+}
+
+/* ---------- Accès données ---------- */
+function classById(id){return cfg.classes.find(c=>c.id===id)}
+function etabById(id){return cfg.etabs.find(e=>e.id===id)||{short:'?',color:'#64748b',name:'?'}}
+function seqById(id){return cfg.sequences.find(s=>s.id===id)}
+function seqsFor(niveau){return cfg.sequences.filter(s=>s.niveau===niveau)}
+function sessFor(classId,date){return S.sessions.find(s=>s.classId===classId&&s.date===date)}
+function sessionsOf(classId){return S.sessions.filter(s=>s.classId===classId).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1)}
+function prevSession(classId,date){const l=S.sessions.filter(s=>s.classId===classId&&s.date<date).sort((a,b)=>a.date<b.date?1:-1);return l[0]||null}
+function dueFor(classId,date){
+ const exact=S.sessions.filter(s=>s.classId===classId&&s.devoirsPour===date&&(s.devoirs||'').trim()&&s.date<date);
+ if(exact.length)return exact.sort((a,b)=>a.date<b.date?-1:1);
+ const p=prevSession(classId,date);
+ if(p&&(p.devoirs||'').trim()&&(!p.devoirsPour||p.devoirsPour>=date))return[p];
+ return[];
+}
+function rankOf(classId,date){return S.sessions.filter(s=>s.classId===classId&&s.date<date).length+1}
+function classLabel(id){const c=classById(id);return c?c.label:'(classe supprimée)'}
+function etabDot(etabId){return `<span class="etab" style="background:${etabById(etabId).color}"></span>`}
+function seqChip(id){const s=seqById(id);return s?`<span class="seq" style="background:${s.color||'#64748b'}">${esc(s.name)}</span>`:''}
+function lastSeqOf(classId){const l=sessionsOf(classId).filter(s=>s.sequenceId);return l.length?l[l.length-1].sequenceId:''}
+function wtBadge(date){const t=weekTypeOf(date);return `<span class="wt ${t}">${t==='F'?'Vacances':'Sem. '+t}</span>`}
+
+/* fil conducteur : même rang de séance l'an dernier, même niveau */
+function filFor(classId,date){
+ const c=classById(classId);if(!c||!S.archives.length)return null;
+ const arch=S.archives[S.archives.length-1];
+ const rank=rankOf(classId,date);
+ const byClass={};
+ (arch.sessions||[]).forEach(s=>{const ac=(arch.classes||[]).find(x=>x.id===s.classId);if(ac&&ac.niveau===c.niveau&&ac.etab===c.etab){(byClass[s.classId]=byClass[s.classId]||[]).push(s)}});
+ if(!Object.keys(byClass).length)(arch.sessions||[]).forEach(s=>{const ac=(arch.classes||[]).find(x=>x.id===s.classId);if(ac&&ac.niveau===c.niveau){(byClass[s.classId]=byClass[s.classId]||[]).push(s)}});
+ const pref=byClass[classId]?classId:Object.keys(byClass).sort((a,b)=>byClass[b].length-byClass[a].length)[0];
+ if(!pref)return null;
+ const list=byClass[pref].sort((a,b)=>a.date<b.date?-1:1);
+ const s=list[rank-1],nx=list[rank];
+ if(!s)return{year:arch.year,rank,none:true};
+ const ac=(arch.classes||[]).find(x=>x.id===pref);
+ const seq=(arch.sequences||[]).find(q=>q.id===s.sequenceId);
+ return{year:arch.year,rank,s,nx,cls:ac?ac.label:'',seq:seq?seq.name:''};
+}
+
+/* ---------- Rendu général ---------- */
+function applyTheme(){const dark=cfg.theme==='dark'||(cfg.theme==='automatic'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',dark)}
+function toggleTheme(){cfg.theme=cfg.theme==='automatic'?'dark':cfg.theme==='dark'?'light':'automatic';save();applyTheme();toast('Thème : '+({automatic:'automatique',dark:'sombre',light:'clair'})[cfg.theme])}
+function setTab(t){tab=t;render();window.scrollTo(0,0)}
+function updateStatus(){
+ const t=todayYmd();const w=isoWeek(new Date());
+ document.getElementById('status').innerHTML=`${cap(fmtLong(t))} · S${w.week} · ${weekTypeOf(t)==='F'?'Vacances':'Semaine '+weekTypeOf(t)} · ${cfg.schoolYear}`;
+ document.querySelectorAll('.ver').forEach(e=>e.textContent=APP_VERSION);
+}
+function render(){
+ applyTheme();updateStatus();
+ document.querySelectorAll('.bottom button,.sidebtn').forEach(b=>b.classList.remove('active'));
+ document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('side-'+tab)?.classList.add('active');
+ const v=document.getElementById('view');
+ v.innerHTML=tab==='home'?homeView():tab==='week'?weekView():tab==='classes'?classesView():tab==='prog'?progView():settingsView();
+}
+
+/* ---------- VUE : cours actuel ---------- */
+function stateChip(st,o){
+ const m=nowMin();
+ if(st==='live')return `<span class="chip live">● En cours · fin à ${fmtT(o.slot.end)}</span>`;
+ if(st==='soon')return `<span class="chip live">Commence dans ${toMin(o.slot.start)-m} min</span>`;
+ if(st==='next')return `<span class="chip">Prochain cours · dans ${Math.round((toMin(o.slot.start)-m))} min</span>`;
+ if(st==='ended')return `<span class="chip todo">Terminé — à saisir</span>`;
+ if(st==='past')return `<span class="chip">Cours passé</span>`;
+ return `<span class="chip">À venir</span>`;
+}
+function homeView(){
+ const auto=courseNow();
+ const o=focus||(auto&&auto.occ);
+ if(!o)return `<div class="panel empty"><div style="font-size:44px">🗓️</div><h2>Aucun cours trouvé</h2><p>Vérifie l’emploi du temps et le calendrier dans les Réglages.</p><button class="primary" onclick="setTab('settings')">⚙️ Réglages</button></div>`;
+ const st=focus?occState(o):auto.state;
+ const c=classById(o.slot.classId),e=etabById(c.etab);
+ const cur=sessFor(c.id,o.date);
+ const prev=prevSession(c.id,o.date);
+ const due=dueFor(c.id,o.date);
+ const nxt=nextOcc(c.id,o.date);
+ const fil=filFor(c.id,o.date);
+ const isAuto=!focus;
+ let h='';
+ if(cfg.notify.inApp&&auto&&auto.state==='soon'&&isAuto)h+=`<div class="alertbar">🔔 Cours de ${esc(classLabel(auto.occ.slot.classId))} dans ${toMin(auto.occ.slot.start)-nowMin()} min</div>`;
+ h+=`<div class="panel" style="border-top:6px solid ${e.color}">
+ <div class="row between" style="margin-bottom:10px">
+  <button onclick="moveFocus(-1)">◀ Cours précédent</button>
+  <button class="${isAuto?'ghost':'primary'}" onclick="focus=null;render()" ${isAuto?'disabled':''}>⟲ Maintenant</button>
+  <button onclick="moveFocus(1)">Cours suivant ▶</button>
+ </div>
+ <div class="course-head">
+  <div class="grow">
+   <div class="row" style="margin-bottom:6px">${etabDot(c.etab)}<span class="small" style="font-weight:700">${esc(e.name)}</span>${wtBadge(o.date)}${stateChip(st,o)}</div>
+   <div class="course-name">${esc(c.label)}</div>
+   <div class="course-meta">${cap(fmtLong(o.date))} · ${fmtT(o.slot.start)} – ${fmtT(o.slot.end)} · séance n°${cur?rankOf(c.id,o.date):rankOf(c.id,o.date)}</div>
+  </div>
+  <div style="min-width:220px">
+   <select onchange="pickClassFocus(this.value)" aria-label="Changer de classe"><option value="">🔀 Autre classe…</option>${classOptions('')}</select>
+  </div>
+ </div>
+ <div class="grid2" style="margin-top:14px">
+  <div class="box">
+   <h3>⏮ Séance précédente${prev?' · '+esc(fmtShort(prev.date)):''}</h3>
+   ${prev?`${prev.sequenceId?seqChip(prev.sequenceId)+'<br>':''}${prev.title?`<div style="font-weight:800;font-size:17px;margin:6px 0 4px">${esc(prev.title)}</div>`:''}<div class="txt">${esc(prev.contenu||'—')}</div>${prev.note?`<div class="small" style="margin-top:8px">📝 ${esc(prev.note)}</div>`:''}<div class="row" style="margin-top:10px"><button class="mini" onclick="openEditor({id:'${prev.id}'})">✏️ Modifier</button></div>`:`<div class="txt small">Aucune séance enregistrée avant celle-ci.</div>`}
+  </div>
+  <div class="box devoirs">
+   <h3>📒 Travail à faire pour cette séance</h3>
+   ${due.length?due.map(s=>`<div class="txt">${esc(s.devoirs)}</div><div class="small" style="margin-top:4px">donné le ${esc(fmtShort(s.date))}</div>`).join('<hr style="border:0;border-top:1px solid var(--line)">'):`<div class="txt small">Pas de travail prévu pour aujourd’hui.</div>`}
+  </div>
+ </div>
+ ${fil?`<div class="box fil" style="margin-top:14px"><h3>🧭 Fil conducteur · ${esc(fil.year)} · séance n°${fil.rank}</h3>${fil.none?'<div class="small">Pas de séance n°'+fil.rank+' l’an dernier pour ce niveau.</div>':`<div class="small">${esc(fil.cls)} · ${esc(fmtShort(fil.s.date))}${fil.seq?' · '+esc(fil.seq):''}</div>${fil.s.title?`<div style="font-weight:800;margin-top:4px">${esc(fil.s.title)}</div>`:''}<div class="txt">${esc(fil.s.contenu||'')}</div>${fil.nx?`<div class="small" style="margin-top:8px">Séance suivante l’an dernier : ${esc(fil.nx.title||(fil.nx.contenu||'').slice(0,110))}</div>`:''}`}</div>`:''}
+ ${cur?`<div class="box" style="margin-top:14px;border-color:rgba(21,128,61,.4)"><h3>✅ Séance du jour (saisie)</h3>${cur.sequenceId?seqChip(cur.sequenceId)+'<br>':''}${cur.title?`<div style="font-weight:800;margin:6px 0 4px">${esc(cur.title)}</div>`:''}<div class="txt">${esc(cur.contenu||'')}</div>${cur.devoirs?`<div class="sess"><div class="dv">📒 ${esc(cur.devoirs)}${cur.devoirsPour?` — pour le ${esc(fmtShort(cur.devoirsPour))}`:''}</div></div>`:''}<div class="row" style="margin-top:8px">${cur.pronote?'<span class="chip ok">Pronote ✓</span>':'<span class="chip todo">Pas encore dans Pronote</span>'}</div></div>`:''}
+ <div class="row" style="margin-top:14px">
+  <button class="big primary grow" onclick="openEditor({classId:'${c.id}',date:'${o.date}',slotId:'${o.slot.id}'})">${cur?'✏️ Modifier la séance':'🎤 Fin de cours : dicter la séance'}</button>
+  ${cur?`<button class="big good" onclick="openPronote('${cur.id}')">📋 Pronote</button>`:''}
+  <button class="big" onclick="goSuivi('${c.id}')">👥 Élèves</button>
+ </div>
+ <div class="small" style="margin-top:8px">${nxt?`Prochaine séance avec ${esc(c.label)} : ${esc(fmtLong(nxt.date))} à ${fmtT(nxt.slot.start)}`:''}</div>
+ </div>`;
+ h+=todayPanel()+missingPanel()+pronotePendingPanel();
+ lastFocusKey=occKey(o);
+ return h;
+}
+function classOptions(sel){return cfg.etabs.map(e=>`<optgroup label="${esc(e.short)}">${cfg.classes.filter(c=>c.etab===e.id).map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.label)}</option>`).join('')}</optgroup>`).join('')}
+function moveFocus(dir){const auto=courseNow();const o=focus||(auto&&auto.occ);if(!o)return;const n=neighborOcc(o,dir);if(n){focus=n;render();window.scrollTo(0,0)}else toast('Aucun autre cours trouvé')}
+function pickClassFocus(id){
+ if(!id)return;const t=todayYmd();
+ const o=occOfClassOn(id,t)||nextOcc(id,t)||prevOcc(id,t);
+ if(o){focus=o;render();window.scrollTo(0,0)}
+ else{focus={date:t,slot:{id:'virtual-'+id,classId:id,start:'08:00',end:'09:00',day:new Date().getDay(),weeks:'all',virtual:true}};render()}
+}
+function todayPanel(){
+ const t=todayYmd(),list=slotsOn(t);
+ if(!list.length)return `<div class="panel"><div class="section-title">Aujourd’hui</div><div class="small">${offReason(t)||'Pas de cours aujourd’hui.'}</div></div>`;
+ return `<div class="panel"><div class="section-title">Aujourd’hui</div><div class="list">${list.map(sl=>{const c=classById(sl.classId);const s=sessFor(c.id,t);const st=occState({date:t,slot:sl});
+  return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${fmtT(sl.start)}</b> · ${esc(c.label)} <span class="small">${esc(etabById(c.etab).short)}</span></div>${st==='live'?'<span class="chip live">en cours</span>':''}${s?(s.pronote?'<span class="chip ok">Saisi · Pronote ✓</span>':'<span class="chip ok">Saisi</span>'):(st==='past'?'<span class="chip todo">À saisir</span>':'')}<button class="mini" onclick="focus={date:'${t}',slot:cfg.slots.find(x=>x.id==='${sl.id}')};render();window.scrollTo(0,0)">Voir</button></div>`}).join('')}</div></div>`;
+}
+function missingList(days=21){
+ const t=todayYmd(),m=nowMin(),out=[];
+ for(let i=days;i>=0;i--){const d=addDays(t,-i);if(cfg.startDate&&d<cfg.startDate)continue;for(const sl of slotsOn(d)){if(d===t&&toMin(sl.end)>m)continue;if(!sessFor(sl.classId,d))out.push({date:d,slot:sl})}}
+ return out.reverse();
+}
+function missingPanel(){
+ const l=missingList();if(!l.length)return '';
+ return `<div class="panel"><div class="section-title">⏳ Séances à saisir <span class="chip todo">${l.length}</span></div><div class="list">${l.slice(0,12).map(o=>{const c=classById(o.slot.classId);return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${esc(c.label)}</b> · ${esc(fmtShort(o.date))} ${fmtT(o.slot.start)}</div><button class="mini primary" onclick="openEditor({classId:'${c.id}',date:'${o.date}',slotId:'${o.slot.id}'})">🎤 Saisir</button><button class="mini" onclick="skipOcc('${c.id}','${o.date}','${o.slot.id}')" title="Cours non assuré (absence, sortie…)">Pas eu cours</button></div>`}).join('')}</div>${l.length>12?`<div class="small">… et ${l.length-12} autres (onglet Semaine).</div>`:''}</div>`;
+}
+function skipOcc(classId,date,slotId){
+ const sl=cfg.slots.find(x=>x.id===slotId);
+ S.sessions.push({id:uid(),classId,date,slotId,start:sl?sl.start:'',title:'Pas de cours',contenu:'',devoirs:'',devoirsPour:'',note:'Cours non assuré',sequenceId:'',pronote:true,skipped:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
+ save();render();toast('Marqué « pas eu cours »');
+}
+function pronotePendingPanel(){
+ const l=S.sessions.filter(s=>!s.pronote&&!s.skipped).sort((a,b)=>a.date<b.date?1:-1);if(!l.length)return '';
+ return `<div class="panel"><div class="section-title">📋 À reporter dans Pronote <span class="chip todo">${l.length}</span></div><div class="list">${l.slice(0,15).map(s=>{const c=classById(s.classId)||{label:'?',etab:''};return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${esc(c.label)}</b> · ${esc(fmtShort(s.date))}<div class="small">${esc((s.title||s.contenu||'').slice(0,90))}</div></div><button class="mini good" onclick="openPronote('${s.id}')">📋 Copier</button></div>`}).join('')}</div></div>`;
+}
+
+/* ---------- VUE : semaine ---------- */
+function mondayOf(offset){const d=new Date();const wd=d.getDay()||7;d.setDate(d.getDate()-wd+1+offset*7);return ymd(d)}
+function weekView(){
+ const mon=mondayOf(weekOffset),t=todayYmd(),m=nowMin();
+ const w=isoWeek(parseYmd(mon));
+ let h=`<div class="panel tight" style="padding:12px"><div class="row between"><button onclick="weekOffset--;render()">◀</button><div style="text-align:center"><div style="font-weight:850;font-size:17px">Semaine ${w.week} · du ${esc(fmtShort(mon))} au ${esc(fmtShort(addDays(mon,4)))}</div><div style="margin-top:4px">${wtBadge(mon)}</div></div><button onclick="weekOffset++;render()">▶</button></div>${weekOffset?`<div style="text-align:center;margin-top:8px"><button class="mini" onclick="weekOffset=0;render()">Cette semaine</button></div>`:''}</div><div class="week">`;
+ for(let i=0;i<5;i++){
+  const d=addDays(mon,i),off=isOffDay(d),list=slotsOn(d);
+  h+=`<div class="day ${d===t?'today':''} ${off?'off':''}"><h4>${esc(cap(fmtShort(d)))}</h4>`;
+  if(off)h+=`<div class="small" style="padding:6px">${esc(offReason(d))}</div>`;
+  for(const sl of list){
+   const c=classById(sl.classId),s=sessFor(c.id,d),past=d<t||(d===t&&toMin(sl.end)<=m);
+   const st=s?(s.skipped?'⛔ pas eu cours':s.pronote?'✅ saisi · Pronote ✓':'✅ saisi · 📋 Pronote à faire'):(past?'⏳ à saisir':'');
+   h+=`<button class="slot" style="border-left-color:${etabById(c.etab).color}" onclick="openEditor({classId:'${c.id}',date:'${d}',slotId:'${sl.id}'})"><b>${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div>${st?`<div class="st">${st}</div>`:''}${s&&s.title?`<div class="t">${esc(s.title.slice(0,40))}</div>`:''}</button>`;
+  }
+  if(!off)h+=`<button class="mini ghost" style="width:100%" onclick="addExtra('${d}')">＋ séance hors EDT</button>`;
+  h+=`</div>`;
+ }
+ return h+`</div><p class="small" style="margin-top:10px">Touchez un cours pour saisir ou modifier la séance. « Séance hors EDT » sert aux cours déplacés ou remplacés.</p>`;
+}
+function addExtra(date){
+ openModal(`<h2>Séance hors emploi du temps</h2><p class="small">${esc(cap(fmtLong(date)))}</p><label class="lbl">Classe</label><select id="xCls">${classOptions('')}</select><label class="lbl">Heure</label><input id="xStart" type="time" value="08:30"><div class="row" style="margin-top:14px"><button class="primary grow" onclick="const c=document.getElementById('xCls').value,h=document.getElementById('xStart').value;closeModal();openEditor({classId:c,date:'${date}',start:h})">Continuer</button><button onclick="closeModal()">Annuler</button></div>`);
+}
+
+/* ---------- VUE : classes ---------- */
+function classesView(){
+ if(!classTab||!classById(classTab)){const a=courseNow();classTab=a?a.occ.slot.classId:cfg.classes[0]?.id}
+ const c=classById(classTab);
+ let h=`<div class="panel tight" style="padding:12px">${cfg.etabs.map(e=>`<div class="row" style="margin:4px 0"><span class="small" style="width:60px;font-weight:800">${esc(e.short)}</span><div class="tabs">${cfg.classes.filter(x=>x.etab===e.id).map(x=>`<button class="${x.id===classTab?'on':''}" onclick="classTab='${x.id}';render()">${esc(x.label)}</button>`).join('')}</div></div>`).join('')}</div>`;
+ if(!c)return h+'<div class="panel empty">Aucune classe.</div>';
+ const list=sessionsOf(c.id).slice().reverse();
+ const nx=nextOcc(c.id,addDays(todayYmd(),-1));
+ h+=`<div class="panel"><div class="row between"><div><div class="section-title" style="margin:0">${etabDot(c.etab)} ${esc(c.label)} <span class="small">${esc(c.name)} · ${esc(etabById(c.etab).short)}</span></div><div class="small">${list.filter(s=>!s.skipped).length} séance(s) saisie(s)${nx?` · prochain cours : ${esc(fmtShort(nx.date))} ${fmtT(nx.slot.start)}`:''}</div></div><div class="row"><button class="primary" onclick="openEditor({classId:'${c.id}',date:'${todayYmd()}'})">➕ Séance</button><button onclick="progMode='classe';progSel='${c.id}';progSource='current';setTab('prog')">🧭 Progression</button></div></div></div>`;
+ if(!list.length)return h+`<div class="panel empty">Aucune séance enregistrée pour cette classe.</div>`;
+ return h+list.map(sessCard).join('');
+}
+function sessCard(s){
+ return `<div class="sess"><div class="h"><div class="row"><b>${esc(cap(fmtLong(s.date)))}</b>${s.start?`<span class="small">${fmtT(s.start)}</span>`:''}${s.sequenceId?seqChip(s.sequenceId):''}${s.skipped?'<span class="chip">Pas eu cours</span>':s.pronote?'<span class="chip ok">Pronote ✓</span>':'<span class="chip todo">Pronote à faire</span>'}</div><div class="row"><button class="mini" onclick="openEditor({id:'${s.id}'})">✏️</button>${s.skipped?'':`<button class="mini good" onclick="openPronote('${s.id}')">📋</button>`}<button class="mini danger" onclick="delSession('${s.id}')">🗑</button></div></div>${s.title?`<div style="font-weight:800;margin-top:6px">${esc(s.title)}</div>`:''}${s.contenu?`<div class="txt">${esc(s.contenu)}</div>`:''}${s.devoirs?`<div class="dv">📒 ${esc(s.devoirs)}${s.devoirsPour?` — <b>pour le ${esc(fmtShort(s.devoirsPour))}</b>`:''}</div>`:''}${s.note?`<div class="small" style="margin-top:6px">📝 ${esc(s.note)}</div>`:''}</div>`;
+}
+function delSession(id){if(!confirm('Supprimer cette séance ?'))return;S.sessions=S.sessions.filter(s=>s.id!==id);save();closeModal();render();toast('Séance supprimée')}
+
+/* ---------- ÉDITEUR DE SÉANCE ---------- */
+function openEditor(p){
+ let s=null;
+ if(p.id){s=S.sessions.find(x=>x.id===p.id);if(!s)return toast('Séance introuvable')}
+ else{s=sessFor(p.classId,p.date)}
+ const classId=s?s.classId:p.classId,date=s?s.date:p.date,c=classById(classId);
+ if(!c)return toast('Classe introuvable');
+ const slot=s?cfg.slots.find(x=>x.id===s.slotId):(p.slotId?cfg.slots.find(x=>x.id===p.slotId):occOfClassOn(classId,date)?.slot);
+ const start=s?s.start:(slot?slot.start:(p.start||''));
+ const nx=nextOcc(classId,date);
+ let draft=null;
+ if(!s){try{const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');if(d&&d.classId===classId&&d.date===date)draft=d}catch(_){}}
+ const v=s||draft||{};
+ editing={id:s?s.id:null,classId,date,slotId:slot?slot.id:(s?s.slotId:''),start,pourAuto:!(s&&s.devoirsPour),pourDefault:nx?nx.date:''};
+ const seqSel=v.sequenceId!==undefined?v.sequenceId:lastSeqOf(classId);
+ const aiReady=cfg.ai.provider==='claude'&&cfg.ai.key;
+ openModal(`
+ <div class="row between"><div><h2>${etabDot(c.etab)} ${esc(c.label)}</h2><div class="small">${esc(etabById(c.etab).name)}${start?' · '+fmtT(start):''} · séance n°${rankOf(classId,date)}</div></div><button onclick="closeEditor()">✕</button></div>
+ <div class="row" style="margin-top:6px"><div class="grow" style="min-width:160px"><label class="lbl">Date de la séance</label><input id="eDate" type="date" value="${date}" onchange="editorDateChanged(this.value)"></div>
+ <div class="grow" style="min-width:220px"><label class="lbl">Séquence</label><div class="row" style="flex-wrap:nowrap"><select id="eSeq" class="grow" onchange="saveDraft()"><option value="">— Aucune —</option>${seqsFor(c.niveau).map(q=>`<option value="${q.id}" ${q.id===seqSel?'selected':''}>${esc(q.name)}</option>`).join('')}</select><button onclick="newSeqInline('${c.niveau}')" title="Nouvelle séquence">＋</button></div></div></div>
+ ${draft&&!s?'<div class="small" style="margin-top:6px">↺ Brouillon récupéré.</div>':''}
+ <div class="box" style="margin-top:12px">
+  <div class="row between"><b>🎙️ Dictée de fin de cours</b><span class="small">Dicte tout d’un coup : ce qu’on a fait, puis les devoirs</span></div>
+  <div class="row" style="margin-top:8px;align-items:stretch;flex-wrap:nowrap"><textarea id="eDictee" rows="4" class="grow" placeholder="Ex. : « On a écouté le Boléro de Ravel, repéré l’ostinato et le crescendo, commencé le commentaire d’écoute. Pour la prochaine fois, apprendre la fiche sur l’orchestre. »" oninput="saveDraft()">${esc(v.dictee||'')}</textarea><button class="mic" onclick="dictate('eDictee',this)">🎤</button></div>
+  <div class="row" style="margin-top:8px">
+   <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec Claude</button>
+   <button onclick="localSplit()">✂️ Répartir sans IA</button>
+  </div>
+  ${aiReady?'':'<div class="small" style="margin-top:6px">Pour activer la reformulation : Réglages › Dictée & IA › colle ta clé Claude.</div>'}
+ </div>
+ <label class="lbl">Titre (Pronote)</label><input id="eTitre" value="${esc(v.title||'')}" placeholder="Ex. : Le Boléro de Ravel — ostinato et crescendo" oninput="saveDraft()">
+ <label class="lbl">📘 Ce qu’on a fait en cours (contenu)</label>
+ <div class="row" style="align-items:stretch;flex-wrap:nowrap"><textarea id="eContenu" rows="5" class="grow" oninput="saveDraft()">${esc(v.contenu||'')}</textarea><button class="mic" onclick="dictate('eContenu',this)">🎤</button></div>
+ <label class="lbl">📒 Travail à faire</label>
+ <div class="row" style="align-items:stretch;flex-wrap:nowrap"><textarea id="eDevoirs" rows="3" class="grow" oninput="saveDraft()" placeholder="Laisser vide s’il n’y a rien à faire">${esc(v.devoirs||'')}</textarea><button class="mic" onclick="dictate('eDevoirs',this)">🎤</button></div>
+ <div class="row" style="margin-top:8px"><div style="min-width:180px" class="grow"><label class="lbl" style="margin-top:0">Pour le</label><input id="ePour" type="date" value="${v.devoirsPour||editing.pourDefault}" onchange="editing.pourAuto=false;saveDraft()"></div><div class="small grow" id="pourHint">${nx?`Prochain cours : ${esc(fmtLong(nx.date))} à ${fmtT(nx.slot.start)}`:'Aucun cours suivant trouvé.'}</div></div>
+ <label class="lbl">📝 Note pour moi (non copiée dans Pronote)</label><input id="eNote" value="${esc(v.note||'')}" placeholder="Ex. : écoute pas terminée, reprendre à 2’30" oninput="saveDraft()">
+ <label class="row" style="margin-top:12px;font-weight:700"><input type="checkbox" id="ePronote" style="width:24px;height:24px" ${s&&s.pronote?'checked':''}> Déjà reporté dans Pronote</label>
+ <div class="row" style="margin-top:16px">
+  <button class="big primary grow" onclick="saveSession(true)">💾 Enregistrer${cfg.pronote.openAfterSave?' puis Pronote':''}</button>
+  <button class="big" onclick="saveSession(false)">💾 Enregistrer seulement</button>
+  ${s?`<button class="big danger" onclick="delSession('${s.id}')">🗑</button>`:''}
+ </div>`);
+}
+function closeEditor(){stopDictation();closeModal()}
+function editorDateChanged(d){
+ if(!editing||!d)return;
+ const nx=nextOcc(editing.classId,d);editing.pourDefault=nx?nx.date:'';
+ const o=occOfClassOn(editing.classId,d);if(o){editing.slotId=o.slot.id;editing.start=o.slot.start}
+ if(editing.pourAuto){document.getElementById('ePour').value=editing.pourDefault}
+ document.getElementById('pourHint').textContent=nx?`Prochain cours : ${fmtLong(nx.date)} à ${fmtT(nx.slot.start)}`:'Aucun cours suivant trouvé.';
+}
+function readEditor(){
+ const g=id=>document.getElementById(id);
+ return{date:g('eDate').value||editing.date,sequenceId:g('eSeq').value,dictee:g('eDictee').value,title:g('eTitre').value.trim(),contenu:g('eContenu').value.trim(),devoirs:g('eDevoirs').value.trim(),devoirsPour:g('ePour').value,note:g('eNote').value.trim(),pronote:g('ePronote').checked};
+}
+function saveDraft(){if(!editing||editing.id)return;try{const v=readEditor();localStorage.setItem(DRAFT_KEY,JSON.stringify({classId:editing.classId,date:editing.date,...v}))}catch(_){}}
+function clearDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch(_){}}
+function newSeqInline(niveau){
+ const name=prompt('Nom de la nouvelle séquence ('+niveau+') :','S'+(seqsFor(niveau).length+1)+' – ');
+ if(!name||!name.trim())return;
+ const q={id:uid(),niveau,name:name.trim(),color:SEQ_COLORS[cfg.sequences.length%SEQ_COLORS.length]};
+ cfg.sequences.push(q);save();
+ const sel=document.getElementById('eSeq');const op=document.createElement('option');op.value=q.id;op.textContent=q.name;sel.appendChild(op);sel.value=q.id;saveDraft();toast('Séquence créée');
+}
+function saveSession(thenPronote){
+ if(!editing)return;stopDictation();
+ const v=readEditor();
+ if(!v.contenu&&!v.title&&!v.devoirs){
+  if(v.dictee.trim()){if(!confirm('Le contenu est vide mais une dictée existe. Copier la dictée brute dans « Ce qu’on a fait » ?'))return;v.contenu=v.dictee.trim()}
+  else return toast('Rien à enregistrer : dicte ou écris le contenu de la séance');
+ }
+ if(!v.title&&cfg.ai.autoTitle&&v.contenu){v.title=autoTitle(v.contenu)}
+ if(v.devoirs&&!v.devoirsPour){v.devoirsPour=nextOcc(editing.classId,v.date)?.date||''}
+ const now=new Date().toISOString();
+ let s=editing.id?S.sessions.find(x=>x.id===editing.id):null;
+ if(!s){
+  const clash=sessFor(editing.classId,v.date);
+  if(clash&&!confirm('Une séance existe déjà pour cette classe à cette date. La remplacer ?'))return;
+  if(clash)S.sessions=S.sessions.filter(x=>x.id!==clash.id);
+  s={id:uid(),classId:editing.classId,createdAt:now};S.sessions.push(s);
+ }
+ const o=occOfClassOn(editing.classId,v.date);
+ Object.assign(s,{date:v.date,slotId:o?o.slot.id:(editing.slotId||''),start:o?o.slot.start:(editing.start||''),sequenceId:v.sequenceId,title:v.title,contenu:v.contenu,devoirs:v.devoirs,devoirsPour:v.devoirs?v.devoirsPour:'',note:v.note,dictee:v.dictee,pronote:v.pronote,skipped:false,updatedAt:now});
+ clearDraft();save();closeModal();editing=null;render();
+ toast('Séance enregistrée ✅');
+ if(thenPronote&&cfg.pronote.openAfterSave&&!s.pronote)setTimeout(()=>openPronote(s.id),250);
+}
+function autoTitle(t){let x=String(t).split(/[.\n;:]/)[0].trim();if(x.length>70)x=x.slice(0,67).replace(/\s+\S*$/,'')+'…';return cap(x)}
+
+/* ---------- Dictée (Web Speech si disponible, sinon micro du clavier) ---------- */
+let rec=null,recBtn=null;
+function stopDictation(){try{if(rec)rec.stop()}catch(_){}}
+function dictate(id,btn){
+ const ta=document.getElementById(id);
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(rec){stopDictation();return}
+ if(!SR){ta.focus();toast('Touche le 🎤 du clavier de l’iPad (à gauche de la barre d’espace) pour dicter',5000);return}
+ try{
+  rec=new SR();rec.lang='fr-FR';rec.continuous=true;rec.interimResults=true;recBtn=btn;
+  const base=ta.value?ta.value.replace(/\s*$/,' '):'';let fin='';
+  rec.onresult=e=>{let inter='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript+' ';else inter+=r[0].transcript}ta.value=base+fin+inter;saveDraft()};
+  rec.onerror=e=>{if(e.error!=='aborted'&&e.error!=='no-speech')toast('Dictée interrompue ('+e.error+'). Utilise le 🎤 du clavier.',4500)};
+  rec.onend=()=>{if(recBtn){recBtn.classList.remove('rec');recBtn.textContent='🎤'}rec=null;recBtn=null;ta.value=ta.value.replace(/\s+$/,'');saveDraft()};
+  rec.start();btn.classList.add('rec');btn.textContent='⏹';toast('Je t’écoute… touche ⏹ pour arrêter');
+ }catch(e){rec=null;ta.focus();toast('Dictée indisponible ici : utilise le 🎤 du clavier',4500)}
+}
+function localSplit(){
+ const g=id=>document.getElementById(id);
+ const t=g('eDictee').value.trim();if(!t)return toast('Dicte d’abord dans la zone « Dictée »');
+ const re=/(pour la prochaine (fois|séance)|pour la semaine prochaine|pour (le )?(lundi|mardi|mercredi|jeudi|vendredi)( prochain)?|les devoirs?|devoirs?\s*:|comme devoirs?|travail à faire|à faire pour|il faudra)/i;
+ const m=t.match(re);
+ const tidy=x=>cap(x.trim().replace(/^[,.;:\s]+|[,;:\s]+$/g,'')).replace(/([^.!?…])$/,'$1.');
+ if(m&&m.index>0){g('eContenu').value=tidy(t.slice(0,m.index));g('eDevoirs').value=tidy(t.slice(m.index).replace(/^(les devoirs?|devoirs?\s*:|comme devoirs?)\s*(c'est|sont|:)?\s*/i,''))}
+ else{g('eContenu').value=tidy(t);toast('Pas de devoirs repérés (dis « pour la prochaine fois… »)',4000)}
+ saveDraft();
+}
+
+/* ---------- Reformulation par Claude ---------- */
+async function aiReformulate(){
+ const g=id=>document.getElementById(id);
+ let raw=g('eDictee').value.trim();
+ if(!raw){const a=g('eContenu').value.trim(),b=g('eDevoirs').value.trim();raw=a+(b?'\nDevoirs : '+b:'')}
+ if(!raw)return toast('Dicte d’abord ce que vous avez fait');
+ const c=classById(editing.classId);const seq=seqById(g('eSeq').value);
+ const btn=g('aiBtn');btn.disabled=true;btn.textContent='⏳ Claude reformule…';
+ try{
+  const r=await callClaude(raw,{classe:c.label,niveau:c.niveau,sequence:seq?seq.name:'',date:fmtLong(g('eDate').value||editing.date)});
+  if(r.titre)g('eTitre').value=r.titre;
+  if(r.contenu)g('eContenu').value=r.contenu;
+  g('eDevoirs').value=r.devoirs||'';
+  saveDraft();toast('Reformulation prête ✨ — relis avant d’enregistrer',3500);
+ }catch(e){console.error(e);toast('Claude : '+e.message,7000)}
+ finally{btn.disabled=false;btn.textContent='✨ Reformuler avec Claude'}
+}
+function aiSystemPrompt(){return `Tu aides un professeur d'éducation musicale de collège (France, cycle 4) à remplir le cahier de textes Pronote à partir d'une dictée vocale de fin de cours.
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour : {"titre":"…","contenu":"…","devoirs":"…"}
+- "titre" : titre court de la séance (8 mots maximum), sans date ni nom de classe.
+- "contenu" : ce qui a été fait, en 2 à 5 phrases courtes et factuelles, lisibles par les élèves et les parents (style cahier de textes : « Écoute de… », « Analyse de… », « Apprentissage du chant… »). Pas de « nous » ni de « on ».
+- "devoirs" : le travail à faire pour la prochaine séance, à l'infinitif (« Apprendre… », « Terminer… »). Chaîne vide s'il n'y a rien.
+Garde fidèlement les faits dictés, n'invente rien. Corrige les erreurs de reconnaissance vocale, surtout sur les noms d'œuvres, de compositeurs et le vocabulaire musical (ostinato, timbre, nuance, tempo, forme rondo, etc.). Orthographe et typographie françaises soignées.`}
+async function callClaude(raw,ctx){
+ const key=(cfg.ai.key||'').trim();if(!key)throw new Error('clé API manquante (Réglages)');
+ const user=`Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`;
+ let res;
+ try{
+  res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+   body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:900,system:aiSystemPrompt(),messages:[{role:'user',content:user}]})});
+ }catch(e){throw new Error('pas de connexion Internet ?')}
+ const j=await res.json().catch(()=>({}));
+ if(!res.ok){const m=j&&j.error&&j.error.message||('HTTP '+res.status);throw new Error(res.status===401?'clé refusée — vérifie-la dans les Réglages':res.status===404?'modèle introuvable ('+(cfg.ai.model)+') — change-le dans les Réglages':m)}
+ const txt=(j.content||[]).map(b=>b.text||'').join('');
+ const mm=txt.match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');
+ const o=JSON.parse(mm[0]);
+ return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim()};
+}
+async function testAI(){
+ const el=document.getElementById('aiTest');el.textContent='Test en cours…';
+ try{const r=await callClaude('on a écouté le bolero de ravel et repéré lostinato. pour la prochaine fois apprendre la fiche',{classe:'4e test',niveau:'4e',sequence:'',date:fmtLong(todayYmd())});el.innerHTML='✅ Ça marche : <b>'+esc(r.titre)+'</b> — '+esc(r.contenu)+(r.devoirs?' / Devoirs : '+esc(r.devoirs):'')}
+ catch(e){el.textContent='❌ '+e.message}
+}
+
+/* ---------- Pronote : copie ---------- */
+function pronoteTexts(s){
+ const seq=seqById(s.sequenceId);
+ const titre=(cfg.pronote.prefixSeq&&seq?seq.name+' – ':'')+(s.title||'');
+ return{titre,contenu:s.contenu||'',devoirs:s.devoirs||''};
+}
+function openPronote(id){
+ const s=S.sessions.find(x=>x.id===id);if(!s)return;
+ const c=classById(s.classId)||{label:'?',etab:'',name:'?'};const e=etabById(c.etab);const t=pronoteTexts(s);
+ window._pt=t;
+ openModal(`<div class="row between"><div><h2>📋 Reporter dans Pronote</h2><div class="small">${esc(c.name)} (${esc(e.short)}) · cours du ${esc(fmtLong(s.date))}${s.start?' · '+fmtT(s.start):''}</div></div><button onclick="closeModal()">✕</button></div>
+ <div class="small" style="margin:8px 0">Pronote › <b>Cahier de textes</b> › <b>Saisie</b> › cours du ${esc(fmtShort(s.date))} → copie chaque bloc puis colle-le dans la zone correspondante.</div>
+ ${e.pronoteUrl?`<button class="primary" style="width:100%" onclick="window.open('${esc(e.pronoteUrl)}','_blank')">🌐 Ouvrir Pronote ${esc(e.short)}</button>`:`<div class="small">Astuce : ajoute l’adresse de ton Pronote web dans Réglages › Établissements pour l’ouvrir d’ici.</div>`}
+ <div class="copyblock"><div class="row between"><b>1. Titre</b><button class="mini" onclick="copyText(window._pt.titre,'Titre copié')">📋 Copier</button></div><div class="txt">${esc(t.titre)||'<span class=small>(vide)</span>'}</div></div>
+ <div class="copyblock"><div class="row between"><b>2. Contenu (grande zone de texte)</b><button class="mini" onclick="copyText(window._pt.contenu,'Contenu copié')">📋 Copier</button></div><div class="txt">${esc(t.contenu)||'<span class=small>(vide)</span>'}</div></div>
+ <div class="copyblock"><div class="row between"><b>3. Travail à effectuer</b>${t.devoirs?`<button class="mini" onclick="copyText(window._pt.devoirs,'Travail copié')">📋 Copier</button>`:''}</div><div class="txt">${t.devoirs?esc(t.devoirs):'<span class=small>Pas de travail à faire.</span>'}</div>${t.devoirs&&s.devoirsPour?`<div class="chip" style="font-size:14px">« Ajouter un travail à faire » → Pour le : <b>&nbsp;${esc(fmtLong(s.devoirsPour))}</b></div>`:''}</div>
+ <button style="width:100%;margin-bottom:8px" onclick="copyText(window._pt.titre+'\\n\\n'+window._pt.contenu+(window._pt.devoirs?'\\n\\nTravail à faire${s.devoirsPour?' pour le '+esc(fmtShort(s.devoirsPour)):''} : '+window._pt.devoirs:''),'Tout copié')">📋 Tout copier en un bloc</button>
+ <button class="big good" style="width:100%" onclick="markPronote('${s.id}')">✅ C’est fait dans Pronote</button>`);
+}
+function markPronote(id){const s=S.sessions.find(x=>x.id===id);if(s){s.pronote=true;s.updatedAt=new Date().toISOString();save()}closeModal();render();toast('Marqué comme reporté dans Pronote ✅')}
+function copyText(t,msg){
+ const ok=()=>toast((msg||'Copié')+' ✅');
+ const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='0';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,t.length);let r=false;try{r=document.execCommand('copy')}catch(_){}ta.remove();r?ok():toast('Copie impossible — sélectionne le texte à la main',4000)};
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok).catch(fb);else fb();
+}
+
+/* ---------- VUE : progressions ---------- */
+function progData(){
+ if(progSource==='current')return{classes:cfg.classes,sequences:cfg.sequences,sessions:S.sessions,year:cfg.schoolYear};
+ const a=S.archives.find(x=>x.year===progSource);return a?{classes:a.classes||[],sequences:a.sequences||[],sessions:a.sessions||[],year:a.year}:{classes:[],sequences:[],sessions:[],year:''};
+}
+function progRows(){
+ const d=progData();
+ let rows=d.sessions.filter(s=>!s.skipped);
+ if(progMode==='classe')rows=rows.filter(s=>s.classId===progSel);
+ else rows=rows.filter(s=>{const c=d.classes.find(x=>x.id===s.classId);return c&&c.niveau===progSel});
+ rows=rows.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+ const counters={};
+ rows=rows.map(s=>{counters[s.classId]=(counters[s.classId]||0)+1;const c=d.classes.find(x=>x.id===s.classId)||{};const q=d.sequences.find(x=>x.id===s.sequenceId);const e=cfg.etabs.find(x=>x.id===c.etab);return{...s,n:counters[s.classId],cls:c.label||'?',etab:e?e.short:'',seq:q?q.name:'',seqColor:q?q.color:'#64748b'}});
+ return{d,rows};
+}
+function progView(){
+ const d=progData();
+ if(!progSel)progSel=progMode==='classe'?(d.classes[0]?.id||''):'6e';
+ if(progMode==='classe'&&!d.classes.find(c=>c.id===progSel))progSel=d.classes[0]?.id||'';
+ if(progMode==='niveau'&&!NIVEAUX.find(n=>n[0]===progSel))progSel='6e';
+ const{rows}=progRows();
+ let h=`<div class="panel"><div class="row">
+  <select style="max-width:200px" onchange="progSource=this.value;progSel=null;render()"><option value="current" ${progSource==='current'?'selected':''}>Année ${esc(cfg.schoolYear)} (en cours)</option>${S.archives.map(a=>`<option value="${esc(a.year)}" ${progSource===a.year?'selected':''}>Archive ${esc(a.year)}</option>`).join('')}</select>
+  <div class="tabs"><button class="${progMode==='classe'?'on':''}" onclick="progMode='classe';progSel=null;render()">Par classe</button><button class="${progMode==='niveau'?'on':''}" onclick="progMode='niveau';progSel=null;render()">Par niveau</button></div>
+  <select class="grow" style="min-width:160px" onchange="progSel=this.value;render()">${progMode==='classe'?(progSource==='current'?classOptions(progSel):d.classes.map(c=>`<option value="${c.id}" ${c.id===progSel?'selected':''}>${esc(c.label)}</option>`).join('')):NIVEAUX.map(n=>`<option value="${n[0]}" ${n[0]===progSel?'selected':''}>${n[1]}</option>`).join('')}</select>
+ </div>
+ <div class="row" style="margin-top:10px"><button onclick="exportCSV()">📊 Exporter (Excel / CSV)</button><button onclick="printProg()">🖨️ Imprimer / PDF</button><button onclick="copyProgText()">📋 Copier en texte</button></div></div>`;
+ if(!rows.length)return h+`<div class="panel empty">Aucune séance pour cette sélection.</div>`;
+ const groups=[];const idx={};
+ rows.forEach(r=>{const k=r.sequenceId||'_none';if(!(k in idx)){idx[k]=groups.length;groups.push({k,name:r.seq||'Sans séquence',color:r.seqColor,rows:[]})}groups[idx[k]].rows.push(r)});
+ h+=`<div class="panel"><div class="small">${rows.length} séance(s) · ${groups.length} séquence(s) · du ${esc(fmtShort(rows[0].date))} au ${esc(fmtShort(rows[rows.length-1].date))}</div>`;
+ for(const g of groups){
+  const dates=g.rows.map(r=>r.date);
+  h+=`<div class="seqhead"><span class="seq" style="background:${g.color}">${esc(g.name)}</span><span class="small">${g.rows.length} séance(s) · ${esc(fmtShort(dates[0]))} → ${esc(fmtShort(dates[dates.length-1]))}</span></div>
+  <div style="overflow:auto"><table class="prog"><thead><tr><th>N°</th><th>Date</th>${progMode==='niveau'?'<th>Classe</th>':''}<th>Titre & contenu</th><th>Travail à faire</th></tr></thead><tbody>${g.rows.map(r=>`<tr><td>${r.n}</td><td style="white-space:nowrap">${esc(fmtNum(r.date))}</td>${progMode==='niveau'?`<td>${esc(r.cls)}<div class="small">${esc(r.etab)}</div></td>`:''}<td class="pre">${r.title?`<b>${esc(r.title)}</b>\n`:''}${esc(r.contenu||'')}${r.note?`\n<span class="small">📝 ${esc(r.note)}</span>`:''}</td><td class="pre">${esc(r.devoirs||'')}</td></tr>`).join('')}</tbody></table></div>`;
+ }
+ return h+`</div>`;
+}
+function progTitle(){const d=progData();return 'Progression '+(progMode==='classe'?(d.classes.find(c=>c.id===progSel)?.label||''):'niveau '+(NIVEAUX.find(n=>n[0]===progSel)||['',''])[1])+' — '+d.year}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function exportCSV(){
+ const{rows,d}=progRows();if(!rows.length)return toast('Rien à exporter');
+ const head=['Année','Établissement','Classe','N°','Date','Séquence','Titre','Contenu','Travail à faire','Pour le','Note perso'];
+ const lines=[head.map(csvCell).join(';')].concat(rows.map(r=>[d.year,r.etab,r.cls,r.n,fmtNum(r.date),r.seq,r.title,r.contenu,r.devoirs,r.devoirsPour?fmtNum(r.devoirsPour):'',r.note].map(csvCell).join(';')));
+ downloadFile('﻿'+lines.join('\r\n'),progTitle().replace(/[^\w\-]+/g,'_')+'.csv','text/csv;charset=utf-8');
+}
+function printProg(){
+ const{rows}=progRows();if(!rows.length)return toast('Rien à imprimer');
+ const groups={};rows.forEach(r=>{(groups[r.seq||'Sans séquence']=groups[r.seq||'Sans séquence']||[]).push(r)});
+ document.getElementById('printArea').innerHTML=`<h1>${esc(progTitle())}</h1>${Object.entries(groups).map(([k,l])=>`<h2>${esc(k)}</h2><table><tr><th>N°</th><th>Date</th>${progMode==='niveau'?'<th>Classe</th>':''}<th>Contenu</th><th>Travail</th></tr>${l.map(r=>`<tr><td>${r.n}</td><td>${esc(fmtNum(r.date))}</td>${progMode==='niveau'?`<td>${esc(r.cls)}</td>`:''}<td>${r.title?'<b>'+esc(r.title)+'</b>\n':''}${esc(r.contenu)}</td><td>${esc(r.devoirs)}</td></tr>`).join('')}</table>`).join('')}`;
+ setTimeout(()=>window.print(),100);
+}
+function copyProgText(){
+ const{rows}=progRows();if(!rows.length)return toast('Rien à copier');
+ let out=progTitle()+'\n';let last=null;
+ rows.forEach(r=>{if(r.seq!==last){out+='\n== '+(r.seq||'Sans séquence')+' ==\n';last=r.seq}out+=`\n${r.n}. ${fmtNum(r.date)}${progMode==='niveau'?' ('+r.cls+')':''} — ${r.title||''}\n${r.contenu||''}${r.devoirs?'\nTravail : '+r.devoirs:''}\n`});
+ copyText(out,'Progression copiée');
+}
+
+/* ---------- Fichiers ---------- */
+async function downloadFile(content,name,type){
+ const blob=new Blob([content],{type});
+ try{const f=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+}
+function exportBackup(){S.exportedAt=new Date().toISOString();downloadFile(JSON.stringify(S,null,1),'progression-classes-'+todayYmd()+'.json','application/json')}
+function exportYear(){const a={format:'progression-classe-annee',year:cfg.schoolYear,classes:cfg.classes,sequences:cfg.sequences,sessions:S.sessions,exportedAt:new Date().toISOString()};downloadFile(JSON.stringify(a,null,1),'progression-'+cfg.schoolYear+'.json','application/json')}
+function pickFile(cb){const i=document.createElement('input');i.type='file';i.accept='.json,application/json,*/*';i.style.display='none';document.body.appendChild(i);i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(f){const r=new FileReader();r.onload=()=>cb(String(r.result));r.onerror=()=>toast('Lecture impossible');r.readAsText(f,'UTF-8')}};i.click()}
+function importBackup(){
+ pickFile(async txt=>{
+  let x;try{x=JSON.parse(txt.replace(/^﻿/,''))}catch(e){return toast('Fichier illisible (JSON invalide)',5000)}
+  if(x&&x.format==='progression-classe-annee'){
+   if(!confirm(`Ajouter l’année ${x.year} (${(x.sessions||[]).length} séances) aux archives ? (fil conducteur)`))return;
+   S.archives=S.archives.filter(a=>a.year!==x.year);S.archives.push({year:x.year,classes:x.classes||[],sequences:x.sequences||[],sessions:x.sessions||[]});S.archives.sort((a,b)=>a.year<b.year?-1:1);
+   await persistNow().catch(()=>{});render();return toast('Archive '+x.year+' ajoutée ✅');
+  }
+  if(!x||x.format!=='progression-classe')return toast('Ce fichier n’est pas une sauvegarde de Progression',5000);
+  if(!confirm(`Importer ${(x.sessions||[]).length} séance(s) et ${(x.archives||[]).length} archive(s) ?\nCela remplace les données actuelles de cet appareil.`))return;
+  try{S=normalizeState(x);cfg=S.config;blockSave=false;await persistNow();render();toast('Sauvegarde importée ✅')}catch(e){toast('Import impossible : '+e.message,6000)}
+ });
+}
+function archiveYear(){
+ const n=S.sessions.filter(s=>!s.skipped).length;
+ const [y1]=cfg.schoolYear.split('-').map(Number);const next=(y1+1)+'-'+(y1+2);
+ if(!confirm(`Archiver l’année ${cfg.schoolYear} (${n} séances) ?\n\n• Les séances passent dans les archives (fil conducteur ${next}).\n• Les classes, séquences et l’emploi du temps sont conservés : tu les ajusteras pour la rentrée.\n• Pense d’abord à exporter une sauvegarde.`))return;
+ S.archives=S.archives.filter(a=>a.year!==cfg.schoolYear);
+ S.archives.push({year:cfg.schoolYear,classes:JSON.parse(JSON.stringify(cfg.classes)),sequences:JSON.parse(JSON.stringify(cfg.sequences)),sessions:S.sessions});
+ S.sessions=[];cfg.schoolYear=next;
+ save();render();toast('Année archivée ✅ — mets à jour le calendrier et l’emploi du temps',6000);
+}
+
+/* ---------- Calendrier (.ics) pour les notifications ---------- */
+function exportICS(){
+ const t=todayYmd();const [y1]=cfg.schoolYear.split('-').map(Number);const end=(y1+1)+'-07-10';
+ const before=Math.max(0,Number(cfg.notify.minutesBefore)||5);
+ const url=location.href.replace(/progression\.html.*$/,'index.html');
+ const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Suivi de classe//Progression//FR','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Cours éducation musicale'];
+ const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+Z$/,'Z');
+ const dt=(d,h)=>d.replace(/-/g,'')+'T'+h.replace(':','')+'00';
+ const escI=s=>String(s).replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+ let n=0;
+ for(let d=t;d<=end;d=addDays(d,1)){
+  for(const sl of slotsOn(d)){
+   const c=classById(sl.classId),e=etabById(c.etab);n++;
+   L.push('BEGIN:VEVENT','UID:'+d+'-'+sl.id+'@suivi-classe','DTSTAMP:'+stamp,'DTSTART:'+dt(d,sl.start),'DTEND:'+dt(d,sl.end),
+    'SUMMARY:'+escI('🎵 '+c.label+' · '+e.short),'LOCATION:'+escI(e.name),'DESCRIPTION:'+escI('Ouvre Suivi de classe : la page de la classe s’affiche automatiquement.'),'URL:'+url,
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+escI(c.label+' dans '+before+' min'),'TRIGGER:-PT'+before+'M','END:VALARM','END:VEVENT');
+  }
+ }
+ L.push('END:VCALENDAR');
+ if(!n)return toast('Aucun cours à exporter');
+ downloadFile(L.join('\r\n'),'cours-'+cfg.schoolYear+'.ics','text/calendar');
+ toast(n+' cours exportés vers le calendrier',4000);
+}
+function automationList(){
+ const by={};
+ cfg.slots.filter(s=>classById(s.classId)).forEach(s=>{(by[s.start]=by[s.start]||{days:new Set(),weeks:new Set()});by[s.start].days.add(s.day);by[s.start].weeks.add(s.weeks)});
+ const before=Math.max(0,Number(cfg.notify.minutesBefore)||5);
+ return Object.keys(by).sort((a,b)=>toMin(a)-toMin(b)).map(h=>{const m=toMin(h)-before;const hh=pad(Math.floor(m/60))+':'+pad(m%60);return{at:hh,start:h,days:[...by[h].days].sort().map(d=>JOURS[d].toLowerCase()).join(', ')}});
+}
+
+/* ---------- VUE : réglages ---------- */
+function settingsView(){
+ const days=[1,2,3,4,5];
+ const aut=automationList();
+ return `
+ <details class="set" open><summary>🎙️ Dictée & reformulation par Claude</summary><div class="in">
+  <p class="small">La clé reste uniquement sur cet iPad. Crée-la sur console.anthropic.com › API Keys. Chaque reformulation coûte une fraction de centime.</p>
+  <label class="lbl">Clé API Claude</label><input type="password" value="${esc(cfg.ai.key)}" placeholder="sk-ant-…" autocomplete="off" onchange="cfg.ai.key=this.value.trim();cfg.ai.provider='claude';save()">
+  <label class="lbl">Modèle</label><input value="${esc(cfg.ai.model)}" onchange="cfg.ai.model=this.value.trim()||'claude-haiku-5-5';save()">
+  <div class="small">Par défaut : claude-haiku-5-5 (rapide, économique). Tu peux mettre un modèle plus puissant si tu le souhaites.</div>
+  <label class="row" style="margin-top:10px"><input type="checkbox" style="width:22px;height:22px" ${cfg.ai.autoTitle?'checked':''} onchange="cfg.ai.autoTitle=this.checked;save()"> Créer un titre automatiquement si je n’en mets pas</label>
+  <div class="row" style="margin-top:10px"><button onclick="testAI()">🧪 Tester la clé</button><span class="small grow" id="aiTest"></span></div>
+  <p class="small" style="margin-top:12px">🎤 <b>Dicter sur iPad</b> : touche le micro du clavier. Le bouton 🎤 à côté des zones utilise la reconnaissance de Safari quand elle est disponible, sinon il ouvre le clavier.</p>
+ </div></details>
+
+ <details class="set"><summary>🔔 Ouverture automatique & notifications</summary><div class="in">
+  <label class="lbl">Prévenir combien de minutes avant le cours ?</label><input type="number" min="0" max="30" value="${cfg.notify.minutesBefore}" onchange="cfg.notify.minutesBefore=Math.max(0,Number(this.value)||0);save();render()">
+  <label class="row" style="margin-top:10px"><input type="checkbox" style="width:22px;height:22px" ${cfg.notify.inApp?'checked':''} onchange="cfg.notify.inApp=this.checked;save()"> Bandeau d’alerte dans l’appli quand un cours approche</label>
+  <h3 style="margin:16px 0 6px">1. Notifications avec le Calendrier (recommandé)</h3>
+  <p class="small">Exporte tous tes cours (semaines Q1/Q2 et vacances respectées) avec une alerte ${cfg.notify.minutesBefore} min avant. Sur l’iPad : ouvre le fichier reçu (app Fichiers) › <b>Ajouter tout</b>, idéalement dans un nouveau calendrier « Cours ». Quand l’alerte arrive, ouvre Suivi de classe : il affiche directement la bonne classe.</p>
+  <button class="primary" onclick="exportICS()">📅 Exporter mes cours vers le Calendrier (.ics)</button>
+  <p class="small">À refaire si l’emploi du temps change (supprime d’abord l’ancien calendrier « Cours »).</p>
+  <h3 style="margin:16px 0 6px">2. Ouverture à heure fixe avec l’app Raccourcis</h3>
+  <p class="small">Raccourcis › Automatisation › ＋ › <b>Heure de la journée</b> › choisis l’heure et les jours › action <b>Ouvrir les URL</b> avec l’adresse ci-dessous › désactive « Demander avant d’exécuter ». ⚠️ Raccourcis ouvre Safari, pas l’icône de l’écran d’accueil : sur iOS 16 ces deux versions ne partagent pas leurs données. Cette méthode ne convient que si tu utilises l’appli dans Safari.</p>
+  <div class="row"><input readonly value="${esc(location.href.split('?')[0].replace(/progression\.html$/,'index.html'))}" onclick="this.select()"><button onclick="copyText(location.href.split('?')[0].replace(/progression\\.html$/,'index.html'),'Adresse copiée')">📋</button></div>
+  <div class="list" style="margin-top:8px">${aut.map(a=>`<div class="item"><b style="width:70px">${fmtT(a.at)}</b><div class="grow">${esc(a.days)} <span class="small">(cours à ${fmtT(a.start)})</span></div></div>`).join('')}</div>
+  <p class="small">Dans tous les cas, l’appli suit ton emploi du temps : à chaque ouverture ou retour dessus, elle se place sur le cours en cours (ou le suivant), et Suivi de classe ouvre la classe correspondante.</p>
+ </div></details>
+
+ <details class="set"><summary>🏫 Établissements & classes</summary><div class="in">
+  ${cfg.etabs.map(e=>`<div class="box" style="margin-bottom:10px"><div class="row"><span class="etab" style="background:${e.color};width:16px;height:16px"></span><input style="max-width:260px" value="${esc(e.name)}" onchange="etabById('${e.id}').name=this.value;save()"><input style="max-width:120px" value="${esc(e.short)}" onchange="etabById('${e.id}').short=this.value;save()"><input type="color" style="width:56px;padding:2px;height:42px" value="${e.color}" onchange="etabById('${e.id}').color=this.value;save();render()"></div>
+   <label class="lbl">Adresse de Pronote web (espace professeurs)</label><input value="${esc(e.pronoteUrl||'')}" placeholder="https://…index-education.net/pronote/professeur.html" onchange="etabById('${e.id}').pronoteUrl=this.value.trim();save()">
+   <div class="small" style="margin:10px 0 4px">Classes : nom Pronote · nom affiché · niveau · classe dans Suivi de classe</div>
+   ${cfg.classes.filter(c=>c.etab===e.id).map(c=>`<div class="clsrow"><input value="${esc(c.name)}" onchange="classById('${c.id}').name=this.value;save()"><input value="${esc(c.label)}" onchange="classById('${c.id}').label=this.value;save()"><select onchange="classById('${c.id}').niveau=this.value;save()">${NIVEAUX.map(n=>`<option value="${n[0]}" ${n[0]===c.niveau?'selected':''}>${n[1]}</option>`).join('')}</select><select onchange="classById('${c.id}').suiviId=this.value;save()"><option value="">${(()=>{const m=matchSuivi(c,true);return m?'Auto : '+esc(m.name):'— non reliée —'})()}</option>${suiviClasses.map(s=>`<option value="${s.id}" ${s.id===c.suiviId?'selected':''}>${esc(s.name)}</option>`).join('')}</select><button class="mini danger" onclick="delClass('${c.id}')">🗑</button></div>`).join('')}
+   <button class="mini" onclick="addClassCfg('${e.id}')">＋ Classe</button>
+  </div>`).join('')}
+  ${suiviClasses.length?'':'<p class="small">Les classes de Suivi de classe apparaîtront ici dès que tu ouvres ce module depuis l’appli Suivi de classe installée sur l’iPad.</p>'}
+ </div></details>
+
+ <details class="set"><summary>🕘 Emploi du temps</summary><div class="in">
+  <p class="small">« Semaines » : <b>Toutes</b>, ou seulement <b>Q1</b> (semaines marron dans Pronote) / <b>Q2</b> (semaines bleues).</p>
+  ${cfg.etabs.map(e=>`<h3 style="margin:14px 0 6px">${etabDot(e.id)} ${esc(e.short)}</h3>${cfg.slots.filter(s=>classById(s.classId)?.etab===e.id).sort((a,b)=>a.day-b.day||toMin(a.start)-toMin(b.start)).map(s=>`<div class="cfgrow">
+   <select onchange="slotSet('${s.id}','day',Number(this.value))">${days.map(d=>`<option value="${d}" ${d===s.day?'selected':''}>${JOURS[d]}</option>`).join('')}</select>
+   <input type="time" value="${s.start}" onchange="slotSet('${s.id}','start',this.value)"><input type="time" value="${s.end}" onchange="slotSet('${s.id}','end',this.value)">
+   <select onchange="slotSet('${s.id}','classId',this.value)">${cfg.classes.filter(c=>c.etab===e.id).map(c=>`<option value="${c.id}" ${c.id===s.classId?'selected':''}>${esc(c.label)}</option>`).join('')}</select>
+   <select onchange="slotSet('${s.id}','weeks',this.value)"><option value="all" ${s.weeks==='all'?'selected':''}>Toutes</option><option value="Q1" ${s.weeks==='Q1'?'selected':''}>Q1</option><option value="Q2" ${s.weeks==='Q2'?'selected':''}>Q2</option></select>
+   <button class="mini danger" onclick="cfg.slots=cfg.slots.filter(x=>x.id!=='${s.id}');save();render()">🗑</button></div>`).join('')}
+   <button class="mini" onclick="addSlot('${e.id}')">＋ Créneau</button>`).join('')}
+ </div></details>
+
+ <details class="set"><summary>📆 Calendrier ${esc(cfg.schoolYear)} (semaines Q1/Q2, vacances, jours fériés)</summary><div class="in">
+  <p class="small">Touchez une semaine pour la faire passer Q1 → Q2 → Vacances. Pré-rempli d’après la frise Pronote.</p>
+  <div class="weeks">${schoolWeeks().map(w=>`<button class="${weekTypeOf(w.mon)}" onclick="cycleWeek('${w.key}')"><b>S${w.week}</b> · ${weekTypeOf(w.mon)==='F'?'Vac.':weekTypeOf(w.mon)}<br>${esc(w.label)}</button>`).join('')}</div>
+  <label class="lbl">Jours sans cours (fériés, ponts, sorties…)</label>
+  <div class="row">${cfg.feries.slice().sort().map(f=>`<span class="chip">${esc(fmtShort(f))} <button class="mini ghost" style="min-height:24px;padding:0 4px" onclick="cfg.feries=cfg.feries.filter(x=>x!=='${f}');save();render()">✕</button></span>`).join('')}</div>
+  <div class="row" style="margin-top:8px"><input type="date" id="newFerie" style="max-width:200px"><button class="mini" onclick="const v=document.getElementById('newFerie').value;if(v&&!cfg.feries.includes(v)){cfg.feries.push(v);save();render()}">＋ Ajouter</button></div>
+ </div></details>
+
+ <details class="set"><summary>🧩 Séquences</summary><div class="in">
+  <p class="small">Chaque séance est rattachée à une séquence : c’est ce qui structure les progressions de fin d’année.</p>
+  ${NIVEAUX.map(n=>`<h3 style="margin:14px 0 6px">${n[1]}</h3>${seqsFor(n[0]).map((q,i,arr)=>`<div class="seqrow"><span class="seq" style="background:${q.color}">${i+1}</span><input value="${esc(q.name)}" onchange="seqById('${q.id}').name=this.value;save()"><input type="color" value="${q.color||'#64748b'}" onchange="seqById('${q.id}').color=this.value;save();render()"><button class="mini" ${i?'':'disabled'} onclick="moveSeq('${q.id}',-1)">↑</button><button class="mini" ${i<arr.length-1?'':'disabled'} onclick="moveSeq('${q.id}',1)">↓</button><button class="mini danger" onclick="delSeq('${q.id}')">🗑</button></div>`).join('')}<button class="mini" onclick="addSeq('${n[0]}')">＋ Séquence ${n[1]}</button>`).join('')}
+ </div></details>
+
+ <details class="set"><summary>📋 Pronote</summary><div class="in">
+  <label class="row"><input type="checkbox" style="width:22px;height:22px" ${cfg.pronote.openAfterSave?'checked':''} onchange="cfg.pronote.openAfterSave=this.checked;save()"> Ouvrir la fenêtre « Reporter dans Pronote » après l’enregistrement</label>
+  <label class="row" style="margin-top:8px"><input type="checkbox" style="width:22px;height:22px" ${cfg.pronote.prefixSeq?'checked':''} onchange="cfg.pronote.prefixSeq=this.checked;save()"> Préfixer le titre par le nom de la séquence</label>
+ </div></details>
+
+ <details class="set"><summary>💾 Sauvegarde, archives & fin d’année</summary><div class="in">
+  <div class="small" id="storeInfo">${S.sessions.length} séance(s) · ${S.archives.length} archive(s) · stockage : ${storageMode==='idb'?'IndexedDB ✅':'secours localStorage ⚠️'}</div>
+  <div class="row" style="margin-top:10px"><button onclick="exportBackup()">💾 Exporter une sauvegarde</button><button onclick="importBackup()">📥 Importer (sauvegarde ou année archivée)</button></div>
+  <h3 style="margin:16px 0 6px">Fin d’année</h3>
+  <p class="small">1. Exporte l’année (fichier à garder). 2. Archive-la : les séances deviennent le <b>fil conducteur</b> de l’année suivante (affiché à chaque cours : « l’an dernier, séance n°X »).</p>
+  <div class="row"><button onclick="exportYear()">📦 Exporter l’année ${esc(cfg.schoolYear)}</button><button class="primary" onclick="archiveYear()">🗄️ Archiver l’année</button></div>
+  ${S.archives.length?`<div class="list" style="margin-top:8px">${S.archives.map(a=>`<div class="item"><b>${esc(a.year)}</b><div class="grow small">${(a.sessions||[]).length} séances</div><button class="mini danger" onclick="if(confirm('Supprimer l’archive ${esc(a.year)} ?')){S.archives=S.archives.filter(x=>x.year!=='${esc(a.year)}');save();render()}">🗑</button></div>`).join('')}</div>`:''}
+  <h3 style="margin:16px 0 6px">Zone sensible</h3>
+  <button class="danger" onclick="resetConfig()">↺ Rétablir l’emploi du temps et le calendrier d’origine</button>
+ </div></details>
+ <p class="small" style="text-align:center">Progression ${APP_VERSION} · module de Suivi de classe</p>`;
+}
+function schoolWeeks(){
+ const [y1]=cfg.schoolYear.split('-').map(Number);let d=new Date(y1,8,1);while(d.getDay()!==1)d.setDate(d.getDate()+1);
+ const out=[];let s=ymd(d);const end=(y1+1)+'-07-05';
+ while(s<=end){const w=isoWeek(parseYmd(s));out.push({mon:s,key:w.key,week:w.week,label:parseYmd(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})});s=addDays(s,7)}
+ return out;
+}
+function cycleWeek(k){const [y,w]=k.split('-W').map(Number);const mon=schoolWeeks().find(x=>x.key===k);const cur=weekTypeOf(mon?mon.mon:todayYmd());cfg.weekMap[k]=cur==='Q1'?'Q2':cur==='Q2'?'F':'Q1';save();render()}
+function slotSet(id,k,v){const s=cfg.slots.find(x=>x.id===id);if(s){s[k]=v;save()}}
+function addSlot(etab){const c=cfg.classes.find(x=>x.etab===etab);if(!c)return toast('Ajoute d’abord une classe');cfg.slots.push({id:'s'+uid().slice(0,8),day:1,start:'08:30',end:'09:25',classId:c.id,weeks:'all'});save();render()}
+function addClassCfg(etab){const name=prompt('Nom de la classe dans Pronote :');if(!name)return;const m=name.match(/\d/);cfg.classes.push({id:'c'+uid().slice(0,8),etab,name:name.trim(),label:name.trim(),niveau:m?m[0]+'e':'6e',suiviId:''});save();render()}
+function delClass(id){const n=S.sessions.filter(s=>s.classId===id).length;if(!confirm(`Supprimer cette classe${n?` et ses ${n} séance(s)`:''} ? Ses créneaux seront retirés.`))return;cfg.classes=cfg.classes.filter(c=>c.id!==id);cfg.slots=cfg.slots.filter(s=>s.classId!==id);S.sessions=S.sessions.filter(s=>s.classId!==id);save();render()}
+function addSeq(niveau){const name=prompt('Nom de la séquence ('+niveau+') :','S'+(seqsFor(niveau).length+1)+' – ');if(!name||!name.trim())return;cfg.sequences.push({id:uid(),niveau,name:name.trim(),color:SEQ_COLORS[cfg.sequences.length%SEQ_COLORS.length]});save();render()}
+function moveSeq(id,dir){const q=seqById(id);const l=seqsFor(q.niveau);const i=l.indexOf(q),j=i+dir;if(j<0||j>=l.length)return;const a=cfg.sequences.indexOf(l[i]),b=cfg.sequences.indexOf(l[j]);[cfg.sequences[a],cfg.sequences[b]]=[cfg.sequences[b],cfg.sequences[a]];save();render()}
+function delSeq(id){const n=S.sessions.filter(s=>s.sequenceId===id).length;if(!confirm(`Supprimer cette séquence ?${n?` ${n} séance(s) y sont rattachées : elles resteront, sans séquence.`:''}`))return;cfg.sequences=cfg.sequences.filter(q=>q.id!==id);S.sessions.forEach(s=>{if(s.sequenceId===id)s.sequenceId=''});save();render()}
+function resetConfig(){if(!confirm('Rétablir les classes, l’emploi du temps et le calendrier d’origine ? (les séances et séquences sont conservées)'))return;const d=defaultConfig();cfg.etabs=d.etabs;cfg.classes=d.classes;cfg.slots=d.slots;cfg.weekMap=d.weekMap;cfg.feries=d.feries;save();render()}
+
+/* ---------- Lien avec Suivi de classe ---------- */
+function matchSuivi(c,autoOnly){
+ if(!autoOnly&&c.suiviId){const s=suiviClasses.find(x=>x.id===c.suiviId);if(s)return s}
+ const keys=[norm(c.name),norm(c.label)];
+ return suiviClasses.find(s=>keys.includes(norm(s.name)))||suiviClasses.find(s=>{const n=norm(s.name);return keys.some(k=>k.length>2&&(n.startsWith(k)||k.startsWith(n)))})||null;
+}
+function goSuivi(classId){flushSave();const c=classId&&classById(classId);location.href='index.html'+(c?'?classe='+encodeURIComponent(c.id):'')}
+
+/* ---------- Modale & toast ---------- */
+function openModal(html){document.getElementById('sheet').innerHTML=html;document.getElementById('modal').classList.add('show');document.getElementById('sheet').scrollTop=0}
+function closeModal(){document.getElementById('modal').classList.remove('show');editing=null}
+let toastT=null;function toast(m,ms=2400){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms)}
+
+/* ---------- Mise à jour automatique (suit l’emploi du temps) ---------- */
+function autoFocusRefresh(fromResume){
+ if(document.getElementById('modal').classList.contains('show'))return;
+ if(fromResume)focus=null;
+ if(tab==='home'){const y=window.scrollY;const a=courseNow();const k=a?occKey(a.occ):'';if(!focus||fromResume||k!==lastFocusKey){render();if(!fromResume)window.scrollTo(0,y)}}
+ else updateStatus();
+}
+setInterval(()=>autoFocusRefresh(false),30000);
+
+/* ---------- Démarrage ---------- */
+async function init(){
+ let loaded=null;
+ try{loaded=await idbGet()}catch(e){storageMode='ls'}
+ if(!loaded){try{const r=localStorage.getItem(LS_KEY);if(r)loaded=JSON.parse(r)}catch(_){}}
+ if(loaded){try{S=normalizeState(loaded)}catch(e){S=emptyState();blockSave=true;toast('Données illisibles : rien n’a été écrasé. Importe une sauvegarde.',7000)}}
+ cfg=S.config;
+ if(!cfg.startDate){cfg.startDate=todayYmd();save()}
+ await loadSuiviClasses();
+ const p=new URLSearchParams(location.search);
+ const pc=p.get('classe'),pd=p.get('date'),pt=p.get('tab');
+ if(pt&&['home','week','classes','prog','settings'].includes(pt))tab=pt;
+ if(pc&&classById(pc)){const d=pd||todayYmd();focus=occOfClassOn(pc,d)||null;if(!focus)pickClassFocus(pc)}
+ render();
+ if(p.get('saisir')==='1'&&focus)openEditor({classId:focus.slot.classId,date:focus.date,slotId:focus.slot.id});
+ if(!loaded)persistNow().catch(()=>{});
+ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(_){}
+}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+init();
+</script>
+</body>
+</html>

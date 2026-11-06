@@ -72,6 +72,7 @@ async function init(){
   catch(e){console.error('Données locales illisibles :',e);data=emptyData();blockSave=true;readFailed=true}
  }
  currentClassId=data.classes[0]?.id||null;
+ try{await edtAutoSelect('start')}catch(e){console.warn('Emploi du temps :',e)}
  applyTheme();render();
  if(readFailed)toast('Données locales illisibles : rien n’a été écrasé. Importe une sauvegarde pour repartir.',7000);
  // Migration automatique depuis l'ancien stockage localStorage (versions ≤ V14)
@@ -92,13 +93,20 @@ const SND_DEFS={
  malus:{wave:'buzz',notes:[[329.63,0,.20],[246.94,.16,.34]]},
  alert:{wave:'buzz',notes:[[880,0,.14],[659.25,.16,.14],[880,.32,.14],[659.25,.48,.14],[880,.64,.14],[659.25,.80,.14],[880,.96,.22]]}
 };
-let sndEls=null,sndUnlocked=false,actx=null;
 function sndSample(wave,ph){
  const t=ph%(2*Math.PI);
  if(wave==='buzz'){let v=0;for(let h=1;h<=7;h+=2)v+=Math.sin(h*t)/h;return v*.9} // carré adouci : audible sur les petits haut-parleurs
  return Math.sin(t)+.45*Math.sin(2*t)+.2*Math.sin(3*t); // timbre brillant
 }
-function synthWavURI(def){
+// ===== SONS V20 =====
+// Problème corrigé : après plusieurs bonus/malus, iPadOS « suspend » le contexte audio ou bloque l'élément <audio> réutilisé,
+// et plus rien ne sonnait jusqu'au redémarrage de l'appli.
+// Solution : 1) sons pré-calculés joués par le Web Audio (une nouvelle source à chaque son, aucun état à réinitialiser) ;
+// 2) le contexte audio est réveillé à CHAQUE toucher (pas seulement au premier) et recréé s'il est fermé ;
+// 3) une boucle de silence jouée par un élément <audio> place l'iPad en mode « lecture » : les sons passent même commutateur silencieux activé ;
+// 4) secours : un petit lot d'éléments <audio> utilisés à tour de rôle (jamais le même deux fois de suite).
+let actx=null,sndBufs=null,sndPool={},sndPoolIdx={},keepAlive=null,lastGesture=0;
+function sndRender(def){
  const total=Math.max(...def.notes.map(n=>n[1]+n[2]))+.08,N=Math.ceil(total*SND_RATE),buf=new Float32Array(N);
  def.notes.forEach(([f,st,du])=>{
   const i0=Math.floor(st*SND_RATE),len=Math.floor(du*SND_RATE);
@@ -108,62 +116,69 @@ function synthWavURI(def){
   }
  });
  let peak=0;for(let i=0;i<N;i++)peak=Math.max(peak,Math.abs(buf[i]));
- const k=peak?0.92/peak:1,bytes=new Uint8Array(44+N*2),dv=new DataView(bytes.buffer);
+ const k=peak?0.92/peak:1;for(let i=0;i<N;i++)buf[i]*=k;
+ return buf;
+}
+function wavURI(samples){
+ const N=samples.length,bytes=new Uint8Array(44+N*2),dv=new DataView(bytes.buffer);
  const w=(o,str)=>{for(let i=0;i<str.length;i++)dv.setUint8(o+i,str.charCodeAt(i))};
  w(0,'RIFF');dv.setUint32(4,36+N*2,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
  dv.setUint32(24,SND_RATE,true);dv.setUint32(28,SND_RATE*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,N*2,true);
- for(let i=0;i<N;i++)dv.setInt16(44+i*2,Math.max(-1,Math.min(1,buf[i]*k))*32767,true);
+ for(let i=0;i<N;i++)dv.setInt16(44+i*2,Math.max(-1,Math.min(1,samples[i]))*32767,true);
  let bin='';for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
  return 'data:audio/wav;base64,'+btoa(bin);
 }
-function ensureSounds(){
- if(sndEls)return sndEls;
- sndEls={};
- try{for(const k in SND_DEFS){const el=new Audio(synthWavURI(SND_DEFS[k]));el.preload='auto';el.volume=1;sndEls[k]=el}}catch(e){console.warn('Sons indisponibles :',e);sndEls={}}
- return sndEls;
+function synthWavURI(def){return wavURI(sndRender(def))}
+let sndSamples=null;
+function samplesFor(kind){if(!sndSamples){sndSamples={};for(const k in SND_DEFS)sndSamples[k]=sndRender(SND_DEFS[k])}return sndSamples[kind]||sndSamples.bonus}
+function getCtx(){
+ const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+ if(!actx||actx.state==='closed'){try{actx=new C();sndBufs=null}catch(e){actx=null;return null}}
+ if(!sndBufs){sndBufs={};for(const k in SND_DEFS){const s=samplesFor(k),b=actx.createBuffer(1,s.length,SND_RATE);b.getChannelData(0).set(s);sndBufs[k]=b}}
+ return actx;
+}
+function startKeepAlive(){
+ // boucle de silence (1 s) : garde la session audio en mode lecture et ignore le commutateur silencieux
+ try{
+  if(!keepAlive){keepAlive=new Audio(wavURI(new Float32Array(SND_RATE)));keepAlive.loop=true;keepAlive.setAttribute('playsinline','');keepAlive.preload='auto'}
+  if(keepAlive.paused){const p=keepAlive.play();if(p&&p.catch)p.catch(()=>{})}
+ }catch(_){}
 }
 function unlockAudio(){
- if(sndUnlocked)return;
- sndUnlocked=true;
- try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(_){}
- try{
-  const els=ensureSounds();
-  for(const k in els){const el=els[k];el.muted=true;const p=el.play();
-   if(p&&p.then)p.then(()=>{el.pause();el.currentTime=0;el.muted=false}).catch(()=>{el.muted=false;sndUnlocked=false});
-   else{el.pause();el.muted=false}}
- }catch(_){sndUnlocked=false}
- try{const C=window.AudioContext||window.webkitAudioContext;if(C){if(!actx||actx.state==='closed')actx=new C();if(actx.state!=='running')actx.resume()}}catch(_){}
+ // appelé à chaque toucher : réveille l'audio si iPadOS l'a mis en pause
+ lastGesture=Date.now();
+ startKeepAlive();
+ const ctx=getCtx();
+ if(ctx&&ctx.state!=='running'){try{ctx.resume().catch(()=>{})}catch(_){}}
 }
-['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
-function webAudioPlay(kind){
+['pointerdown','touchstart','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true,capture:true}));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&actx&&actx.state!=='running'){try{actx.resume().catch(()=>{})}catch(_){}}});
+function ctxPlay(kind){
+ const ctx=getCtx();if(!ctx)return false;
+ const go=()=>{try{const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=sndBufs[kind]||sndBufs.bonus;g.gain.value=1;src.connect(g);g.connect(ctx.destination);src.start(0);src.onended=()=>{try{src.disconnect();g.disconnect()}catch(_){}}}catch(e){console.warn('Web Audio :',e)}};
+ if(ctx.state==='running'){go();return true}
+ // contexte suspendu/interrompu : on tente de le réveiller ; s'il ne répond pas vite, on passe au secours
+ let done=false;
+ try{ctx.resume().then(()=>{if(!done){done=true;go()}}).catch(()=>{})}catch(_){}
+ setTimeout(()=>{if(!done){done=true;
+  // contexte bloqué : on le recrée pour les prochains sons et on joue celui-ci avec un élément <audio>
+  try{actx.close()}catch(_){};actx=null;sndBufs=null;elPlay(kind)}},250);
+ return true;
+}
+function elPlay(kind){
  try{
-  const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-  if(!actx||actx.state==='closed')actx=new C();
-  const go=()=>{
-   const def=SND_DEFS[kind]||SND_DEFS.bonus,now=actx.currentTime+.02;
-   def.notes.forEach(([f,st,du])=>{
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type=def.wave==='buzz'?'square':'triangle';o.frequency.value=f;
-    g.gain.setValueAtTime(.0001,now+st);g.gain.exponentialRampToValueAtTime(.35,now+st+.01);g.gain.exponentialRampToValueAtTime(.0001,now+st+du);
-    o.connect(g);g.connect(actx.destination);o.start(now+st);o.stop(now+st+du+.02);
-   });
-  };
-  if(actx.state==='running')go();else actx.resume().then(go).catch(()=>{});
- }catch(e){console.warn('Web Audio :',e)}
+  if(!sndPool[kind]){const uri=wavURI(samplesFor(kind));sndPool[kind]=[0,1,2,3].map(()=>{const a=new Audio(uri);a.preload='auto';a.setAttribute('playsinline','');return a});sndPoolIdx[kind]=0}
+  const a=sndPool[kind][sndPoolIdx[kind]];sndPoolIdx[kind]=(sndPoolIdx[kind]+1)%sndPool[kind].length;
+  try{a.pause();a.currentTime=0}catch(_){}
+  a.muted=false;a.volume=1;const p=a.play();if(p&&p.catch)p.catch(()=>{});
+ }catch(e){console.warn('Son :',e)}
 }
 function playSound(kind){
  if(data.soundOn===false)return;
- try{
-  const el=ensureSounds()[kind];
-  if(el){
-   el.muted=false;el.currentTime=0;
-   const p=el.play();
-   if(p&&p.catch)p.catch(()=>webAudioPlay(kind));
-   return;
-  }
- }catch(e){}
- webAudioPlay(kind);
+ startKeepAlive();
+ if(!ctxPlay(kind))elPlay(kind);
 }
+function webAudioPlay(kind){ctxPlay(kind)}
 function applyTheme(){let dark=data.theme==='dark'||(data.theme==='automatic'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',dark)}
 function currentClass(){return data.classes.find(c=>c.id===currentClassId)}
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -190,7 +205,7 @@ function openMore(){openModal(`<h2>Plus d’actions</h2><div class="pick"><butto
 function classView(){const c=currentClass(); if(!c)return `<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Tu peux créer une classe ou importer directement une base existante.</p><div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="addClass()">➕ Créer une classe</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="backup()">💾 Sauvegarder</button></div></div>`;
 let total=c.students.reduce((a,s)=>{const k=counts(s.id);return {b:a.b+k.bonus,m:a.m+k.malus}}, {b:0,m:0});
 const sizeLabel={s:'Petites',m:'Moyennes',l:'Grandes'}[sizeKey()];
-return `<div class="panel tight"><div class="row"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="addClass()">➕ Classe</button><button onclick="openClassSettings()">⚙️</button></div>
+return `${edtBanner()}<div class="panel tight"><div class="row"><select class="grow" onchange="currentClassId=this.value;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button onclick="addClass()">➕ Classe</button><button onclick="openClassSettings()">⚙️</button></div>
 <div class="chips"><span class="chip plus">+${total.b} bonus</span><span class="chip minus">−${total.m} malus</span><span class="chip">Solde ${total.b-total.m}</span><span class="chip">${c.students.length} élèves</span></div>
 <div class="row" style="margin-top:8px"><input class="grow" style="min-width:150px" placeholder="🔎 Rechercher un élève…" value="${esc(search)}" oninput="onSearch(this.value)"><button onclick="todayOnly=!todayOnly;render()">${todayOnly?'📅 Aujourd’hui':'📊 Total'}</button><button onclick="sort=sort==='name'?'bonus':sort==='bonus'?'malus':'name';render()">↕️ ${sort==='name'?'Nom':sort==='bonus'?'Bonus':'Malus'}</button><button onclick="cycleSize()">🖼️ ${sizeLabel}</button></div>
 <div class="row" style="margin-top:8px"><button class="primary" onclick="giveAll()">👥 Toute la classe</button><button class="primary" onclick="randomStudent()">🎲 Aléatoire</button><button onclick="undo()" ${lastEvents.length?'':'disabled'}>↩️ Annuler</button><button onclick="setTab('recap')">📊 Récap</button><button onclick="setTab('behaviors')">⭐ Bonus/malus</button><button onclick="openMore()">⋯ Plus</button></div></div>
@@ -204,7 +219,7 @@ function behaviorView(){return `<div class="panel"><div class="row"><div class="
 function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">💾 Base de données</div><p class="small">Sauvegarde toute la base de l’application dans un fichier JSON pour la transférer sur un autre appareil.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
 function reportsView(){
  const reports=data.alerts.slice().reverse();
- return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')} · ${a.streak||5} malus cumulés</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après chaque palier de 5 malus.</p></div>`}`;
+ return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${esc(dateFR(a.date))} · 5 malus consécutifs</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après chaque palier de 5 malus.</p></div>`}`;
 }
 
 let recapPeriod='total',recapDetail=false,recapSort='name',recapDir=1;
@@ -293,16 +308,17 @@ function checkAlert(studentId){
  }
  return null;
 }
+function dateFR(d){return new Date(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
 function showAlert(alert){
  if(!alert)return;
  if(!alert.viewed){alert.viewed=true;save();render();}
- const items=(alert.items||[]).map((x,i)=>`<div class="checkrow"><span style="font-size:20px">${x.emoji||'🔴'}</span><span class="grow"><b>${i+1}. ${esc(x.label)}</b><br><span class="small">${new Date(x.date).toLocaleString('fr-FR')}</span></span></div>`).join('');
+ const items=(alert.items||[]).map((x,i)=>`<div class="checkrow"><span style="font-size:20px">${x.emoji||'🔴'}</span><span class="grow"><b>${i+1}. ${esc(x.label)}</b><br><span class="small">${esc(dateFR(x.date))}</span></span></div>`).join('');
  openModal(`<div style="text-align:center;padding:8px 0 14px"><div style="font-size:42px">🚨</div><h2 style="margin:4px 0">Alerte : 5 malus atteints</h2><p><b>${esc(alert.studentName)}</b> · ${esc(alert.className)}</p><p class="small">Un rapport récapitulatif a été créé.</p></div><div class="panel" style="margin:0 0 12px"><div class="section-title">Rapport des 5 derniers malus</div>${items}</div><div class="row"><button class="primary grow" onclick="copyAlert('${alert.id}')">📋 Copier le rapport</button><button onclick="closeModal()">Fermer</button></div>`);
 }
 function alertBanner(){
  const recent=data.alerts.filter(a=>a.className===currentClass()?.name&&!a.viewed).slice(-3).reverse();
  if(!recent.length)return '';
- return `<div class="panel" style="border:2px solid rgba(220,38,38,.35);background:rgba(220,38,38,.06)"><div class="section-title">🚨 Alertes récentes</div>${recent.map(a=>`<div class="row" style="margin:6px 0"><span class="grow"><b>${esc(a.studentName)}</b> · ${new Date(a.date).toLocaleString('fr-FR')}</span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir le rapport</button></div>`).join('')}</div>`;
+ return `<div class="panel" style="border:2px solid rgba(220,38,38,.35);background:rgba(220,38,38,.06)"><div class="section-title">🚨 Alertes récentes</div>${recent.map(a=>`<div class="row" style="margin:6px 0"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(dateFR(a.date))}</span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir le rapport</button></div>`).join('')}</div>`;
 }
 function deleteAlert(id){
  const a=data.alerts.find(x=>x.id===id); if(!a)return;
@@ -312,7 +328,8 @@ function deleteAlert(id){
 }
 function copyAlert(id){
  const a=data.alerts.find(x=>x.id===id); if(!a)return;
- const text=`ALERTE — 5 MALUS ATTEINTS\nÉlève : ${a.studentName}\nClasse : ${a.className}\nDate : ${new Date(a.date).toLocaleString('fr-FR')}\n\n${(a.items||[]).map((x,i)=>`${i+1}. ${x.label} — ${new Date(x.date).toLocaleString('fr-FR')}`).join('\n')}`;
+ const items=(a.items||[]).slice(-5);
+ const text=`RAPPORT — 5 MALUS CONSÉCUTIFS\nÉlève : ${a.studentName}\nClasse : ${a.className}\nDate du rapport : ${dateFR(a.date)}\n\n${a.studentName} a reçu 5 malus. Voici le détail de ces 5 malus :\n\n${items.map((x,i)=>`${i+1}. ${x.label} — ${dateFR(x.date)}`).join('\n')}`;
  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(()=>toast('Rapport copié')).catch(()=>fallbackCopy(text)); else fallbackCopy(text);
 }
 function fallbackCopy(text){openModal(`<h2>Rapport</h2><textarea rows="12">${esc(text)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`);}
@@ -346,7 +363,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=14;
+ exportData._version=20;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -427,5 +444,82 @@ function restoreFile(file){
 function copyCSV(){const c=currentClass();if(!c)return;let out='Élève;Bonus;Malus;Solde\n';c.students.forEach(s=>{const k=counts(s.id);out+=`"${s.name.replaceAll('"','""')}";${k.bonus};${k.malus};${k.bonus-k.malus}\n`});navigator.clipboard?.writeText(out).then(()=>toast('CSV copié')).catch(()=>{openModal(`<h2>Bilan CSV</h2><textarea rows="12">${esc(out)}</textarea><button style="width:100%;margin-top:8px" onclick="closeModal()">Fermer</button>`)})}
 function wipe(){if(!confirm('Effacer toutes les classes, élèves et historiques ?'))return;data={classes:[],behaviors:DEFAULT_BEHAVIORS,events:[],alerts:[],theme:'automatic'};currentClassId=null;blockSave=false;save();render()}
 let toastTimer=null;function toast(msg,ms=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms)}
+// ===== V19 : LIEN AVEC LE MODULE « PROGRESSION » (emploi du temps, séance précédente, devoirs) =====
+// L'appli s'ouvre sur la classe du cours en cours (ou du prochain), d'après l'emploi du temps saisi dans progression.html.
+let edt=null,edtFocus=null,edtAutoKey='',edtManual=false;
+function edtPad(n){return String(n).padStart(2,'0')}
+function edtYmd(d){return d.getFullYear()+'-'+edtPad(d.getMonth()+1)+'-'+edtPad(d.getDate())}
+function edtParse(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function edtAdd(s,n){const d=edtParse(s);d.setDate(d.getDate()+n);return edtYmd(d)}
+function edtMin(t){const[h,m]=String(t).split(':').map(Number);return h*60+(m||0)}
+function edtT(t){const[h,m]=String(t).split(':');return Number(h)+'h'+m}
+function edtNorm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/^(\d)e(?=[a-z])/,'$1').replace(/^(\d)eme/,'$1')}
+function edtWeekKey(date){const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));const day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);const y=d.getUTCFullYear();const w=Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7);return{key:y+'-W'+edtPad(w),w}}
+function edtWeekType(s){const d=edtParse(s),k=edtWeekKey(d),c=edt.config;if(c.weekMap&&c.weekMap[k.key])return c.weekMap[k.key];const m=d.getMonth();if(m===7||(m===6&&d.getDate()>4))return 'F';return k.w%2===0?'Q1':'Q2'}
+function edtSlots(s){const c=edt.config,d=edtParse(s),wd=d.getDay();if(wd===0||wd===6||(c.feries||[]).includes(s))return[];const wt=edtWeekType(s);if(wt==='F')return[];return(c.slots||[]).filter(x=>x.day===wd&&(x.weeks==='all'||x.weeks===wt)&&edtClass(x.classId)).sort((a,b)=>edtMin(a.start)-edtMin(b.start))}
+function edtClass(id){return(edt.config.classes||[]).find(c=>c.id===id)}
+function edtEtab(id){return(edt.config.etabs||[]).find(e=>e.id===id)||{short:'',color:'#64748b'}}
+function edtNow(){
+ const t=edtYmd(new Date()),n=new Date(),m=n.getHours()*60+n.getMinutes(),l=edtSlots(t);
+ const before=Math.max(10,Number(edt.config.notify&&edt.config.notify.minutesBefore)||5);
+ let s=l.find(x=>m>=edtMin(x.start)-before&&m<edtMin(x.end));if(s)return{date:t,slot:s,live:m>=edtMin(s.start)};
+ s=l.find(x=>edtMin(x.start)>m);if(s)return{date:t,slot:s};
+ for(let k=1;k<=60;k++){const d=edtAdd(t,k),l2=edtSlots(d);if(l2.length)return{date:d,slot:l2[0]}}
+ return null;
+}
+function edtNeighbor(o,dir){const l=edtSlots(o.date),i=l.findIndex(x=>x.id===o.slot.id);if(i>=0&&l[i+dir])return{date:o.date,slot:l[i+dir]};for(let k=1;k<=60;k++){const d=edtAdd(o.date,dir*k),l2=edtSlots(d);if(l2.length)return{date:d,slot:dir>0?l2[0]:l2[l2.length-1]}}return null}
+function edtSuiviClass(pc){
+ if(!pc)return null;
+ if(pc.suiviId){const c=data.classes.find(x=>x.id===pc.suiviId);if(c)return c}
+ const keys=[edtNorm(pc.name),edtNorm(pc.label)];
+ return data.classes.find(c=>keys.includes(edtNorm(c.name)))||data.classes.find(c=>{const n=edtNorm(c.name);return keys.some(k=>k.length>2&&(n.startsWith(k)||k.startsWith(n)))})||null;
+}
+function edtLoad(){return new Promise(res=>{
+ let r;try{r=indexedDB.open('progression-classe-db')}catch(e){return res(null)}
+ r.onupgradeneeded=()=>{try{r.transaction.abort()}catch(_){}res(null)};
+ r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('kv')){db.close();return res(null)}const q=db.transaction('kv','readonly').objectStore('kv').get('data');q.onsuccess=()=>{db.close();res(q.result||null)};q.onerror=()=>{db.close();res(null)}};
+ r.onerror=()=>res(null);
+})}
+async function edtAutoSelect(reason){
+ try{edt=await edtLoad()}catch(e){edt=null}
+ if(!edt||!edt.config)return;
+ const p=new URLSearchParams(location.search);
+ if(reason==='start'&&p.get('classe')){
+  const pc=edtClass(p.get('classe'));
+  if(pc){const t=edtYmd(new Date());const sl=edtSlots(t).find(x=>x.classId===pc.id);edtFocus=sl?{date:t,slot:sl}:{date:t,slot:{id:'v',classId:pc.id,start:'',end:''}};const sc=edtSuiviClass(pc);if(sc)currentClassId=sc.id;edtManual=true;try{history.replaceState(null,'',location.pathname)}catch(_){}return}
+ }
+ const o=edtNow();if(!o)return;
+ const key=o.date+'|'+o.slot.id;
+ if(reason==='start'||key!==edtAutoKey){
+  edtAutoKey=key;edtFocus=o;edtManual=false;
+  const sc=edtSuiviClass(edtClass(o.slot.classId));if(sc)currentClassId=sc.id;
+  if(reason!=='start'&&tab==='class'&&!document.getElementById('modal').classList.contains('show'))render();
+ }
+}
+function edtMove(dir){if(!edtFocus||!edtFocus.slot.start)return;const n=edtNeighbor(edtFocus,dir);if(!n)return toast('Aucun autre cours');edtFocus=n;edtManual=true;const sc=edtSuiviClass(edtClass(n.slot.classId));if(sc)currentClassId=sc.id;else toast('Classe non reliée : choisis-la dans Progression › Réglages › Classes',4500);render()}
+function edtBack(){edtAutoKey='';edtAutoSelect('resume').then(render)}
+function edtBanner(){
+ if(!edt||!edtFocus)return `<div class="panel tight noprint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small grow">📅 Relie l’emploi du temps pour ouvrir automatiquement la bonne classe et voir la séance précédente.</span><button onclick="location.href='progression.html'">📅 Progression</button></div>`;
+ const pc=edtClass(edtFocus.slot.classId);if(!pc)return '';
+ const e=edtEtab(pc.etab),d=edtFocus.date,t=edtYmd(new Date());
+ const ses=(edt.sessions||[]).filter(s=>s.classId===pc.id&&!s.skipped);
+ const prev=ses.filter(s=>s.date<d).sort((a,b)=>a.date<b.date?1:-1)[0];
+ let due=ses.filter(s=>s.devoirsPour===d&&s.date<d&&(s.devoirs||'').trim());
+ if(!due.length&&prev&&(prev.devoirs||'').trim()&&(!prev.devoirsPour||prev.devoirsPour>=d))due=[prev];
+ const sc=edtSuiviClass(pc);
+ const when=d===t?(edtFocus.live?'● En cours':'Aujourd’hui'):edtParse(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'});
+ const short=s=>esc(String(s||'').length>160?String(s).slice(0,157)+'…':s||'');
+ return `<div class="panel tight noprint" style="border-left:6px solid ${e.color}">
+ <div class="row" style="justify-content:space-between"><button onclick="edtMove(-1)" ${edtFocus.slot.start?'':'disabled'}>◀ Cours précédent</button><div style="text-align:center"><div style="font-weight:800;font-size:17px">${esc(pc.label)} <span class="small">${esc(e.short)}</span></div><div class="small">${esc(when)}${edtFocus.slot.start?' · '+edtT(edtFocus.slot.start)+'–'+edtT(edtFocus.slot.end):''}${edtManual?` · <a href="#" onclick="edtBack();return false">revenir au cours actuel</a>`:''}</div></div><button onclick="edtMove(1)" ${edtFocus.slot.start?'':'disabled'}>Cours suivant ▶</button></div>
+ ${sc?'':`<div class="small" style="margin-top:6px;color:var(--bad)">Cette classe n’est pas reliée à une classe de Suivi : Progression › Réglages › Établissements & classes.</div>`}
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-top:8px">
+  <div style="border:1px solid var(--line);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">⏮ SÉANCE PRÉCÉDENTE${prev?' · '+esc(edtParse(prev.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})):''}</div><div style="margin-top:3px">${prev?(prev.title?'<b>'+esc(prev.title)+'</b> — ':'')+short(prev.contenu):'<span class="small">Aucune séance saisie</span>'}</div></div>
+  <div style="border:1px solid rgba(79,70,229,.35);background:rgba(79,70,229,.07);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">📒 TRAVAIL POUR CETTE SÉANCE</div><div style="margin-top:3px">${due.length?due.map(s=>short(s.devoirs)).join('<br>'):'<span class="small">Rien de prévu</span>'}</div></div>
+ </div>
+ <div class="row" style="margin-top:8px"><button class="primary" onclick="location.href='progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}&saisir=1'">🎤 Fin de cours : dicter la séance</button><button onclick="location.href='progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}'">📅 Détails & historique</button></div>
+ </div>`;
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')edtAutoSelect('resume')});
+setInterval(()=>{if(document.visibilityState==='visible')edtAutoSelect('tick')},60000);
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 init();

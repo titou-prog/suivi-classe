@@ -1,3 +1,25 @@
+Suivi de classe — PWA iPad V20
+
+Corrections V20 :
+- Sons bonus/malus : ne s'arrêtent plus après plusieurs attributions (audio réveillé à chaque toucher, nouvelle source à chaque son,
+  boucle de silence pour passer outre le commutateur silencieux, secours par éléments audio en rotation).
+- Rapport des 5 malus : toujours « 5 malus » (plus le décompte total), dates seules sans l'heure, phrase explicative claire pour les familles.
+
+V19
+
+Nouveautés V19 : module « Progression des classes » (progression.html)
+- Emploi du temps Martel (semaines Q1/Q2) et Vayrac pré-rempli, calendrier 2026-2027 (vacances, jours fériés).
+- Suivi de classe s'ouvre sur la classe du cours en cours (ou du suivant), avec la séance précédente et le travail à faire.
+  Boutons ◀ Cours précédent / Cours suivant ▶ si l'emploi du temps a changé.
+- Fin de cours : dictée, reformulation par Claude (clé API dans Progression › Réglages), séquence, travail à faire et date « Pour le » calculée.
+- Fenêtre « Reporter dans Pronote » : titre, contenu et travail à copier, case « fait dans Pronote ».
+- Semaine, historique par classe, progressions par classe ou par niveau (CSV, impression/PDF), archives annuelles et fil conducteur.
+- Export des cours vers le Calendrier (.ics) avec alerte avant chaque cours.
+
+Mise à jour : déposer index.html, app.js, sw.js, progression.html et README.txt à la racine du dépôt (remplacer les anciens).
+Sur l'iPad : fermer complètement l'application puis la rouvrir deux fois (la barre latérale doit afficher la dernière version).
+
+— Historique —
 Suivi de classe — PWA iPad V18
 
 Nouveautés V18 :
