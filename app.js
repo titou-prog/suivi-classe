@@ -358,12 +358,12 @@ function deleteClass(){if(!confirm('Supprimer définitivement cette classe ?'))r
 function behaviorForm(id){const b=id?data.behaviors.find(x=>x.id===id):null;openModal(`<h2>${b?'Modifier':'Nouveau'} comportement</h2><select id="bType"><option value="bonus" ${b?.type==='bonus'?'selected':''}>Bonus</option><option value="malus" ${b?.type==='malus'?'selected':''}>Malus</option></select><input id="bEmoji" value="${esc(b?.emoji||'⭐')}" placeholder="Emoji"><input id="bLabel" value="${esc(b?.label||'')}" placeholder="Libellé"><button class="primary" style="width:100%;margin-top:8px" onclick="saveBehavior('${id||''}')">Enregistrer</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
 function saveBehavior(id){const type=document.getElementById('bType').value,emoji=document.getElementById('bEmoji').value.trim()||'⭐',label=document.getElementById('bLabel').value.trim();if(!label)return toast('Indique un libellé');if(id){const b=data.behaviors.find(x=>x.id===id);Object.assign(b,{type,emoji,label})}else data.behaviors.push({id:uid(),type,emoji,label});save();closeModal();render()}
 function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’historique déjà enregistré sera conservé.'))return;data.behaviors=data.behaviors.filter(b=>b.id!==id);save();render()}
-function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><button style="width:100%;margin:6px 0 10px" onclick="lockSettings()">🔐 Mot de passe & mode classe${data.lock&&data.lock.hash?' (activé)':''}</button><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
+function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><button style="width:100%;margin:6px 0" onclick="checkUpdate(true)">🔄 Rechercher une mise à jour (version ${APP_VERSION})</button><button style="width:100%;margin:6px 0 10px" onclick="lockSettings()">🔐 Mot de passe & mode classe${data.lock&&data.lock.hash?' (activé)':''}</button><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=23;
+ exportData._version=24;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -594,5 +594,30 @@ async function regenRecovery(){if(!confirm('Créer un nouveau code de secours ? 
 async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s’ouvrira sans protection.'))return;delete data.lock;if(await persistLock()){closeModal();toast('Mot de passe supprimé')}}
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
+// ===== V24 : détection des mises à jour =====
+const APP_VERSION='V24';
+async function checkUpdate(manual){
+ try{
+  const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
+  const v=(await r.json()).version;
+  if(v&&v!==APP_VERSION){showUpdateBar(v);return}
+  if(manual)toast('Tu as la dernière version ('+APP_VERSION+') ✅');
+ }catch(e){if(manual)toast('Vérification impossible (pas de connexion ?)')}
+}
+function showUpdateBar(v){
+ if(document.getElementById('updBar'))return;
+ const d=document.createElement('div');d.id='updBar';d.className='noprint';
+ d.style.cssText='position:fixed;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top));z-index:9000;background:#4f46e5;color:#fff;border-radius:16px;padding:10px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25);font-weight:700';
+ d.innerHTML='<span style="flex:1">🆕 Nouvelle version '+v+' disponible</span><button style="background:#fff;color:#4f46e5;border:0" onclick="applyUpdate()">Mettre à jour</button>';
+ document.body.appendChild(d);
+}
+async function applyUpdate(){
+ try{flushSave()}catch(_){}
+ try{const reg=await navigator.serviceWorker?.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage('skip')}}catch(_){}
+ try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(_){} // vide seulement les fichiers de l'appli, jamais les données élèves
+ location.replace(location.pathname+'?v='+Date.now());
+}
+setTimeout(()=>checkUpdate(false),2500);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate(false)});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 init().catch(e=>console.error(e)).then(()=>{Verrou.boot(data.lock,{onChange:()=>{try{updateLockUI()}catch(_){}},afterUnlock:r=>{if(r&&r.recovery){toast('Code de secours accepté : choisis un nouveau mot de passe',5000);changeLockPw()}}})});

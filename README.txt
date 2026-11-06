@@ -1,4 +1,9 @@
-Suivi de classe — PWA iPad V23
+Suivi de classe — PWA iPad V24
+
+V24 : numéro de version affiché sous le titre ; bandeau « Nouvelle version disponible » + bouton « Rechercher une mise à jour » dans ⚙️ Réglages.
+À chaque nouvelle version, modifier aussi version.json.
+
+V23
 
 V23 : bouton ⚙️ Réglages en haut de l’écran (il n’était visible que sur grand écran) ; « 🔐 Mot de passe » aussi sur la page Données.
 
