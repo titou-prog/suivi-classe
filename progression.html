@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P4';
+const APP_VERSION='P5';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -218,7 +218,7 @@ function defaultConfig(){
   weekMap:buildWeekMap2026(),
   feries:['2026-11-11','2027-03-29','2027-05-06','2027-05-07','2027-05-17'],
   sequences:[],
-  ai:{provider:'claude',key:'',model:'claude-haiku-5-5',autoTitle:true},
+  ai:{provider:'claude',key:'',model:'claude-haiku-5-5',geminiKey:'',geminiModel:'gemini-flash-latest',autoTitle:true},
   pronote:{prefixSeq:false,openAfterSave:true},
   notify:{minutesBefore:5,inApp:true},
   ics:{},
@@ -699,7 +699,7 @@ function openEditor(p){
  const v=s||draft||{};
  editing={id:s?s.id:null,classId,date,slotId:slot?slot.id:(s?s.slotId:''),start,pourAuto:!(s&&s.devoirsPour),pourDefault:nx?nx.date:''};
  const seqSel=v.sequenceId!==undefined?v.sequenceId:lastSeqOf(classId);
- const aiReady=cfg.ai.provider==='claude'&&cfg.ai.key;
+ const aiReady=aiIsReady();
  openModal(`
  <div class="row between"><div><h2>${etabDot(c.etab)} ${esc(c.label)}</h2><div class="small">${esc(etabById(c.etab).name)}${start?' · '+fmtT(start):''} · séance n°${rankOf(classId,date)}</div></div><button onclick="closeEditor()">✕</button></div>
  <div class="row" style="margin-top:6px"><div class="grow" style="min-width:160px"><label class="lbl">Date de la séance</label><input id="eDate" type="date" value="${date}" onchange="editorDateChanged(this.value)"></div>
@@ -709,10 +709,10 @@ function openEditor(p){
   <div class="row between"><b>🎙️ Dictée de fin de cours</b><span class="small">Dicte tout d’un coup : ce qu’on a fait, puis les devoirs</span></div>
   <div class="row" style="margin-top:8px;align-items:stretch;flex-wrap:nowrap"><textarea id="eDictee" rows="4" class="grow" placeholder="Ex. : « On a écouté le Boléro de Ravel, repéré l’ostinato et le crescendo, commencé le commentaire d’écoute. Pour la prochaine fois, apprendre la fiche sur l’orchestre. »" oninput="saveDraft()">${esc(v.dictee||'')}</textarea><button class="mic" onclick="dictate('eDictee',this)">🎤</button></div>
   <div class="row" style="margin-top:8px">
-   <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec Claude</button>
+   <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec ${aiName()}</button>
    <button onclick="localSplit()">✂️ Répartir sans IA</button>
   </div>
-  ${aiReady?'':'<div class="small" style="margin-top:6px">Pour activer la reformulation : Réglages › Dictée & IA › colle ta clé Claude.</div>'}
+  ${aiReady?'':'<div class="small" style="margin-top:6px">Pour activer la reformulation : Réglages › Dictée & IA › colle ta clé Gemini ou Claude.</div>'}
  </div>
  <label class="lbl">Titre (Pronote)</label><input id="eTitre" value="${esc(v.title||'')}" placeholder="Ex. : Le Boléro de Ravel — ostinato et crescendo" oninput="saveDraft()">
  <label class="lbl">📘 Ce qu’on a fait en cours (contenu)</label>
@@ -809,15 +809,15 @@ async function aiReformulate(){
  if(!raw){const a=g('eContenu').value.trim(),b=g('eDevoirs').value.trim();raw=a+(b?'\nDevoirs : '+b:'')}
  if(!raw)return toast('Dicte d’abord ce que vous avez fait');
  const c=classById(editing.classId);const seq=seqById(g('eSeq').value);
- const btn=g('aiBtn');btn.disabled=true;btn.textContent='⏳ Claude reformule…';
+ const btn=g('aiBtn');btn.disabled=true;btn.textContent='⏳ '+aiName()+' reformule…';
  try{
-  const r=await callClaude(raw,{classe:c.label,niveau:c.niveau,sequence:seq?seq.name:'',date:fmtLong(g('eDate').value||editing.date)});
+  const r=await callAI(raw,{classe:c.label,niveau:c.niveau,sequence:seq?seq.name:'',date:fmtLong(g('eDate').value||editing.date)});
   if(r.titre)g('eTitre').value=r.titre;
   if(r.contenu)g('eContenu').value=r.contenu;
   g('eDevoirs').value=r.devoirs||'';
   saveDraft();toast('Reformulation prête ✨ — relis avant d’enregistrer',3500);
- }catch(e){console.error(e);toast('Claude : '+e.message,7000)}
- finally{btn.disabled=false;btn.textContent='✨ Reformuler avec Claude'}
+ }catch(e){console.error(e);toast(aiName()+' : '+e.message,7000)}
+ finally{btn.disabled=false;btn.textContent='✨ Reformuler avec '+aiName()}
 }
 function aiSystemPrompt(){return `Tu aides un professeur d'éducation musicale de collège (France, cycle 4) à remplir le cahier de textes Pronote à partir d'une dictée vocale de fin de cours.
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour : {"titre":"…","contenu":"…","devoirs":"…"}
@@ -825,6 +825,25 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour : {"titre":"…
 - "contenu" : ce qui a été fait, en 2 à 5 phrases courtes et factuelles, lisibles par les élèves et les parents (style cahier de textes : « Écoute de… », « Analyse de… », « Apprentissage du chant… »). Pas de « nous » ni de « on ».
 - "devoirs" : le travail à faire pour la prochaine séance, à l'infinitif (« Apprendre… », « Terminer… »). Chaîne vide s'il n'y a rien.
 Garde fidèlement les faits dictés, n'invente rien. Corrige les erreurs de reconnaissance vocale, surtout sur les noms d'œuvres, de compositeurs et le vocabulaire musical (ostinato, timbre, nuance, tempo, forme rondo, etc.). Orthographe et typographie françaises soignées.`}
+function aiName(){return cfg.ai.provider==='gemini'?'Gemini':'Claude'}
+function aiIsReady(){return cfg.ai.provider==='gemini'?!!(cfg.ai.geminiKey||'').trim():!!(cfg.ai.key||'').trim()}
+function aiUserMsg(raw,ctx){return `Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`}
+function aiParse(txt){const mm=String(txt||'').match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');const o=JSON.parse(mm[0]);return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim()}}
+function callAI(raw,ctx){return cfg.ai.provider==='gemini'?callGemini(raw,ctx):callClaude(raw,ctx)}
+async function callGemini(raw,ctx){
+ const key=(cfg.ai.geminiKey||'').trim();if(!key)throw new Error('clé Gemini manquante (Réglages)');
+ const model=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
+ let res;
+ try{
+  res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},
+   body:JSON.stringify({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:[{text:aiUserMsg(raw,ctx)}]}],generationConfig:{responseMimeType:'application/json',temperature:0.3,maxOutputTokens:1200}})});
+ }catch(e){throw new Error('pas de connexion Internet ?')}
+ const j=await res.json().catch(()=>({}));
+ if(!res.ok){const m=j&&j.error&&j.error.message||('HTTP '+res.status);throw new Error(res.status===400&&/API key/i.test(m)?'clé refusée — vérifie-la dans les Réglages':res.status===403?'clé refusée ou API non activée':res.status===404?'modèle introuvable ('+model+') — change-le dans les Réglages':res.status===429?'limite gratuite atteinte, réessaie dans une minute':m)}
+ const txt=((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+ if(!txt)throw new Error('réponse vide (contenu bloqué ?)');
+ return aiParse(txt);
+}
 async function callClaude(raw,ctx){
  const key=(cfg.ai.key||'').trim();if(!key)throw new Error('clé API manquante (Réglages)');
  const user=`Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`;
@@ -842,7 +861,7 @@ async function callClaude(raw,ctx){
 }
 async function testAI(){
  const el=document.getElementById('aiTest');el.textContent='Test en cours…';
- try{const r=await callClaude('on a écouté le bolero de ravel et repéré lostinato. pour la prochaine fois apprendre la fiche',{classe:'4e test',niveau:'4e',sequence:'',date:fmtLong(todayYmd())});el.innerHTML='✅ Ça marche : <b>'+esc(r.titre)+'</b> — '+esc(r.contenu)+(r.devoirs?' / Devoirs : '+esc(r.devoirs):'')}
+ try{const r=await callAI('on a écouté le bolero de ravel et repéré lostinato. pour la prochaine fois apprendre la fiche',{classe:'4e test',niveau:'4e',sequence:'',date:fmtLong(todayYmd())});el.innerHTML='✅ Ça marche : <b>'+esc(r.titre)+'</b> — '+esc(r.contenu)+(r.devoirs?' / Devoirs : '+esc(r.devoirs):'')}
  catch(e){el.textContent='❌ '+e.message}
 }
 
@@ -998,11 +1017,18 @@ function settingsView(){
  const days=[1,2,3,4,5];
  const aut=automationList();
  return `
- <details class="set" open><summary>🎙️ Dictée & reformulation par Claude</summary><div class="in">
-  <p class="small">La clé reste uniquement sur cet iPad. Crée-la sur console.anthropic.com › API Keys. Chaque reformulation coûte une fraction de centime.</p>
-  <label class="lbl">Clé API Claude</label><input type="password" value="${esc(cfg.ai.key)}" placeholder="sk-ant-…" autocomplete="off" onchange="cfg.ai.key=this.value.trim();cfg.ai.provider='claude';save()">
+ <details class="set" open><summary>🎙️ Dictée & reformulation par IA</summary><div class="in">
+  <p class="small">Les clés restent uniquement sur cet iPad.</p>
+  <label class="lbl">IA utilisée</label><select onchange="cfg.ai.provider=this.value;save();render()"><option value="gemini" ${cfg.ai.provider==='gemini'?'selected':''}>Gemini (Google) — offre gratuite possible</option><option value="claude" ${cfg.ai.provider==='claude'?'selected':''}>Claude (Anthropic) — crédits payants</option></select>
+  ${cfg.ai.provider==='gemini'?`
+  <label class="lbl">Clé API Gemini</label><input type="password" value="${esc(cfg.ai.geminiKey)}" placeholder="AIza…" autocomplete="off" onchange="cfg.ai.geminiKey=this.value.trim();save()">
+  <div class="small">Crée-la gratuitement sur <b>aistudio.google.com</b> › Get API key (compte Google). Indépendante de l’abonnement Gemini.</div>
+  <label class="lbl">Modèle</label><input value="${esc(cfg.ai.geminiModel)}" onchange="cfg.ai.geminiModel=this.value.trim()||'gemini-flash-latest';save()">
+  <div class="small">Par défaut : gemini-flash-latest (suit toujours le dernier modèle Flash). Si Google le refuse, essaie gemini-flash-lite-latest.</div>`:`
+  <label class="lbl">Clé API Claude</label><input type="password" value="${esc(cfg.ai.key)}" placeholder="sk-ant-…" autocomplete="off" onchange="cfg.ai.key=this.value.trim();save()">
+  <div class="small">Crée-la sur platform.claude.com › API Keys. Nécessite des crédits (Billing › Buy credits).</div>
   <label class="lbl">Modèle</label><input value="${esc(cfg.ai.model)}" onchange="cfg.ai.model=this.value.trim()||'claude-haiku-5-5';save()">
-  <div class="small">Par défaut : claude-haiku-5-5 (rapide, économique). Tu peux mettre un modèle plus puissant si tu le souhaites.</div>
+  <div class="small">Par défaut : claude-haiku-5-5 (rapide, économique).</div>`}
   <label class="row" style="margin-top:10px"><input type="checkbox" style="width:22px;height:22px" ${cfg.ai.autoTitle?'checked':''} onchange="cfg.ai.autoTitle=this.checked;save()"> Créer un titre automatiquement si je n’en mets pas</label>
   <div class="row" style="margin-top:10px"><button onclick="testAI()">🧪 Tester la clé</button><span class="small grow" id="aiTest"></span></div>
   <p class="small" style="margin-top:12px">🎤 <b>Dicter sur iPad</b> : touche le micro du clavier. Le bouton 🎤 à côté des zones utilise la reconnaissance de Safari quand elle est disponible, sinon il ouvre le clavier.</p>
