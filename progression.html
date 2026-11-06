@@ -171,7 +171,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P2';
+const APP_VERSION='P3';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -325,7 +325,7 @@ function slotsOn(s,withCancelled){
  for(const e of cfg.etabs){
   if(icsCovers(e.id,s)){
    for(const v of cfg.ics[e.id].events){if(v.d!==s||!classById(v.c))continue;if(v.x&&!withCancelled)continue;
-    out.push({id:'ics~'+s+'~'+v.s+'~'+v.c,day:wd,start:v.s,end:v.e,classId:v.c,weeks:'all',ics:true,kind:v.k||'',cancelled:!!v.x})}
+    out.push({id:'ics~'+s+'~'+v.s+'~'+v.c,day:wd,start:v.s,end:v.e,classId:v.c,weeks:'all',ics:true,kind:v.k||'',room:v.r||'',cancelled:!!v.x})}
   }else if(!staticOff){
    for(const x of cfg.slots){const c=classById(x.classId);if(c&&c.etab===e.id&&x.day===wd&&(x.weeks==='all'||x.weeks===wt))out.push(x)}
   }
@@ -418,7 +418,7 @@ function icsBuild(parsed,etab){
   const cancelled=v.status==='CANCELLED'||/annul|supprim/i.test(v.cat+' '+v.sum);
   const c=icsMatchClass(v.sum,etab);
   const cat=v.cat.replace(/^Cours\s*-\s*/i,'').replace(/^Cours$/i,'');
-  if(c){events.push({d:v.st.d,s:v.st.t,e:v.en.t||v.st.t,c,k:cat,x:cancelled?1:0});n++}
+  if(c){events.push({d:v.st.d,s:v.st.t,e:v.en.t||v.st.t,c,k:cat,x:cancelled?1:0,r:v.loc||''});n++}
   else{const cn=icsClassName(v.sum);if(cn)unknown[cn]=(unknown[cn]||0)+1;info.push({d:v.st.d,s:v.st.t,e:v.en.t||v.st.t,label:v.sum,k:cat,x:cancelled?1:0})}
  }
  const ds=events.map(e=>e.d).sort();
@@ -651,7 +651,7 @@ function weekView(){
    const c=classById(sl.classId),s=sessFor(c.id,d),past=d<t||(d===t&&toMin(sl.end)<=m);
    if(sl.cancelled){h+=`<div class="slot" style="border-left-color:${etabById(c.etab).color};opacity:.55;background:var(--bg)"><b style="text-decoration:line-through">${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div><div class="st">⛔ annulé (Pronote)</div></div>`;continue}
    const st=s?(s.skipped?'⛔ pas eu cours':s.pronote?'✅ saisi · Pronote ✓':'✅ saisi · 📋 Pronote à faire'):(past?'⏳ à saisir':'');
-   h+=`<button class="slot" style="border-left-color:${etabById(c.etab).color}" onclick="openEditor({classId:'${c.id}',date:'${d}',slotId:'${sl.id}'})"><b>${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div>${sl.kind?`<div class="st" style="color:var(--warn)">↪ ${esc(sl.kind)}</div>`:''}${st?`<div class="st">${st}</div>`:''}${s&&s.title?`<div class="t">${esc(s.title.slice(0,40))}</div>`:''}</button>`;
+   h+=`<button class="slot" style="border-left-color:${etabById(c.etab).color}" onclick="openEditor({classId:'${c.id}',date:'${d}',slotId:'${sl.id}'})"><b>${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div>${sl.kind?`<div class="st" style="color:var(--warn)">↪ ${esc(sl.kind)}${/salle/i.test(sl.kind)&&sl.room?' : '+esc(sl.room):''}</div>`:''}${st?`<div class="st">${st}</div>`:''}${s&&s.title?`<div class="t">${esc(s.title.slice(0,40))}</div>`:''}</button>`;
   }
   if(!off){const wd=parseYmd(d).getDay(),wt=weekTypeOf(d);for(const g of cfg.slots){const c=classById(g.classId);if(!c||!icsCovers(c.etab,d)||g.day!==wd||!(g.weeks==='all'||g.weeks===wt))continue;if(list.some(x=>x.classId===g.classId))continue;h+=`<div class="slot" style="border-left-color:${etabById(c.etab).color};opacity:.55;background:var(--bg);min-height:0"><b style="text-decoration:line-through">${esc(c.label)}</b><div class="t">${fmtT(g.start)} · pas de cours ce jour (Pronote)</div></div>`}}
   for(const v of infos)h+=`<div class="slot" style="border-left-color:#94a3b8;background:var(--bg);min-height:0"><b style="font-size:13px">${esc(v.label)}</b><div class="t">${fmtT(v.s)}–${fmtT(v.e)} · ${esc(etabById(v.etab).short)}${v.k?' · '+esc(v.k):''}</div></div>`;
