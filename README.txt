@@ -1,4 +1,13 @@
-Suivi de classe — PWA iPad V20
+Suivi de classe — PWA iPad V21
+
+Nouveautés V21 :
+- Progression › Réglages › « Emploi du temps Pronote (iCal) » : import du fichier .ics de Pronote (établissement reconnu automatiquement).
+  Sur la période couverte, il remplace l'emploi du temps type : cours déplacés, cours supprimés, cours exceptionnels, vacances, jours fériés.
+- Semaine : cours déplacés signalés, cours supprimés barrés, événements exceptionnels (DNB blanc…) affichés.
+- Suivi de classe s'ouvre aussi sur la bonne classe quand un cours a été déplacé.
+- Champ « lien iCal » avec actualisation automatique, si Pronote autorise la lecture directe.
+
+V20
 
 Corrections V20 :
 - Sons bonus/malus : ne s'arrêtent plus après plusieurs attributions (audio réveillé à chaque toucher, nouvelle source à chaque son,

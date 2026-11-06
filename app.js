@@ -363,7 +363,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=20;
+ exportData._version=21;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -456,7 +456,20 @@ function edtT(t){const[h,m]=String(t).split(':');return Number(h)+'h'+m}
 function edtNorm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/^(\d)e(?=[a-z])/,'$1').replace(/^(\d)eme/,'$1')}
 function edtWeekKey(date){const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));const day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);const y=d.getUTCFullYear();const w=Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7);return{key:y+'-W'+edtPad(w),w}}
 function edtWeekType(s){const d=edtParse(s),k=edtWeekKey(d),c=edt.config;if(c.weekMap&&c.weekMap[k.key])return c.weekMap[k.key];const m=d.getMonth();if(m===7||(m===6&&d.getDate()>4))return 'F';return k.w%2===0?'Q1':'Q2'}
-function edtSlots(s){const c=edt.config,d=edtParse(s),wd=d.getDay();if(wd===0||wd===6||(c.feries||[]).includes(s))return[];const wt=edtWeekType(s);if(wt==='F')return[];return(c.slots||[]).filter(x=>x.day===wd&&(x.weeks==='all'||x.weeks===wt)&&edtClass(x.classId)).sort((a,b)=>edtMin(a.start)-edtMin(b.start))}
+function edtSlots(s){
+ // même logique que progression.html : l'iCal Pronote (s'il est importé) remplace l'emploi du temps type sur sa période
+ const c=edt.config,d=edtParse(s),wd=d.getDay();if(wd===0||wd===6)return[];
+ const wt=edtWeekType(s),staticOff=wt==='F'||(c.feries||[]).includes(s),out=[],ics=c.ics||{};
+ for(const e of(c.etabs||[])){
+  const x=ics[e.id];
+  if(x&&Array.isArray(x.events)&&x.from&&s>=x.from&&s<=x.to){
+   x.events.forEach(v=>{if(v.d===s&&!v.x&&edtClass(v.c))out.push({id:'ics~'+s+'~'+v.s+'~'+v.c,day:wd,start:v.s,end:v.e,classId:v.c,weeks:'all'})});
+  }else if(!staticOff){
+   (c.slots||[]).forEach(x=>{const k=edtClass(x.classId);if(k&&k.etab===e.id&&x.day===wd&&(x.weeks==='all'||x.weeks===wt))out.push(x)});
+  }
+ }
+ return out.sort((a,b)=>edtMin(a.start)-edtMin(b.start));
+}
 function edtClass(id){return(edt.config.classes||[]).find(c=>c.id===id)}
 function edtEtab(id){return(edt.config.etabs||[]).find(e=>e.id===id)||{short:'',color:'#64748b'}}
 function edtNow(){

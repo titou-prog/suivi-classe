@@ -171,7 +171,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P1';
+const APP_VERSION='P2';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -219,6 +219,7 @@ function defaultConfig(){
   ai:{provider:'claude',key:'',model:'claude-haiku-5-5',autoTitle:true},
   pronote:{prefixSeq:false,openAfterSave:true},
   notify:{minutesBefore:5,inApp:true},
+  ics:{},
   theme:'automatic'
  };
 }
@@ -274,6 +275,7 @@ function normalizeState(x){
  c.ai=Object.assign(defaultConfig().ai,c.ai||{});c.pronote=Object.assign(defaultConfig().pronote,c.pronote||{});c.notify=Object.assign(defaultConfig().notify,c.notify||{});
  ['etabs','classes','slots','sequences','feries'].forEach(k=>{if(!Array.isArray(c[k]))c[k]=defaultConfig()[k]});
  if(!c.weekMap||typeof c.weekMap!=='object')c.weekMap={};
+ if(!c.ics||typeof c.ics!=='object')c.ics={};
  return out;
 }
 async function loadSuiviClasses(){
@@ -314,15 +316,25 @@ function weekTypeOf(s){
  const m=d.getMonth();if(m===7||(m===6&&d.getDate()>4))return 'F';
  return isoWeek(d).week%2===0?'Q1':'Q2';
 }
-function isOffDay(s){const d=parseYmd(s);const wd=d.getDay();return wd===0||wd===6||weekTypeOf(s)==='F'||cfg.feries.includes(s)}
-function offReason(s){const d=parseYmd(s);if(d.getDay()===0||d.getDay()===6)return 'Week-end';if(weekTypeOf(s)==='F')return 'Vacances';if(cfg.feries.includes(s))return 'Jour férié / sans cours';return ''}
-function slotsOn(s){
- if(isOffDay(s))return[];
- const wd=parseYmd(s).getDay(),wt=weekTypeOf(s);
- return cfg.slots.filter(x=>x.day===wd&&(x.weeks==='all'||x.weeks===wt)&&classById(x.classId)).sort((a,b)=>toMin(a.start)-toMin(b.start));
+function anyIcs(s){return cfg.etabs.some(e=>icsCovers(e.id,s))}
+function isOffDay(s){const d=parseYmd(s);const wd=d.getDay();if(wd===0||wd===6)return true;if(icsOffLabel(s))return true;if(anyIcs(s))return !slotsOn(s,true).length&&!icsInfoOn(s).length;return weekTypeOf(s)==='F'||cfg.feries.includes(s)}
+function offReason(s){const d=parseYmd(s);if(d.getDay()===0||d.getDay()===6)return 'Week-end';const il=icsOffLabel(s);if(il)return il;if(anyIcs(s)&&!slotsOn(s,true).length)return 'Pas de cours (Pronote)';if(weekTypeOf(s)==='F')return 'Vacances';if(cfg.feries.includes(s))return 'Jour férié / sans cours';return ''}
+function slotsOn(s,withCancelled){
+ const wd=parseYmd(s).getDay();if(wd===0||wd===6)return[];
+ const wt=weekTypeOf(s),staticOff=wt==='F'||cfg.feries.includes(s),out=[];
+ for(const e of cfg.etabs){
+  if(icsCovers(e.id,s)){
+   for(const v of cfg.ics[e.id].events){if(v.d!==s||!classById(v.c))continue;if(v.x&&!withCancelled)continue;
+    out.push({id:'ics~'+s+'~'+v.s+'~'+v.c,day:wd,start:v.s,end:v.e,classId:v.c,weeks:'all',ics:true,kind:v.k||'',cancelled:!!v.x})}
+  }else if(!staticOff){
+   for(const x of cfg.slots){const c=classById(x.classId);if(c&&c.etab===e.id&&x.day===wd&&(x.weeks==='all'||x.weeks===wt))out.push(x)}
+  }
+ }
+ return out.sort((a,b)=>toMin(a.start)-toMin(b.start));
 }
+function findSlot(date,id){if(!id)return null;return slotsOn(date,true).find(x=>x.id===id)||cfg.slots.find(x=>x.id===id)||null}
 function occKey(o){return o?o.date+'|'+o.slot.id:''}
-function occFind(date,slotId){const sl=cfg.slots.find(x=>x.id===slotId);return sl?{date,slot:sl}:null}
+function occFind(date,slotId){const sl=findSlot(date,slotId);return sl?{date,slot:sl}:null}
 function nextOcc(classId,afterYmd,limit=150){for(let i=1;i<=limit;i++){const d=addDays(afterYmd,i);const sl=slotsOn(d).find(x=>x.classId===classId);if(sl)return{date:d,slot:sl}}return null}
 function prevOcc(classId,beforeYmd,limit=150){for(let i=1;i<=limit;i++){const d=addDays(beforeYmd,-i);const sl=slotsOn(d).find(x=>x.classId===classId);if(sl)return{date:d,slot:sl}}return null}
 function occOfClassOn(classId,date){const sl=slotsOn(date).find(x=>x.classId===classId);return sl?{date,slot:sl}:null}
@@ -352,6 +364,124 @@ function occState(o){
  if(o.date<t)return 'past';if(o.date>t)return 'later';
  const a=toMin(o.slot.start),b=toMin(o.slot.end);
  if(m<a-10)return 'next';if(m<a)return 'soon';if(m<b)return 'live';return 'past';
+}
+
+/* ---------- Emploi du temps Pronote (iCal) ----------
+   Quand un fichier/lien iCal Pronote est importé pour un établissement, il remplace l'emploi du temps type
+   sur toute la période qu'il couvre : cours déplacés, annulés, exceptionnels, vacances et jours fériés sont pris en compte. */
+function icsUnfold(t){return String(t).replace(/^﻿/,'').replace(/\r\n/g,'\n').replace(/\n[ \t]/g,'')}
+function icsUnesc(s){return String(s||'').replace(/\\n/gi,'\n').replace(/\\([,;\\])/g,'$1').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim()}
+function icsDate(v){
+ // renvoie {d:'YYYY-MM-DD', t:'HH:MM'|null} en heure locale de l'iPad
+ const m=String(v).match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z?))?/);if(!m)return null;
+ if(!m[4])return{d:`${m[1]}-${m[2]}-${m[3]}`,t:null};
+ const dt=m[7]?new Date(Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5])):new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]);
+ return{d:ymd(dt),t:pad(dt.getHours())+':'+pad(dt.getMinutes())};
+}
+function parseICS(text){
+ const t=icsUnfold(text);if(!/BEGIN:VCALENDAR/.test(t))throw new Error('ce n’est pas un fichier iCal');
+ const head=(t.split('BEGIN:VEVENT')[0]||'');
+ const hv=k=>{const m=head.match(new RegExp('^'+k+'[^:\\n]*:(.*)$','m'));return m?icsUnesc(m[1]):''};
+ const evs=[];
+ for(const blk of t.split('BEGIN:VEVENT').slice(1)){
+  const b=blk.split('END:VEVENT')[0];
+  const g=k=>{const m=b.match(new RegExp('^'+k+'(;[^:\\n]*)?:(.*)$','m'));return m?m[2].trim():''};
+  const st=icsDate(g('DTSTART')),en=icsDate(g('DTEND'));if(!st)continue;
+  evs.push({st,en:en||st,sum:icsUnesc(g('SUMMARY')),cat:icsUnesc(g('CATEGORIES')),status:g('STATUS').toUpperCase(),desc:icsUnesc(g('DESCRIPTION')),loc:icsUnesc(g('LOCATION'))});
+ }
+ const cs=icsDate(hv('X-CALSTART')),ce=icsDate(hv('X-CALEND'));
+ return{evs,name:hv('X-WR-CALNAME'),desc:hv('X-WR-CALDESC'),from:cs?cs.d:'',to:ce?ce.d:''};
+}
+function icsClassName(sum){
+ // « EDUCATION MUSICALE - 3BJORK » → « 3BJORK »
+ const m=String(sum).match(/^\s*EDUCATION MUSICALE\s*-\s*(.+)$/i);return m?m[1].split(',')[0].trim():null;
+}
+function icsMatchClass(sum,etab){
+ const cls=cfg.classes.filter(c=>c.etab===etab);
+ if(/chant choral|chorale/i.test(sum))return(cls.find(c=>c.niveau==='chorale')||{}).id||null;
+ const n=icsClassName(sum);if(!n)return null;const k=norm(n);
+ const c=cls.find(c=>norm(c.name)===k||norm(c.label)===k);return c?c.id:null;
+}
+function icsGuessEtab(parsed){
+ let best=null,score=0;
+ for(const e of cfg.etabs){let n=0;parsed.evs.forEach(v=>{if(icsMatchClass(v.sum,e.id))n++});if(n>score){score=n;best=e.id}}
+ return best;
+}
+function icsBuild(parsed,etab){
+ const events=[],info=[],off=[];let n=0,unknown={};
+ for(const v of parsed.evs){
+  if(!v.st.t){ // journée(s) entière(s) : vacances / férié
+   if(/vacances|f[ée]ri|pont/i.test(v.sum+' '+v.cat))off.push({d:v.st.d,d2:v.en.d>v.st.d?addDays(v.en.d,-1):v.st.d,label:v.sum||'Sans cours'});
+   continue;
+  }
+  if(/autre [ée]tablissement/i.test(v.sum))continue;
+  const cancelled=v.status==='CANCELLED'||/annul|supprim/i.test(v.cat+' '+v.sum);
+  const c=icsMatchClass(v.sum,etab);
+  const cat=v.cat.replace(/^Cours\s*-\s*/i,'').replace(/^Cours$/i,'');
+  if(c){events.push({d:v.st.d,s:v.st.t,e:v.en.t||v.st.t,c,k:cat,x:cancelled?1:0});n++}
+  else{const cn=icsClassName(v.sum);if(cn)unknown[cn]=(unknown[cn]||0)+1;info.push({d:v.st.d,s:v.st.t,e:v.en.t||v.st.t,label:v.sum,k:cat,x:cancelled?1:0})}
+ }
+ const ds=events.map(e=>e.d).sort();
+ return{events,info,off,from:parsed.from||ds[0]||'',to:parsed.to||ds[ds.length-1]||'',n,unknown:Object.keys(unknown),name:parsed.desc||parsed.name};
+}
+function icsOf(etab){const x=cfg.ics&&cfg.ics[etab];return x&&Array.isArray(x.events)?x:null}
+function icsCovers(etab,s){const x=icsOf(etab);return!!(x&&x.from&&s>=x.from&&s<=x.to)}
+function icsOffLabel(s){for(const e of cfg.etabs){const x=icsOf(e.id);if(x&&icsCovers(e.id,s)){const o=(x.off||[]).find(o=>s>=o.d&&s<=o.d2);if(o)return o.label}}return ''}
+function icsInfoOn(s){const out=[];for(const e of cfg.etabs){const x=icsOf(e.id);if(x&&icsCovers(e.id,s))(x.info||[]).forEach(v=>{if(v.d===s)out.push({...v,etab:e.id})})}return out.sort((a,b)=>toMin(a.s)-toMin(b.s))}
+async function icsApply(text,etabHint,source){
+ const parsed=parseICS(text);
+ const guess=icsGuessEtab(parsed);
+ let etab=etabHint||guess;
+ if(!etab)throw new Error('aucune de tes classes n’a été reconnue dans ce calendrier');
+ if(etabHint&&guess&&guess!==etabHint){
+  if(!confirm(`Ce calendrier semble être celui de ${etabById(guess).name} (et non ${etabById(etabHint).name}).\n\nL’enregistrer pour ${etabById(guess).short} ?`))return null;
+  etab=guess;
+ }
+ const b=icsBuild(parsed,etab);
+ if(!b.n)throw new Error('aucun cours reconnu pour '+etabById(etab).short);
+ const prev=cfg.ics[etab]||{};
+ cfg.ics[etab]={url:prev.url||'',...b,importedAt:new Date().toISOString(),source:source||'fichier'};
+ await persistNow().catch(()=>{});
+ return{etab,b};
+}
+function icsImportFile(etabHint){
+ pickFile(async txt=>{
+  try{const r=await icsApply(txt,etabHint,'fichier');if(!r)return;render();
+   toast(`${etabById(r.etab).short} : ${r.b.n} cours importés ✅`+(r.b.unknown.length?` · classes inconnues : ${r.b.unknown.join(', ')}`:''),6000)}
+  catch(e){toast('Import iCal : '+e.message,6000)}
+ },'.ics,text/calendar,*/*');
+}
+async function icsRefresh(etab,silent){
+ const x=cfg.ics[etab]||{};const url=(x.url||'').trim();
+ if(!url){if(!silent)toast('Colle d’abord le lien iCal de Pronote');return false}
+ try{
+  const res=await fetch(url.replace(/^webcal:/i,'https:'),{cache:'no-store'});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const txt=await res.text();
+  const r=await icsApply(txt,etab,'lien');if(!r)return false;
+  cfg.ics[r.etab].url=url;cfg.ics[r.etab].fetchOk=true;save();
+  if(!silent){render();toast(`${etabById(r.etab).short} : emploi du temps actualisé (${r.b.n} cours) ✅`,4000)}
+  return true;
+ }catch(e){
+  console.warn('iCal',e);
+  if(cfg.ics[etab]){cfg.ics[etab].fetchOk=false;save()}
+  if(!silent){render();toast('Pronote refuse la lecture directe du lien depuis l’appli. Utilise « Importer le fichier .ics » (voir l’aide).',7000)}
+  return false;
+ }
+}
+function icsSetUrl(etab,v){cfg.ics[etab]=Object.assign(cfg.ics[etab]||{},{url:v.trim()});if(!cfg.ics[etab].events)delete cfg.ics[etab].from;save()}
+function icsForget(etab){if(!confirm('Revenir à l’emploi du temps type pour '+etabById(etab).short+' ?'))return;const u=(cfg.ics[etab]||{}).url||'';cfg.ics[etab]={url:u};save();render()}
+async function icsAutoRefresh(){
+ for(const e of cfg.etabs){const x=cfg.ics[e.id];if(x&&x.url&&x.fetchOk!==false){const age=x.importedAt?Date.now()-new Date(x.importedAt):1e12;if(age>3*3600e3){const ok=await icsRefresh(e.id,true);if(ok&&tab==='home'&&!document.getElementById('modal').classList.contains('show'))render()}}}
+}
+function icsSettingsHTML(){
+ return cfg.etabs.map(e=>{const x=cfg.ics[e.id]||{};const has=!!(x.events&&x.events.length);
+  return `<div class="box" style="margin-bottom:10px"><div class="row between"><b>${etabDot(e.id)} ${esc(e.short)}</b>${has?`<span class="chip ok">${x.n} cours · du ${esc(fmtShort(x.from))} au ${esc(fmtShort(x.to))}</span>`:'<span class="chip">Emploi du temps type</span>'}</div>
+  ${has?`<div class="small" style="margin-top:6px">Importé le ${esc(new Date(x.importedAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))} (${esc(x.source||'')})${x.unknown&&x.unknown.length?` · ⚠️ classes non reconnues : ${esc(x.unknown.join(', '))} (ajoute-les dans Établissements & classes)`:''}</div>`:''}
+  <label class="lbl">Lien iCal Pronote (facultatif)</label><input value="${esc(x.url||'')}" placeholder="https://…index-education.net/pronote/ical/…" onchange="icsSetUrl('${e.id}',this.value)">
+  ${x.url&&x.fetchOk===false?'<div class="small" style="color:var(--bad);margin-top:4px">Lecture directe du lien refusée par Pronote : importe le fichier .ics.</div>':''}
+  <div class="row" style="margin-top:8px"><button class="primary" onclick="icsImportFile('${e.id}')">📥 Importer le fichier .ics</button><button onclick="icsRefresh('${e.id}')">🔄 Actualiser depuis le lien</button>${has?`<button class="danger" onclick="icsForget('${e.id}')">Revenir à l’EDT type</button>`:''}</div></div>`}).join('')+
+ `<p class="small"><b>Mettre à jour depuis l’iPad</b> : ouvre le lien iCal de Pronote dans Safari › le fichier .ics se télécharge (Téléchargements) › ici, « Importer le fichier .ics ». L’appli reconnaît seule l’établissement. Les cours déplacés, annulés, les vacances et les jours fériés de Pronote remplacent alors l’emploi du temps type.</p>`;
 }
 
 /* ---------- Accès données ---------- */
@@ -486,7 +616,7 @@ function todayPanel(){
  const t=todayYmd(),list=slotsOn(t);
  if(!list.length)return `<div class="panel"><div class="section-title">Aujourd’hui</div><div class="small">${offReason(t)||'Pas de cours aujourd’hui.'}</div></div>`;
  return `<div class="panel"><div class="section-title">Aujourd’hui</div><div class="list">${list.map(sl=>{const c=classById(sl.classId);const s=sessFor(c.id,t);const st=occState({date:t,slot:sl});
-  return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${fmtT(sl.start)}</b> · ${esc(c.label)} <span class="small">${esc(etabById(c.etab).short)}</span></div>${st==='live'?'<span class="chip live">en cours</span>':''}${s?(s.pronote?'<span class="chip ok">Saisi · Pronote ✓</span>':'<span class="chip ok">Saisi</span>'):(st==='past'?'<span class="chip todo">À saisir</span>':'')}<button class="mini" onclick="focus={date:'${t}',slot:cfg.slots.find(x=>x.id==='${sl.id}')};render();window.scrollTo(0,0)">Voir</button></div>`}).join('')}</div></div>`;
+  return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${fmtT(sl.start)}</b> · ${esc(c.label)} <span class="small">${esc(etabById(c.etab).short)}</span></div>${st==='live'?'<span class="chip live">en cours</span>':''}${s?(s.pronote?'<span class="chip ok">Saisi · Pronote ✓</span>':'<span class="chip ok">Saisi</span>'):(st==='past'?'<span class="chip todo">À saisir</span>':'')}<button class="mini" onclick="focus={date:'${t}',slot:findSlot('${t}','${sl.id}')};render();window.scrollTo(0,0)">Voir</button></div>`}).join('')}</div></div>`;
 }
 function missingList(days=21){
  const t=todayYmd(),m=nowMin(),out=[];
@@ -498,7 +628,7 @@ function missingPanel(){
  return `<div class="panel"><div class="section-title">⏳ Séances à saisir <span class="chip todo">${l.length}</span></div><div class="list">${l.slice(0,12).map(o=>{const c=classById(o.slot.classId);return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${esc(c.label)}</b> · ${esc(fmtShort(o.date))} ${fmtT(o.slot.start)}</div><button class="mini primary" onclick="openEditor({classId:'${c.id}',date:'${o.date}',slotId:'${o.slot.id}'})">🎤 Saisir</button><button class="mini" onclick="skipOcc('${c.id}','${o.date}','${o.slot.id}')" title="Cours non assuré (absence, sortie…)">Pas eu cours</button></div>`}).join('')}</div>${l.length>12?`<div class="small">… et ${l.length-12} autres (onglet Semaine).</div>`:''}</div>`;
 }
 function skipOcc(classId,date,slotId){
- const sl=cfg.slots.find(x=>x.id===slotId);
+ const sl=findSlot(date,slotId);
  S.sessions.push({id:uid(),classId,date,slotId,start:sl?sl.start:'',title:'Pas de cours',contenu:'',devoirs:'',devoirsPour:'',note:'Cours non assuré',sequenceId:'',pronote:true,skipped:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
  save();render();toast('Marqué « pas eu cours »');
 }
@@ -514,14 +644,17 @@ function weekView(){
  const w=isoWeek(parseYmd(mon));
  let h=`<div class="panel tight" style="padding:12px"><div class="row between"><button onclick="weekOffset--;render()">◀</button><div style="text-align:center"><div style="font-weight:850;font-size:17px">Semaine ${w.week} · du ${esc(fmtShort(mon))} au ${esc(fmtShort(addDays(mon,4)))}</div><div style="margin-top:4px">${wtBadge(mon)}</div></div><button onclick="weekOffset++;render()">▶</button></div>${weekOffset?`<div style="text-align:center;margin-top:8px"><button class="mini" onclick="weekOffset=0;render()">Cette semaine</button></div>`:''}</div><div class="week">`;
  for(let i=0;i<5;i++){
-  const d=addDays(mon,i),off=isOffDay(d),list=slotsOn(d);
+  const d=addDays(mon,i),off=isOffDay(d),list=slotsOn(d,true),infos=icsInfoOn(d);
   h+=`<div class="day ${d===t?'today':''} ${off?'off':''}"><h4>${esc(cap(fmtShort(d)))}</h4>`;
   if(off)h+=`<div class="small" style="padding:6px">${esc(offReason(d))}</div>`;
   for(const sl of list){
    const c=classById(sl.classId),s=sessFor(c.id,d),past=d<t||(d===t&&toMin(sl.end)<=m);
+   if(sl.cancelled){h+=`<div class="slot" style="border-left-color:${etabById(c.etab).color};opacity:.55;background:var(--bg)"><b style="text-decoration:line-through">${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div><div class="st">⛔ annulé (Pronote)</div></div>`;continue}
    const st=s?(s.skipped?'⛔ pas eu cours':s.pronote?'✅ saisi · Pronote ✓':'✅ saisi · 📋 Pronote à faire'):(past?'⏳ à saisir':'');
-   h+=`<button class="slot" style="border-left-color:${etabById(c.etab).color}" onclick="openEditor({classId:'${c.id}',date:'${d}',slotId:'${sl.id}'})"><b>${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div>${st?`<div class="st">${st}</div>`:''}${s&&s.title?`<div class="t">${esc(s.title.slice(0,40))}</div>`:''}</button>`;
+   h+=`<button class="slot" style="border-left-color:${etabById(c.etab).color}" onclick="openEditor({classId:'${c.id}',date:'${d}',slotId:'${sl.id}'})"><b>${esc(c.label)}</b><div class="t">${fmtT(sl.start)}–${fmtT(sl.end)} · ${esc(etabById(c.etab).short)}</div>${sl.kind?`<div class="st" style="color:var(--warn)">↪ ${esc(sl.kind)}</div>`:''}${st?`<div class="st">${st}</div>`:''}${s&&s.title?`<div class="t">${esc(s.title.slice(0,40))}</div>`:''}</button>`;
   }
+  if(!off){const wd=parseYmd(d).getDay(),wt=weekTypeOf(d);for(const g of cfg.slots){const c=classById(g.classId);if(!c||!icsCovers(c.etab,d)||g.day!==wd||!(g.weeks==='all'||g.weeks===wt))continue;if(list.some(x=>x.classId===g.classId))continue;h+=`<div class="slot" style="border-left-color:${etabById(c.etab).color};opacity:.55;background:var(--bg);min-height:0"><b style="text-decoration:line-through">${esc(c.label)}</b><div class="t">${fmtT(g.start)} · pas de cours ce jour (Pronote)</div></div>`}}
+  for(const v of infos)h+=`<div class="slot" style="border-left-color:#94a3b8;background:var(--bg);min-height:0"><b style="font-size:13px">${esc(v.label)}</b><div class="t">${fmtT(v.s)}–${fmtT(v.e)} · ${esc(etabById(v.etab).short)}${v.k?' · '+esc(v.k):''}</div></div>`;
   if(!off)h+=`<button class="mini ghost" style="width:100%" onclick="addExtra('${d}')">＋ séance hors EDT</button>`;
   h+=`</div>`;
  }
@@ -555,7 +688,7 @@ function openEditor(p){
  else{s=sessFor(p.classId,p.date)}
  const classId=s?s.classId:p.classId,date=s?s.date:p.date,c=classById(classId);
  if(!c)return toast('Classe introuvable');
- const slot=s?cfg.slots.find(x=>x.id===s.slotId):(p.slotId?cfg.slots.find(x=>x.id===p.slotId):occOfClassOn(classId,date)?.slot);
+ const slot=s?findSlot(s.date,s.slotId):(p.slotId?findSlot(date,p.slotId):occOfClassOn(classId,date)?.slot);
  const start=s?s.start:(slot?slot.start:(p.start||''));
  const nx=nextOcc(classId,date);
  let draft=null;
@@ -803,7 +936,7 @@ async function downloadFile(content,name,type){
 }
 function exportBackup(){S.exportedAt=new Date().toISOString();downloadFile(JSON.stringify(S,null,1),'progression-classes-'+todayYmd()+'.json','application/json')}
 function exportYear(){const a={format:'progression-classe-annee',year:cfg.schoolYear,classes:cfg.classes,sequences:cfg.sequences,sessions:S.sessions,exportedAt:new Date().toISOString()};downloadFile(JSON.stringify(a,null,1),'progression-'+cfg.schoolYear+'.json','application/json')}
-function pickFile(cb){const i=document.createElement('input');i.type='file';i.accept='.json,application/json,*/*';i.style.display='none';document.body.appendChild(i);i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(f){const r=new FileReader();r.onload=()=>cb(String(r.result));r.onerror=()=>toast('Lecture impossible');r.readAsText(f,'UTF-8')}};i.click()}
+function pickFile(cb,accept){const i=document.createElement('input');i.type='file';i.accept=accept||'.json,application/json,*/*';i.style.display='none';document.body.appendChild(i);i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(f){const r=new FileReader();r.onload=()=>cb(String(r.result));r.onerror=()=>toast('Lecture impossible');r.readAsText(f,'UTF-8')}};i.click()}
 function importBackup(){
  pickFile(async txt=>{
   let x;try{x=JSON.parse(txt.replace(/^﻿/,''))}catch(e){return toast('Fichier illisible (JSON invalide)',5000)}
@@ -896,7 +1029,9 @@ function settingsView(){
   ${suiviClasses.length?'':'<p class="small">Les classes de Suivi de classe apparaîtront ici dès que tu ouvres ce module depuis l’appli Suivi de classe installée sur l’iPad.</p>'}
  </div></details>
 
- <details class="set"><summary>🕘 Emploi du temps</summary><div class="in">
+ <details class="set" open><summary>🔄 Emploi du temps Pronote (iCal) : cours déplacés et annulés</summary><div class="in">${icsSettingsHTML()}</div></details>
+
+ <details class="set"><summary>🕘 Emploi du temps type (si pas d’iCal)</summary><div class="in">
   <p class="small">« Semaines » : <b>Toutes</b>, ou seulement <b>Q1</b> (semaines marron dans Pronote) / <b>Q2</b> (semaines bleues).</p>
   ${cfg.etabs.map(e=>`<h3 style="margin:14px 0 6px">${etabDot(e.id)} ${esc(e.short)}</h3>${cfg.slots.filter(s=>classById(s.classId)?.etab===e.id).sort((a,b)=>a.day-b.day||toMin(a.start)-toMin(b.start)).map(s=>`<div class="cfgrow">
    <select onchange="slotSet('${s.id}','day',Number(this.value))">${days.map(d=>`<option value="${d}" ${d===s.day?'selected':''}>${JOURS[d]}</option>`).join('')}</select>
@@ -991,6 +1126,7 @@ async function init(){
  render();
  if(p.get('saisir')==='1'&&focus)openEditor({classId:focus.slot.classId,date:focus.date,slotId:focus.slot.id});
  if(!loaded)persistNow().catch(()=>{});
+ setTimeout(()=>icsAutoRefresh().catch(()=>{}),1500);
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(_){}
 }
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
