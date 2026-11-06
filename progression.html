@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P5';
+const APP_VERSION='P6';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -712,6 +712,7 @@ function openEditor(p){
    <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec ${aiName()}</button>
    <button onclick="localSplit()">✂️ Répartir sans IA</button>
   </div>
+  <div class="small" id="aiErr" style="margin-top:6px;color:var(--bad);font-weight:700"></div>
   ${aiReady?'':'<div class="small" style="margin-top:6px">Pour activer la reformulation : Réglages › Dictée & IA › colle ta clé Gemini ou Claude.</div>'}
  </div>
  <label class="lbl">Titre (Pronote)</label><input id="eTitre" value="${esc(v.title||'')}" placeholder="Ex. : Le Boléro de Ravel — ostinato et crescendo" oninput="saveDraft()">
@@ -775,21 +776,29 @@ function saveSession(thenPronote){
 function autoTitle(t){let x=String(t).split(/[.\n;:]/)[0].trim();if(x.length>70)x=x.slice(0,67).replace(/\s+\S*$/,'')+'…';return cap(x)}
 
 /* ---------- Dictée (Web Speech si disponible, sinon micro du clavier) ---------- */
-let rec=null,recBtn=null;
-function stopDictation(){try{if(rec)rec.stop()}catch(_){}}
+let rec=null,recBtn=null,recTa=null;
+function recUI(btn,on){if(!btn)return;btn.classList.toggle('rec',on);btn.textContent=on?'⏹':'🎤'}
+function stopDictation(){
+ // iPadOS ne déclenche pas toujours « onend » après stop() : on libère l'interface tout de suite, puis on coupe le micro de force
+ const r=rec;if(!r)return;
+ rec=null;recUI(recBtn,false);recBtn=null;
+ try{r.stop()}catch(_){}
+ setTimeout(()=>{try{r.abort()}catch(_){}},700);
+ if(recTa){recTa.value=recTa.value.replace(/\s+$/,'');recTa=null;saveDraft()}
+}
 function dictate(id,btn){
  const ta=document.getElementById(id);
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(rec){stopDictation();return}
+ if(rec){const same=recBtn===btn;stopDictation();if(same)return}
  if(!SR){ta.focus();toast('Touche le 🎤 du clavier de l’iPad (à gauche de la barre d’espace) pour dicter',5000);return}
  try{
-  rec=new SR();rec.lang='fr-FR';rec.continuous=true;rec.interimResults=true;recBtn=btn;
+  const r=new SR();rec=r;recBtn=btn;recTa=ta;r.lang='fr-FR';r.continuous=true;r.interimResults=true;
   const base=ta.value?ta.value.replace(/\s*$/,' '):'';let fin='';
-  rec.onresult=e=>{let inter='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript+' ';else inter+=r[0].transcript}ta.value=base+fin+inter;saveDraft()};
-  rec.onerror=e=>{if(e.error!=='aborted'&&e.error!=='no-speech')toast('Dictée interrompue ('+e.error+'). Utilise le 🎤 du clavier.',4500)};
-  rec.onend=()=>{if(recBtn){recBtn.classList.remove('rec');recBtn.textContent='🎤'}rec=null;recBtn=null;ta.value=ta.value.replace(/\s+$/,'');saveDraft()};
-  rec.start();btn.classList.add('rec');btn.textContent='⏹';toast('Je t’écoute… touche ⏹ pour arrêter');
- }catch(e){rec=null;ta.focus();toast('Dictée indisponible ici : utilise le 🎤 du clavier',4500)}
+  r.onresult=e=>{let inter='';for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)fin+=x[0].transcript+' ';else inter+=x[0].transcript}ta.value=base+fin+(rec===r?inter:'');saveDraft()};
+  r.onerror=e=>{if(e.error!=='aborted'&&e.error!=='no-speech')toast('Dictée interrompue ('+e.error+'). Utilise le 🎤 du clavier.',4500);if(rec===r)stopDictation()};
+  r.onend=()=>{if(rec===r)stopDictation()};
+  r.start();recUI(btn,true);toast('Je t’écoute… touche ⏹ pour arrêter');
+ }catch(e){rec=null;recUI(btn,false);ta.focus();toast('Dictée indisponible ici : utilise le 🎤 du clavier',4500)}
 }
 function localSplit(){
  const g=id=>document.getElementById(id);
@@ -809,14 +818,14 @@ async function aiReformulate(){
  if(!raw){const a=g('eContenu').value.trim(),b=g('eDevoirs').value.trim();raw=a+(b?'\nDevoirs : '+b:'')}
  if(!raw)return toast('Dicte d’abord ce que vous avez fait');
  const c=classById(editing.classId);const seq=seqById(g('eSeq').value);
- const btn=g('aiBtn');btn.disabled=true;btn.textContent='⏳ '+aiName()+' reformule…';
+ const btn=g('aiBtn');stopDictation();const er0=document.getElementById('aiErr');if(er0)er0.textContent='';btn.disabled=true;btn.textContent='⏳ '+aiName()+' reformule…';
  try{
   const r=await callAI(raw,{classe:c.label,niveau:c.niveau,sequence:seq?seq.name:'',date:fmtLong(g('eDate').value||editing.date)});
   if(r.titre)g('eTitre').value=r.titre;
   if(r.contenu)g('eContenu').value=r.contenu;
   g('eDevoirs').value=r.devoirs||'';
   saveDraft();toast('Reformulation prête ✨ — relis avant d’enregistrer',3500);
- }catch(e){console.error(e);toast(aiName()+' : '+e.message,7000)}
+ }catch(e){console.error(e);toast(aiName()+' : erreur (détail sous le bouton)',5000);const er=document.getElementById('aiErr');if(er)er.textContent='⚠️ '+aiName()+' : '+e.message}
  finally{btn.disabled=false;btn.textContent='✨ Reformuler avec '+aiName()}
 }
 function aiSystemPrompt(){return `Tu aides un professeur d'éducation musicale de collège (France, cycle 4) à remplir le cahier de textes Pronote à partir d'une dictée vocale de fin de cours.
@@ -830,19 +839,45 @@ function aiIsReady(){return cfg.ai.provider==='gemini'?!!(cfg.ai.geminiKey||'').
 function aiUserMsg(raw,ctx){return `Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`}
 function aiParse(txt){const mm=String(txt||'').match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');const o=JSON.parse(mm[0]);return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim()}}
 function callAI(raw,ctx){return cfg.ai.provider==='gemini'?callGemini(raw,ctx):callClaude(raw,ctx)}
+const GEM_FALLBACK=['gemini-flash-latest','gemini-flash-lite-latest','gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
+const GEM_API='https://generativelanguage.googleapis.com/v1beta/';
+async function gemFetch(url,key,body){
+ let res;try{res=await fetch(url,{method:body?'POST':'GET',headers:{'content-type':'application/json','x-goog-api-key':key},body:body?JSON.stringify(body):undefined})}
+ catch(e){throw new Error('pas de connexion à Google (Internet coupé ou réseau du collège qui bloque generativelanguage.googleapis.com)')}
+ const j=await res.json().catch(()=>({}));return{res,j,msg:(j&&j.error&&(j.error.message||j.error.status))||('HTTP '+res.status)};
+}
+async function gemListModels(key){
+ const{res,j}=await gemFetch(GEM_API+'models?pageSize=200',key);if(!res.ok)return[];
+ return(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/i.test(m.name)&&!/image|tts|audio|live|embed|vision|exp|preview/i.test(m.name)).map(m=>m.name.replace(/^models\//,'')).sort((a,b)=>(/latest/.test(b)-/latest/.test(a))||b.localeCompare(a));
+}
 async function callGemini(raw,ctx){
  const key=(cfg.ai.geminiKey||'').trim();if(!key)throw new Error('clé Gemini manquante (Réglages)');
- const model=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
- let res;
- try{
-  res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},
-   body:JSON.stringify({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:[{text:aiUserMsg(raw,ctx)}]}],generationConfig:{responseMimeType:'application/json',temperature:0.3,maxOutputTokens:1200}})});
- }catch(e){throw new Error('pas de connexion Internet ?')}
- const j=await res.json().catch(()=>({}));
- if(!res.ok){const m=j&&j.error&&j.error.message||('HTTP '+res.status);throw new Error(res.status===400&&/API key/i.test(m)?'clé refusée — vérifie-la dans les Réglages':res.status===403?'clé refusée ou API non activée':res.status===404?'modèle introuvable ('+model+') — change-le dans les Réglages':res.status===429?'limite gratuite atteinte, réessaie dans une minute':m)}
- const txt=((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');
- if(!txt)throw new Error('réponse vide (contenu bloqué ?)');
- return aiParse(txt);
+ const first=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
+ const body=json=>({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:[{text:aiUserMsg(raw,ctx)}]}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:1500},json?{responseMimeType:'application/json'}:{})});
+ let queue=[first,...GEM_FALLBACK.filter(m=>m!==first)],listed=false,last='',tried=[];
+ while(queue.length){
+  const model=queue.shift();if(tried.includes(model))continue;tried.push(model);
+  let r=await gemFetch(GEM_API+'models/'+encodeURIComponent(model)+':generateContent',key,body(true));
+  if(!r.res.ok&&r.res.status===400&&/mime|json mode|response_schema/i.test(r.msg))r=await gemFetch(GEM_API+'models/'+encodeURIComponent(model)+':generateContent',key,body(false));
+  if(r.res.ok){
+   const txt=((r.j.candidates||[])[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
+   if(!txt){last='réponse vide de '+model+' ('+((r.j.candidates||[])[0]?.finishReason||r.j.promptFeedback?.blockReason||'?')+')';continue}
+   if(model!==first){cfg.ai.geminiModel=model;save()}
+   return aiParse(txt);
+  }
+  const st=r.res.status,m=r.msg;last=m+' ['+model+']';
+  if(/api key not valid|API_KEY_INVALID|invalid api key/i.test(m))throw new Error('clé refusée par Google : vérifie que tu as copié toute la clé (elle commence par AIza).');
+  if(/referer|referrer|blocked/i.test(m)&&st===403)throw new Error('ta clé est restreinte à certains sites. Dans Google AI Studio / Cloud, retire la restriction ou ajoute titou-prog.github.io. ('+m+')');
+  if(st===403&&/not been used|disabled|SERVICE_DISABLED/i.test(m))throw new Error('l’API Gemini n’est pas activée pour cette clé. Crée la clé depuis aistudio.google.com › Get API key. ('+m+')');
+  if(/location is not supported|User location/i.test(m))throw new Error('Google refuse l’accès depuis ce pays/réseau. ('+m+')');
+  // modèle indisponible, ou quota gratuit nul pour ce modèle : on essaie le suivant
+  if(st===404||st===429||(st===400&&/not found|not supported|unsupported/i.test(m))){
+   if(!queue.length&&!listed){listed=true;queue=(await gemListModels(key)).filter(x=>!tried.includes(x))}
+   continue;
+  }
+  throw new Error(m+' ['+model+']');
+ }
+ throw new Error(/quota|exhausted|429|rate/i.test(last)?'limite gratuite de Google atteinte, réessaie dans une minute ('+last+')':'aucun modèle Gemini n’a répondu. Dernier message : '+last);
 }
 async function callClaude(raw,ctx){
  const key=(cfg.ai.key||'').trim();if(!key)throw new Error('clé API manquante (Réglages)');
