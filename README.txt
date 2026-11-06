@@ -1,4 +1,8 @@
-Suivi de classe — PWA iPad V22
+Suivi de classe — PWA iPad V23
+
+V23 : bouton ⚙️ Réglages en haut de l’écran (il n’était visible que sur grand écran) ; « 🔐 Mot de passe » aussi sur la page Données.
+
+V22
 
 Nouveautés V22 : mot de passe et « mode classe »
 - Réglages (⚙️) › « 🔐 Mot de passe & mode classe » : créer le mot de passe et noter le code de secours.
