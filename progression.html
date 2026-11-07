@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P6';
+const APP_VERSION='P7';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -854,7 +854,7 @@ async function callGemini(raw,ctx){
  const key=(cfg.ai.geminiKey||'').trim();if(!key)throw new Error('clé Gemini manquante (Réglages)');
  const first=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
  const body=json=>({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:[{text:aiUserMsg(raw,ctx)}]}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:1500},json?{responseMimeType:'application/json'}:{})});
- let queue=[first,...GEM_FALLBACK.filter(m=>m!==first)],listed=false,last='',tried=[];
+ let queue=[first,...GEM_FALLBACK.filter(m=>m!==first)],listed=false,last='',tried=[],busy=[],rounds=0;
  while(queue.length){
   const model=queue.shift();if(tried.includes(model))continue;tried.push(model);
   let r=await gemFetch(GEM_API+'models/'+encodeURIComponent(model)+':generateContent',key,body(true));
@@ -871,12 +871,15 @@ async function callGemini(raw,ctx){
   if(st===403&&/not been used|disabled|SERVICE_DISABLED/i.test(m))throw new Error('l’API Gemini n’est pas activée pour cette clé. Crée la clé depuis aistudio.google.com › Get API key. ('+m+')');
   if(/location is not supported|User location/i.test(m))throw new Error('Google refuse l’accès depuis ce pays/réseau. ('+m+')');
   // modèle indisponible, ou quota gratuit nul pour ce modèle : on essaie le suivant
+  // surcharge passagère chez Google (503 « high demand ») : on passe au modèle suivant, et on réessaie plus tard dans la boucle
+  if(st===500||st===502||st===503||st===504||/high demand|overloaded|UNAVAILABLE|try again later/i.test(m)){busy.push(model);if(!queue.length&&!listed){listed=true;queue=(await gemListModels(key)).filter(x=>!tried.includes(x))}if(!queue.length&&rounds<2){rounds++;await new Promise(r=>setTimeout(r,1500*rounds));tried=tried.filter(x=>!busy.includes(x));queue=busy.splice(0)}continue}
   if(st===404||st===429||(st===400&&/not found|not supported|unsupported/i.test(m))){
    if(!queue.length&&!listed){listed=true;queue=(await gemListModels(key)).filter(x=>!tried.includes(x))}
    continue;
   }
   throw new Error(m+' ['+model+']');
  }
+ if(/high demand|overloaded|UNAVAILABLE|try again later/i.test(last))throw new Error('Google est surchargé en ce moment (tous les modèles gratuits essayés). Réessaie dans quelques minutes, ou utilise « Répartir sans IA ».');
  throw new Error(/quota|exhausted|429|rate/i.test(last)?'limite gratuite de Google atteinte, réessaie dans une minute ('+last+')':'aucun modèle Gemini n’a répondu. Dernier message : '+last);
 }
 async function callClaude(raw,ctx){
@@ -887,6 +890,7 @@ async function callClaude(raw,ctx){
   res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
    body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:900,system:aiSystemPrompt(),messages:[{role:'user',content:user}]})});
  }catch(e){throw new Error('pas de connexion Internet ?')}
+ if(res.status===529||res.status===503){await new Promise(r=>setTimeout(r,2000));try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:900,system:aiSystemPrompt(),messages:[{role:'user',content:user}]})})}catch(e){throw new Error('pas de connexion Internet ?')}}
  const j=await res.json().catch(()=>({}));
  if(!res.ok){const m=j&&j.error&&j.error.message||('HTTP '+res.status);throw new Error(res.status===401?'clé refusée — vérifie-la dans les Réglages':res.status===404?'modèle introuvable ('+(cfg.ai.model)+') — change-le dans les Réglages':m)}
  const txt=(j.content||[]).map(b=>b.text||'').join('');
