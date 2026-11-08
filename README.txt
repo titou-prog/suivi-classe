@@ -1,4 +1,14 @@
-Suivi de classe — PWA iPad V26
+Suivi de classe — PWA iPad V27
+
+Nouveautés V27 :
+- Page Élèves allégée : sélecteur de classe, 🔎, 🎲 Hasard, 👥 Toute la classe, ↩️ Annuler (seulement après une action). Tout le reste passe dans le menu ☰.
+- Menu ☰ (en haut à droite) : En classe, Cours, Suivi des élèves, Classe, Affichage (taille, tri, compteurs, thème), Application.
+- Bandeau du cours sur une ligne ; « séance précédente » et devoirs au toucher.
+- Module « Trace écrite » intégré (trace.html) : enregistrement, photos du tableau, fiche IA, synthèse, QCM.
+  Même mot de passe, classes reprises de Suivi de classe, clé Gemini partagée avec Progression.
+- Barre de navigation du bas supprimée.
+
+V26
 
 V26 : correctif des mises à jour sur iPad (le service worker restait bloqué sur l’ancienne version) ; « Mettre à jour » réinstalle proprement l’appli sans toucher aux données ; les requêtes vers d’autres sites ne sont plus mises en cache.
 
@@ -52,7 +62,7 @@ Nouveautés V19 : module « Progression des classes » (progression.html)
 - Semaine, historique par classe, progressions par classe ou par niveau (CSV, impression/PDF), archives annuelles et fil conducteur.
 - Export des cours vers le Calendrier (.ics) avec alerte avant chaque cours.
 
-Mise à jour : déposer index.html, app.js, verrou.js, sw.js, progression.html et README.txt à la racine du dépôt (remplacer les anciens).
+Mise à jour : déposer index.html, app.js, verrou.js, sw.js, progression.html, trace.html, version.json et README.txt à la racine du dépôt (remplacer les anciens).
 Sur l'iPad : fermer complètement l'application puis la rouvrir deux fois (la barre latérale doit afficher la dernière version).
 
 — Historique —

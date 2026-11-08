@@ -1,0 +1,3873 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Suivi de classe">
+<meta name="theme-color" content="#1C2B3A">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Trace écrite — Suivi de classe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1C2B3A;
+    --surface: #243447;
+    --surface2: #2D4160;
+    --indigo: #4F7FBF;
+    --indigo-light: #6B99D4;
+    --gold: #D4A843;
+    --gold-light: #E8C06A;
+    --cream: #F0EDE8;
+    --green: #5BA87A;
+    --red: #C05B5B;
+    --text: #D8D4CF;
+    --text-dim: #8A9BAC;
+    --border: #334D6B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo-icon { font-size: 28px; }
+  .logo-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+  }
+  .logo-text p { font-size: 0.75rem; color: var(--text-dim); margin-top: 1px; }
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .api-badge {
+    font-size: 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    color: var(--text-dim);
+  }
+  .api-badge.connected { border-color: var(--green); color: var(--green); }
+
+  /* ── STAFF PROGRESS ── */
+  .staff-progress {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    position: relative;
+  }
+  .staff-lines {
+    position: relative;
+    height: 48px;
+    display: flex;
+    align-items: center;
+  }
+  .staff-lines::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 7px,
+      var(--border) 7px, var(--border) 8px,
+      transparent 8px, transparent 15px
+    );
+    border-radius: 4px;
+    opacity: 0.5;
+  }
+  .steps-track {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+  }
+  .step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .step-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .step-dot.active {
+    background: var(--indigo);
+    border-color: var(--indigo-light);
+    box-shadow: 0 0 16px rgba(79,127,191,0.5);
+  }
+  .step-dot.done {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .step-label {
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-align: center;
+    width: 70px;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .step-label.active { color: var(--indigo-light); }
+  .step-label.done { color: var(--green); }
+  .step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    margin: 0 4px;
+    margin-bottom: 28px;
+    transition: background 0.3s;
+  }
+  .step-connector.done { background: var(--green); }
+
+  /* ── MAIN LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 24px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--cream);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title .num {
+    width: 26px; height: 26px;
+    background: var(--indigo);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-primary {
+    background: var(--indigo);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--indigo-light); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-gold {
+    background: var(--gold);
+    color: #1C2B3A;
+    font-weight: 600;
+  }
+  .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
+  .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+  }
+  .btn-danger:hover { background: rgba(192,91,91,0.1); }
+  .btn-outline {
+    background: transparent;
+    color: var(--indigo-light);
+    border: 1px solid var(--indigo);
+  }
+  .btn-outline:hover { background: rgba(79,127,191,0.15); }
+  .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+  .btn-record {
+    background: var(--red);
+    color: white;
+    border-radius: 50px;
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    min-width: 180px;
+    justify-content: center;
+  }
+  .btn-record.recording {
+    animation: pulse-red 1.2s ease-in-out infinite;
+    background: #E07070;
+  }
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192,91,91,0.6); }
+    50% { box-shadow: 0 0 0 14px rgba(192,91,91,0); }
+  }
+
+  /* ── RECORDING AREA ── */
+  .recording-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 0;
+  }
+  .waveform {
+    width: 100%;
+    max-width: 400px;
+    height: 60px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0 12px;
+    overflow: hidden;
+  }
+  .wave-bar {
+    width: 3px;
+    background: var(--indigo);
+    border-radius: 2px;
+    height: 6px;
+    transition: height 0.1s;
+  }
+  .wave-bar.active { animation: wave-anim 0.5s ease-in-out infinite alternate; }
+  @keyframes wave-anim {
+    from { height: 4px; }
+    to { height: 40px; }
+  }
+  .timer-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    color: var(--cream);
+    letter-spacing: 0.1em;
+  }
+  .recording-hint {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  /* ── TRANSCRIPT ── */
+  .transcript-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 100px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--cream);
+    margin-top: 12px;
+    white-space: pre-wrap;
+  }
+  .transcript-placeholder { color: var(--text-dim); font-style: italic; }
+
+  /* ── SÉANCE META ── */
+  .meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .meta-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .meta-group input, .meta-group select, .meta-group textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .meta-group input:focus, .meta-group select:focus, .meta-group textarea:focus {
+    border-color: var(--indigo);
+  }
+  .meta-group select option { background: var(--surface2); }
+  .meta-group textarea { resize: vertical; min-height: 80px; }
+
+  /* ── FICHE COURS OUTPUT ── */
+  .fiche-output {
+    background: #0F1C28;
+    border: 1px solid var(--indigo);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 12px;
+    font-size: 0.875rem;
+    line-height: 1.8;
+    color: var(--cream);
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  .fiche-output::-webkit-scrollbar { width: 6px; }
+  .fiche-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── SESSION LIST ── */
+  .session-list { display: flex; flex-direction: column; gap: 10px; }
+  .session-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .session-item:hover { border-color: var(--indigo); }
+  .session-item.selected { border-color: var(--gold); }
+  .session-num {
+    width: 34px; height: 34px;
+    background: var(--indigo);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: white;
+    flex-shrink: 0;
+  }
+  .session-info { flex: 1; }
+  .session-title { font-weight: 600; color: var(--cream); font-size: 0.9rem; }
+  .session-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+  .session-actions { display: flex; gap: 6px; }
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 32px;
+    font-size: 0.875rem;
+  }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+  /* ── LOADING ── */
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--indigo-light);
+    font-size: 0.875rem;
+    padding: 12px 0;
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--indigo-light);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab {
+    white-space: nowrap;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    transition: all 0.2s;
+    font-weight: 500;
+    user-select: none;
+  }
+  .tab.active {
+    color: var(--indigo-light);
+    border-bottom-color: var(--indigo);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── QUIZ ── */
+  .quiz-preview {
+    background: #0F1C28;
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--cream);
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: rgba(79,127,191,0.2); color: var(--indigo-light); }
+  .badge-green { background: rgba(91,168,122,0.2); color: var(--green); }
+  .badge-gold { background: rgba(212,168,67,0.2); color: var(--gold); }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: var(--cream);
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { background: var(--green); color: white; }
+  #toast.error { background: var(--red); color: white; }
+  #toast.info { background: var(--indigo); color: white; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* ── FLEX UTILS ── */
+  .flex { display: flex; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .mt-4 { margin-top: 16px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 14px 16px; }
+    .staff-progress { padding: 16px; }
+    .container { padding: 16px; }
+    .meta-row { grid-template-columns: 1fr; }
+    .step-label { display: none; }
+  }
+
+  /* ── API KEY MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 480px;
+    width: 100%;
+  }
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--cream);
+    margin-bottom: 10px;
+  }
+  .modal p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 18px; }
+  .modal input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    margin-bottom: 14px;
+  }
+  .modal input:focus { border-color: var(--indigo); }
+  .warning-box {
+    background: rgba(212,168,67,0.1);
+    border: 1px solid rgba(212,168,67,0.4);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: var(--gold-light);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* ── QCMCam export info ── */
+  .info-box {
+    background: rgba(79,127,191,0.08);
+    border: 1px solid rgba(79,127,191,0.3);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 12px;
+  }
+  .info-box strong { color: var(--indigo-light); }
+
+  /* ── AUDIO DE SÉANCE ── */
+  .audio-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 18px;
+  }
+  .audio-panel audio { width: 100%; margin: 10px 0; }
+  .audio-panel .audio-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500;
+  }
+  .progress-line { font-size: 0.8rem; color: var(--indigo-light); margin-top: 8px; }
+  .progress-bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-bar > div { height: 100%; width: 0; background: var(--indigo); transition: width 0.3s; }
+
+  /* ── TABLEAU (photos) ── */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.875rem;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .dropzone.drag { border-color: var(--gold); background: rgba(212,168,67,0.06); }
+  .dropzone .dz-icon { font-size: 2.2rem; margin-bottom: 8px; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .photo-thumb {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0F1C28;
+    aspect-ratio: 4 / 3;
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+  .photo-thumb .ph-num {
+    position: absolute; top: 6px; left: 6px;
+    background: rgba(28,43,58,0.85); color: var(--cream);
+    font-size: 0.7rem; font-weight: 600; border-radius: 10px; padding: 2px 8px;
+  }
+  .photo-thumb .ph-del {
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(192,91,91,0.9); color: white; border: none; border-radius: 50%;
+    width: 22px; height: 22px; cursor: pointer; font-size: 0.75rem; line-height: 22px;
+  }
+  .photo-thumb .ph-state {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(15,28,40,0.85); font-size: 0.68rem; padding: 3px 6px; color: var(--text-dim);
+  }
+  .photo-thumb .ph-state.ok { color: var(--green); }
+  .photo-thumb .ph-state.err { color: var(--red); }
+
+  .oeuvre-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+  .oeuvre-head { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .oeuvre-photos { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .oeuvre-photos img { height: 54px; border-radius: 4px; border: 1px solid var(--border); cursor: zoom-in; }
+  .oeuvre-card textarea.transcr {
+    width: 100%; min-height: 200px; resize: vertical;
+    background: #0F1C28; border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font-family: 'Inter', sans-serif; font-size: 0.84rem; line-height: 1.6; color: var(--cream); outline: none;
+  }
+  .oeuvre-card textarea.transcr:focus { border-color: var(--indigo); }
+  .hint-line { font-size: 0.78rem; color: var(--gold-light); margin: 6px 0 10px; }
+  .result-block { margin-top: 14px; }
+  .result-block h4 {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    margin-bottom: 6px; color: var(--text-dim);
+  }
+  .result-block ul { list-style: none; font-size: 0.84rem; line-height: 1.6; }
+  .result-block li { padding: 3px 0 3px 18px; position: relative; }
+  .result-block.corr li::before { content: '⚠️'; position: absolute; left: -2px; font-size: 0.7rem; top: 5px; }
+  .result-block.ajout li::before { content: '➕'; position: absolute; left: -2px; font-size: 0.7rem; top: 5px; }
+  .result-block.doute li::before { content: '❓'; position: absolute; left: -2px; font-size: 0.7rem; top: 5px; }
+  .resume-box {
+    width: 100%; min-height: 150px; resize: vertical;
+    background: #FBF8F1; color: #1C2B3A;
+    border: 2px solid var(--gold); border-radius: 10px; padding: 16px 18px;
+    font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.75; outline: none;
+  }
+  .sources-line { font-size: 0.72rem; color: var(--text-dim); margin-top: 8px; line-height: 1.6; word-break: break-word; }
+  .sources-line a { color: var(--indigo-light); }
+
+  .lightbox {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 300;
+    display: none; align-items: center; justify-content: center; padding: 20px; cursor: zoom-out;
+  }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+
+  /* ── Modes : claude.ai / fichier ── */
+  :root { color-scheme: dark; }
+  .only-claude { display: none !important; }
+  .in-claude .only-claude { display: block !important; }
+  .in-claude .no-claude { display: none !important; }
+  [hidden] { display: none !important; }
+  header { top: env(safe-area-inset-top, 0px); }
+  .dictation-help {
+    background: rgba(212,168,67,0.08);
+    border: 1px solid rgba(212,168,67,0.4);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+    font-size: 0.85rem; line-height: 1.6; color: var(--text);
+  }
+  .dictation-help .dh-title { font-weight: 600; color: var(--gold-light); margin-bottom: 6px; }
+  .dictation-help ol { padding-left: 20px; }
+  .dictation-help .dh-note { font-size: 0.75rem; color: var(--text-dim); margin-top: 8px; }
+  .live-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text); margin-bottom: 14px; cursor: pointer; }
+  /* iPad / tactile : champs à 16 px pour éviter le zoom automatique, cibles plus grandes */
+  @media (pointer: coarse) {
+    input, select, textarea, .meta-group input, .meta-group select, .meta-group textarea { font-size: 16px !important; }
+    .btn-sm { padding: 9px 14px; }
+    .photo-thumb .ph-del { width: 28px; height: 28px; line-height: 28px; }
+  }
+
+  /* ── Boîte de dialogue intégrée ── */
+  .dlg-overlay {
+    position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .dlg-overlay textarea {
+    width: 100%; min-height: 220px; background: #0F1C28; color: var(--cream);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Inter', sans-serif; line-height: 1.6;
+  }
+
+  /* ── Projection des résumés ── */
+  .projector {
+    position: fixed; inset: 0; z-index: 450; background: #FBF8F1; color: #1C2B3A;
+    display: flex; flex-direction: column;
+    padding: max(20px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+  }
+  .projector .pj-body { flex: 1; overflow-y: auto; max-width: 1100px; width: 100%; margin: 0 auto; }
+  .projector .pj-classe { color: #4F7FBF; font-size: clamp(14px, 2vw, 22px); font-weight: 600; }
+  .projector h1 {
+    font-family: 'Playfair Display', serif; font-size: clamp(26px, 4.4vw, 54px); line-height: 1.15;
+    border-bottom: 4px solid #D4A843; padding-bottom: 12px; margin: 6px 0 22px; text-wrap: balance;
+  }
+  .projector p { font-size: clamp(19px, 2.9vw, 36px); line-height: 1.65; white-space: pre-wrap; }
+  .projector .pj-bar { display: flex; gap: 10px; justify-content: center; align-items: center; padding-top: 12px; flex-wrap: wrap; }
+  .projector .pj-bar button { background: #1C2B3A; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-size: 1rem; cursor: pointer; }
+  .projector .pj-bar span { color: #4b5a6b; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 600px) {
+    .oeuvre-head { grid-template-columns: 1fr; }
+    .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<script src="verrou.js"></script>
+<script>Verrou.coverIfNotAdmin()</script>
+
+<!-- API Key Modal -->
+<div id="apiModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🔑 Clé API Gemini Pro</h2>
+    <p>Cette application utilise <strong>Google Gemini 2.0 Flash</strong> avec votre abonnement Pro — sans limitation de quota.</p>
+    <div class="warning-box" style="border-color:rgba(91,168,122,0.5); background:rgba(91,168,122,0.08); color:#8ecfaa;">
+      ✅ <strong>Où trouver votre clé :</strong><br>
+      1. Allez sur <strong>aistudio.google.com</strong><br>
+      2. Connectez-vous avec le compte Google lié à votre abonnement Gemini Pro<br>
+      3. Cliquez <strong>"Get API key"</strong> → <strong>"Create API key"</strong><br>
+      4. Copiez la clé générée
+    </div>
+    <input type="password" id="apiKeyInput" placeholder="Collez votre clé API ici..." autocomplete="off">
+    <div class="flex gap-2">
+      <button class="btn btn-primary" onclick="saveApiKey()">Valider</button>
+      <button class="btn btn-outline" onclick="closeModal()">Passer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo-icon">🎵</div>
+  <div class="logo-text">
+    <h1>Trace Écrite Musicale</h1>
+    <p>Construction collaborative de fiches de cours</p>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='index.html'" title="Revenir à Suivi de classe">← Suivi de classe</button>
+    <span id="syncStatus" class="api-badge" hidden></span>
+    <span id="apiStatus" class="api-badge">Sans IA</span>
+    <button class="btn btn-outline btn-sm no-claude" onclick="showModal()">⚙️ Clé Gemini</button>
+  </div>
+</header>
+
+<!-- Staff Progress Bar -->
+<div class="staff-progress">
+  <div class="staff-lines">
+    <div class="steps-track" id="stepsTrack">
+      <div class="step-node" onclick="goToTab('classes')">
+        <div class="step-dot" id="dot-0">🏫</div>
+        <div class="step-label" id="lbl-0">Classes</div>
+      </div>
+      <div class="step-connector" id="conn-0"></div>
+      <div class="step-node" onclick="goToTab('record')">
+        <div class="step-dot active" id="dot-1">🎙️</div>
+        <div class="step-label active" id="lbl-1">Enregistrer</div>
+      </div>
+      <div class="step-connector" id="conn-1"></div>
+      <div class="step-node" onclick="goToTab('tableau')">
+        <div class="step-dot" id="dot-2">📸</div>
+        <div class="step-label" id="lbl-2">Tableau</div>
+      </div>
+      <div class="step-connector" id="conn-2"></div>
+      <div class="step-node" onclick="goToTab('fiche')">
+        <div class="step-dot" id="dot-3">✨</div>
+        <div class="step-label" id="lbl-3">Fiche IA</div>
+      </div>
+      <div class="step-connector" id="conn-3"></div>
+      <div class="step-node" onclick="goToTab('sessions')">
+        <div class="step-dot" id="dot-4">📚</div>
+        <div class="step-label" id="lbl-4">Séances</div>
+      </div>
+      <div class="step-connector" id="conn-4"></div>
+      <div class="step-node" onclick="goToTab('synthese')">
+        <div class="step-dot" id="dot-5">📄</div>
+        <div class="step-label" id="lbl-5">Synthèse</div>
+      </div>
+      <div class="step-connector" id="conn-5"></div>
+      <div class="step-node" onclick="goToTab('quiz')">
+        <div class="step-dot" id="dot-6">🎯</div>
+        <div class="step-label" id="lbl-6">QCM</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab" data-tab="classes" onclick="goToTab('classes')">🏫 Classes</div>
+    <div class="tab active" data-tab="record" onclick="goToTab('record')">🎙️ Enregistrement</div>
+    <div class="tab" data-tab="tableau" onclick="goToTab('tableau')">📸 Tableau</div>
+    <div class="tab" data-tab="fiche" onclick="goToTab('fiche')">✨ Fiche de cours</div>
+    <div class="tab" data-tab="sessions" onclick="goToTab('sessions')">📚 Séances</div>
+    <div class="tab" data-tab="synthese" onclick="goToTab('synthese')">📄 Synthèse</div>
+    <div class="tab" data-tab="quiz" onclick="goToTab('quiz')">🎯 QCM</div>
+  </div>
+
+  <!-- ══ TAB 0 : CLASSES ══ -->
+  <div class="tab-panel" id="panel-classes">
+    <div class="section-header">
+      <h2>🏫 Mes classes</h2>
+      <div class="flex gap-2" style="flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="importSuiviClasses()">📥 Reprendre mes classes de Suivi</button><button class="btn btn-primary btn-sm" onclick="showAddClassModal()">+ Ajouter une classe</button></div>
+    </div>
+
+    <div id="micActivationBanner" style="display:none; margin-bottom:16px;">
+      <div class="info-box" style="border-color:var(--gold); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <span>🎙️ <strong style="color:var(--gold-light);">Activez le microphone une fois</strong> pour ne plus être redemandé pendant la session.</span>
+        <button class="btn btn-gold btn-sm" onclick="activateMicOnce()">Activer le micro</button>
+      </div>
+    </div>
+
+    <div id="classesList"></div>
+
+    <div class="card" style="margin-top:8px;">
+      <div class="card-title" style="margin-bottom:8px;">💾 Sauvegarde et transfert</div>
+      <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.6; margin-bottom:12px;">
+        <span class="only-claude" style="display:inline;">Dans claude.ai, vos classes et vos fiches sont synchronisées entre vos appareils (PC, iPad).</span>
+        Pour récupérer les fiches de l'ancienne version (fichier sur le PC) : exportez-les là-bas, puis importez le fichier ici.
+      </p>
+      <div class="flex gap-2" style="flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="exportAllData()">📤 Exporter mes données (.json)</button>
+        <label class="btn btn-outline btn-sm">📥 Importer une sauvegarde
+          <input type="file" id="importDataInput" accept=".json,application/json" style="display:none;" onchange="importAllData(this)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Modal ajout classe -->
+    <div id="addClassModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; padding:16px;">
+      <div class="modal">
+        <h2>🏫 Nouvelle classe</h2>
+        <div class="meta-group" style="margin-bottom:12px;">
+          <label>Nom de la classe</label>
+          <input type="text" id="newClassName" placeholder="ex : 4ème A, 5ème B...">
+        </div>
+        <div class="meta-group" style="margin-bottom:12px;">
+          <label>Niveau</label>
+          <select id="newClassNiveau">
+            <option value="6ème">6ème</option>
+            <option value="5ème">5ème</option>
+            <option value="4ème" selected>4ème</option>
+            <option value="3ème">3ème</option>
+          </select>
+        </div>
+        <div class="meta-group" style="margin-bottom:16px;">
+          <label>Élèves (un par ligne)</label>
+          <textarea id="newClassEleves" style="min-height:120px;" placeholder="Dupont Martin&#10;Martin Sophie&#10;Bernard Lucas&#10;..."></textarea>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" onclick="saveNewClass()">Créer la classe</button>
+          <button class="btn btn-outline" onclick="hideAddClassModal()">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal détail classe -->
+    <div id="classDetailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; padding:16px; overflow-y:auto;">
+      <div class="modal" style="max-width:600px; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <h2 id="classDetailTitle">Classe</h2>
+          <button class="btn btn-outline btn-sm" onclick="hideClassDetailModal()">✕ Fermer</button>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; font-weight:500;">Élèves</div>
+          <div id="classDetailEleves" style="font-size:0.85rem; color:var(--text); line-height:2;"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; font-weight:500;">Fiches de cours</div>
+          <div id="classDetailFiches"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; font-weight:500;">Synthèses</div>
+          <div id="classDetailSyntheses"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 1 : ENREGISTREMENT ══ -->
+  <div class="tab-panel active" id="panel-record">
+
+    <!-- Métadonnées séance -->
+    <div class="card">
+      <div class="card-title"><span class="num">1</span> Informations de la séance</div>
+      <div class="meta-row">
+        <div class="meta-group">
+          <label>Classe</label>
+          <select id="classe">
+            <option value="5ème">5ème</option>
+            <option value="4ème" selected>4ème</option>
+            <option value="3ème">3ème</option>
+          </select>
+        </div>
+        <div class="meta-group">
+          <label>Numéro de séance</label>
+          <input type="number" id="seanceNum" value="1" min="1" max="99">
+        </div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-group">
+          <label>Titre / Thème de la séquence</label>
+          <input type="text" id="sequenceTitle" placeholder="ex : Les troubadours au Moyen Âge">
+        </div>
+        <div class="meta-group">
+          <label>Date</label>
+          <input type="date" id="seanceDate">
+        </div>
+      </div>
+      <div class="meta-group" style="margin-top:10px">
+        <label>Notions clés abordées (aide pour l'IA)</label>
+        <textarea id="notionsCles" placeholder="ex : polyphonie, bourdon, troubadour, canso..."></textarea>
+      </div>
+    </div>
+
+    <!-- Enregistrement + Transcription simultanée -->
+    <div class="card">
+      <div class="card-title"><span class="num">2</span> Prise de parole des élèves</div>
+      <p class="no-claude" style="font-size:0.82rem; color:var(--text-dim); margin-bottom:18px;">
+        Lancez l'enregistrement : la transcription s'effectue <strong>en temps réel</strong> pendant que les élèves parlent. Aucun quota consommé.
+      </p>
+
+      <div id="speechCompatWarning" style="display:none; margin-bottom:14px;">
+        <div class="info-box" style="border-color:var(--gold); color:var(--gold-light);">
+          ⚠️ <strong>Navigateur incompatible.</strong> La transcription automatique nécessite <strong>Chrome</strong> ou <strong>Edge</strong>.<br>
+          Vous pouvez tout de même enregistrer et saisir le texte manuellement dans la zone ci-dessous.
+        </div>
+      </div>
+
+      <div class="only-claude dictation-help">
+        <div class="dh-title">🎤 Sur iPad : dictée du clavier</div>
+        <ol>
+          <li>Touchez la zone <strong>Transcription</strong> ci-dessous pour ouvrir le clavier.</li>
+          <li>Appuyez sur la touche <strong>micro 🎤</strong> du clavier : ce que disent les élèves s'écrit en direct.</li>
+          <li>Touchez à nouveau la touche micro pour arrêter, corrigez si besoin, puis générez la fiche.</li>
+        </ol>
+        <div class="dh-note">Si la touche micro n'apparaît pas : Réglages → Général → Clavier → <em>Activer la dictée</em>.
+          Dans claude.ai, la page n'a pas accès au micro : l'enregistrement audio et sa retranscription par Gemini restent disponibles dans la version fichier sur le PC.</div>
+      </div>
+
+      <label class="no-claude live-toggle">
+        <input type="checkbox" id="liveTranscribe" checked>
+        <span>Transcription en direct pendant l'enregistrement <span id="liveHint" style="color:var(--text-dim);"></span></span>
+      </label>
+
+      <div class="recording-center no-claude">
+        <div class="waveform" id="waveform"></div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <button class="btn btn-record" id="recordBtn" onclick="toggleRecording()">
+          <span id="recordBtnIcon">⏺</span>
+          <span id="recordBtnText">Démarrer l'enregistrement</span>
+        </button>
+        <div class="recording-hint" id="recordingHint">Cliquez pour enregistrer et transcrire simultanément</div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <label style="font-size:0.75rem; color:var(--text-dim); letter-spacing:0.06em; text-transform:uppercase; font-weight:500;">
+            📝 Transcription en direct
+          </label>
+          <button class="btn btn-outline btn-sm" onclick="clearTranscript()">🗑️ Effacer</button>
+        </div>
+        <div id="liveInterim" style="font-size:0.8rem; color:var(--text-dim); font-style:italic; min-height:20px; margin-bottom:6px; padding:0 2px;"></div>
+        <textarea id="transcriptArea" style="width:100%; min-height:140px; resize:vertical; background:#0F1C28; border:1px solid var(--border); border-radius:8px; padding:14px; font-family:'Inter',sans-serif; font-size:0.875rem; color:var(--cream); outline:none; line-height:1.7;"
+          placeholder="La transcription apparaîtra ici en temps réel... Vous pouvez aussi saisir ou corriger le texte."></textarea>
+      </div>
+
+      <!-- Audio de la séance -->
+      <div class="audio-panel">
+        <div class="audio-head">
+          <span>🎧 Audio de la séance <span id="audioBadge" class="badge badge-blue" style="margin-left:6px; display:none;"></span></span>
+          <label class="btn btn-outline btn-sm" style="text-transform:none; letter-spacing:0;">
+            📂 Importer un fichier audio
+            <input type="file" id="audioFileInput" accept="audio/*,video/*,.m4a,.mp3,.wav,.ogg,.webm,.aac,.flac" style="display:none;" onchange="importAudioFile(this)">
+          </label>
+        </div>
+        <div id="audioEmpty" style="font-size:0.8rem; color:var(--text-dim); margin-top:10px;">
+          <span class="no-claude">L'audio est enregistré automatiquement pendant la prise de parole et conservé avec la fiche lorsque vous la sauvegardez.
+          Vous pouvez aussi importer un enregistrement fait sur téléphone.</span>
+          <span class="only-claude">Facultatif : importez un enregistrement fait avec l'app Dictaphone pour le garder avec la fiche (sur cet appareil).</span>
+        </div>
+        <div id="audioLoaded" style="display:none;">
+          <audio id="audioPlayer" controls preload="metadata"></audio>
+          <div class="flex gap-2" style="flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm no-claude" id="audioTranscribeBtn" onclick="transcribeAudioWithAI()">🧠 Retranscrire l'audio avec Gemini</button>
+            <button class="btn btn-outline btn-sm" onclick="downloadCurrentAudio()">⬇️ Télécharger l'audio</button>
+            <button class="btn btn-danger btn-sm" onclick="clearCurrentAudio()">✕ Retirer</button>
+          </div>
+          <div class="no-claude" style="font-size:0.75rem; color:var(--text-dim); margin-top:8px;">
+            La retranscription Gemini est plus fidèle que la transcription en direct (ponctuation, vocabulaire musical). Elle remplace le texte ci-dessus.
+          </div>
+          <div id="audioProgress" style="display:none;">
+            <div class="progress-line" id="audioProgressText"></div>
+            <div class="progress-bar"><div id="audioProgressBar"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="text-align:right;">
+        <button class="btn btn-gold" onclick="goToFiche()">Générer la fiche de cours avec l'IA →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 2 : TABLEAU (photos) ══ -->
+  <div class="tab-panel" id="panel-tableau">
+
+    <div class="card">
+      <div class="card-title"><span class="num">1</span> Photos du tableau</div>
+      <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:14px;">
+        Déposez les photos des commentaires d'écoute (Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ?).
+        Vous pouvez déposer directement le <strong>.zip</strong> reçu par mail. Les photos de plusieurs classes et de plusieurs œuvres peuvent être mélangées : l'IA les regroupe par œuvre.
+      </p>
+
+      <div id="dropzone" class="dropzone" onclick="document.getElementById('photoInput').click()">
+        <div class="dz-icon">📸</div>
+        <div><strong style="color:var(--cream);">Cliquez</strong> ou glissez ici vos photos (JPG, PNG) ou un fichier .zip</div>
+        <div style="font-size:0.75rem; margin-top:6px;">Sur téléphone, vous pouvez aussi prendre la photo directement.</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*,.zip,application/zip" multiple style="display:none;" onchange="handlePhotoFiles(this.files); this.value='';">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoFiles(this.files); this.value='';">
+
+      <div class="flex gap-2 mt-3" style="flex-wrap:wrap; align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('cameraInput').click()">📷 Prendre une photo</button>
+        <button class="btn btn-outline btn-sm" onclick="addEmptyOeuvre()" title="Pour une écoute dont la photo a été perdue">✍️ Œuvre sans photo</button>
+        <button class="btn btn-danger btn-sm" id="clearPhotosBtn" onclick="clearPhotos()" style="display:none;">✕ Tout retirer</button>
+        <span id="photoCount" style="font-size:0.8rem; color:var(--text-dim);"></span>
+      </div>
+
+      <div id="photoGrid" class="photo-grid"></div>
+
+      <div class="divider"></div>
+
+      <div class="meta-row">
+        <div class="meta-group">
+          <label>Classe par défaut (si non écrite au tableau)</label>
+          <select id="tableauClasse"></select>
+        </div>
+        <div class="meta-group">
+          <label>Titre de l'œuvre (facultatif)</label>
+          <input type="text" id="tableauTitreHint" placeholder="ex : Sunday Bloody Sunday – U2">
+        </div>
+      </div>
+      <div class="meta-group">
+        <label>Précisions pour l'IA (facultatif)</label>
+        <textarea id="tableauConsignes" style="min-height:60px;" placeholder="ex : séquence sur la musique engagée ; problématique : la musique peut-elle apporter la paix ?"></textarea>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-dim); margin-top:12px; cursor:pointer;">
+        <input type="checkbox" id="tableauUseTranscript"> Tenir compte aussi de la transcription audio de la séance (onglet Enregistrement)
+      </label>
+
+      <div style="text-align:right; margin-top:16px;">
+        <button class="btn btn-gold" id="analyzeBtn" onclick="analyzePhotos()" disabled>🔎 Extraire le texte des photos</button>
+      </div>
+      <div id="analyzeProgress" style="display:none;">
+        <div class="progress-line" id="analyzeProgressText"></div>
+        <div class="progress-bar"><div id="analyzeProgressBar"></div></div>
+      </div>
+    </div>
+
+    <div id="oeuvresSection" style="display:none;">
+      <div class="section-header">
+        <h2>📝 Texte extrait — relisez et corrigez si besoin</h2>
+        <span id="oeuvresCount" class="badge badge-gold"></span>
+      </div>
+      <div class="info-box" style="margin-top:0; margin-bottom:16px;">
+        <strong>Étape 2.</strong> Vérifiez le titre, la classe et le texte de chaque œuvre (les mots incertains sont marqués <strong>[?]</strong>).
+        Puis cliquez sur <strong>« Vérifier et rédiger le résumé »</strong> : l'IA contrôle les informations (dates, noms, faits), corrige les erreurs et rédige un résumé de 4-5 lignes à recopier.
+      </div>
+      <div id="oeuvresList"></div>
+      <div class="flex gap-2" style="flex-wrap:wrap; justify-content:flex-end; margin-bottom:24px;">
+        <button class="btn btn-outline btn-sm" onclick="addEmptyOeuvre()">+ Ajouter une œuvre (photo perdue)</button>
+        <button class="btn btn-gold" onclick="summarizeAllOeuvres()">✍️ Vérifier et rédiger tous les résumés</button>
+      </div>
+      <div id="tableauExportBar" class="card" style="display:none;">
+        <div class="card-title" style="margin-bottom:10px;">📤 Tous les résumés</div>
+        <div class="flex gap-2" style="flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="exportResumesDocx()">⬇️ Télécharger en .docx</button>
+          <button class="btn btn-outline btn-sm" onclick="projectResumes()">🖥️ Projeter</button>
+          <button class="btn btn-outline btn-sm no-claude" onclick="printResumes()">🖨️ Imprimer</button>
+          <button class="btn btn-outline btn-sm" onclick="copyAllResumes()">📋 Copier tout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox" onclick="this.style.display='none'"><img id="lightboxImg" alt=""></div>
+
+  <!-- ══ TAB 3 : FICHE DE COURS ══ -->
+  <div class="tab-panel" id="panel-fiche">
+    <div class="card">
+      <div class="card-title"><span class="num">3</span> Fiche de cours générée par l'IA</div>
+      <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:16px;">
+        L'IA (Gemini) va vérifier et enrichir les apports des élèves pour créer une fiche de cours structurée.
+      </p>
+
+      <div id="ficheLoading" style="display:none;">
+        <div class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Gemini génère la fiche de cours...</span>
+        </div>
+      </div>
+
+      <div id="ficheOutput" class="fiche-output" style="display:none; white-space:pre-wrap;"></div>
+
+      <div id="ficheActions" style="display:none; margin-top:16px;">
+        <div class="flex gap-2" style="flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="regenerateFiche()">🔄 Régénérer</button>
+          <button class="btn btn-gold btn-sm" onclick="saveFiche()">💾 Sauvegarder cette fiche</button>
+          <button class="btn btn-outline btn-sm" onclick="copyFiche()">📋 Copier</button>
+          <button class="btn btn-outline btn-sm" style="border-color:var(--green); color:var(--green);" onclick="generateFlashTest()">⚡ Flash Test (10 questions)</button>
+        </div>
+      </div>
+
+      <!-- Flash Test output -->
+      <div id="flashTestSection" style="display:none; margin-top:20px;">
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:12px;"><span class="num" style="background:var(--green);">⚡</span> Flash Test — 10 questions QCMCam</div>
+        <div id="flashTestLoading" style="display:none;">
+          <div class="loading-indicator"><div class="spinner"></div><span>Gemini génère le flash test...</span></div>
+        </div>
+        <div id="flashTestOutput" style="display:none;">
+          <div id="flashTestText" class="quiz-preview" style="max-height:300px;"></div>
+          <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm" onclick="exportFlashTest()">⬇️ Exporter QCMCam (.txt)</button>
+            <button class="btn btn-outline btn-sm" onclick="copyFlashTest()">📋 Copier</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="ficheEmpty" style="text-align:center; padding:40px; color:var(--text-dim);">
+        <div style="font-size:2.5rem; margin-bottom:12px;">✨</div>
+        <p>Enregistrez les élèves dans l'onglet <strong>Enregistrement</strong>, puis cliquez sur <strong>Générer la fiche de cours</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 4 : SÉANCES ══ -->
+  <div class="tab-panel" id="panel-sessions">
+    <div class="section-header">
+      <h2>📚 Fiches de cours par classe</h2>
+      <span id="sessionCount" class="badge badge-blue">0 séance</span>
+    </div>
+
+    <div style="margin-bottom:14px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <label style="font-size:0.78rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em;">Filtrer par classe :</label>
+      <select id="sessionsClassFilter" onchange="updateSessionsList()" style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; color:var(--cream); font-family:'Inter',sans-serif; font-size:0.85rem; outline:none;">
+        <option value="">Toutes les classes</option>
+      </select>
+    </div>
+
+    <div id="sessionsList" class="session-list"></div>
+
+    <div class="divider"></div>
+    <div style="text-align:center; color:var(--text-dim); font-size:0.8rem;">
+      La synthèse et le QCM se génèrent à partir de 2 séances minimum (idéalement 5–6).
+    </div>
+  </div>
+
+  <!-- ══ TAB 5 : SYNTHÈSE ══ -->
+  <div class="tab-panel" id="panel-synthese">
+    <div class="card">
+      <div class="card-title"><span class="num">5</span> Fiche synthèse (export Word)</div>
+      <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:16px;">
+        Choisissez une classe, l'IA compile ses fiches en une synthèse avec vocabulaire, exportable en .docx.
+      </p>
+
+      <div class="meta-row" style="margin-bottom:14px;">
+        <div class="meta-group">
+          <label>Classe à synthétiser</label>
+          <select id="syntheseClassFilter" onchange="updateSyntheseInfo()" style="background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:9px 12px; color:var(--cream); font-family:'Inter',sans-serif; font-size:0.875rem; outline:none; width:100%;">
+            <option value="">— Choisir une classe —</option>
+          </select>
+        </div>
+        <div class="meta-group" style="display:flex; align-items:flex-end;">
+          <button class="btn btn-primary" id="syntheseBtn" onclick="generateSynthese()" disabled style="width:100%;">✨ Générer la synthèse</button>
+        </div>
+      </div>
+
+      <div id="syntheseInfo" style="margin-bottom:16px;"></div>
+
+      <div id="syntheseLoading" style="display:none;">
+        <div class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Gemini génère la fiche synthèse...</span>
+        </div>
+      </div>
+
+      <div id="syntheseOutput" style="display:none;">
+        <div id="syntheseText" class="fiche-output" style="border-color:var(--gold);"></div>
+        <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="exportSyntheseDocx()">⬇️ Télécharger en .docx</button>
+          <button class="btn btn-outline btn-sm" onclick="copySynthese()">📋 Copier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 6 : QCM ══ -->
+  <div class="tab-panel" id="panel-quiz">
+    <div class="card">
+      <div class="card-title"><span class="num">6</span> QCM — Export QCMCam</div>
+      <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:16px;">
+        L'IA génère 20 questions QCM à partir de toutes les séances. L'export est au format texte compatible QCMCam.
+      </p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="generateQuiz()">🎯 Générer le QCM (20 questions)</button>
+      </div>
+
+      <div id="quizLoading" style="display:none;">
+        <div class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Gemini génère les questions...</span>
+        </div>
+      </div>
+
+      <div id="quizOutput" style="display:none;">
+        <div id="quizText" class="quiz-preview"></div>
+        <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="exportQuizQCMCam()">⬇️ Exporter QCMCam (.txt)</button>
+          <button class="btn btn-outline btn-sm" onclick="copyQuiz()">📋 Copier</button>
+        </div>
+
+        <div class="info-box">
+          <strong>📖 Comment importer dans QCMCam ?</strong><br>
+          1. Ouvrez QCMCam → Fichier → Importer un QCM<br>
+          2. Sélectionnez le fichier .txt téléchargé<br>
+          3. Format : une question par bloc, réponses A/B/C/D, réponse correcte marquée *
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+// Stockage sûr (le navigateur peut refuser l'accès : navigation privée, page intégrée…)
+const store = {
+  get(k, d = null) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  json(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+};
+let apiKey = store.get('gemini_pro_api_key', '');
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let timerInterval = null;
+let timerSeconds = 0;
+let waveBars = [];
+let micStream = null; // stream gardé actif pour éviter la demande répétée
+
+// App data
+let sessions = store.json('trace_sessions', []);
+let currentFiche = '';
+let currentSynthese = '';
+let currentQuiz = '';
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('seanceDate').value = new Date().toISOString().split('T')[0];
+  buildWaveform();
+  updateApiStatus();
+  updateSessionsList();
+  updateSyntheseInfo();
+  updateClasseSelect();
+  renderClassesList();
+  closeModal();
+  goToTab('classes');
+  initDropzone();
+  if (IN_CLAUDE) {
+    document.documentElement.classList.add('in-claude');
+    initClaudeRuntime();
+  } else {
+    if (!apiKey) shareGeminiKey().then(ok => { if (!ok) showModal(); });
+    // Afficher le bandeau micro si pas encore autorisé
+    checkMicStatus();
+  }
+  if (IS_IOS) document.documentElement.classList.add('ios');
+  try { if (!IN_CLAUDE && navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  updateRecordModeUI();
+});
+
+async function checkMicStatus() {
+  try {
+    const perm = await navigator.permissions.query({ name: 'microphone' });
+    if (perm.state === 'granted') {
+      // Déjà autorisé — initialiser silencieusement
+      getMicStream();
+      document.getElementById('micActivationBanner').style.display = 'none';
+    } else {
+      document.getElementById('micActivationBanner').style.display = 'block';
+    }
+  } catch(e) {
+    // API permissions non supportée — afficher le bandeau
+    document.getElementById('micActivationBanner').style.display = 'block';
+  }
+}
+
+async function activateMicOnce() {
+  try {
+    await getMicStream();
+    document.getElementById('micActivationBanner').style.display = 'none';
+    showToast('Microphone activé ✓ — plus de demande pendant la session', 'success');
+  } catch(err) {
+    showToast('Accès refusé. Vérifiez les permissions dans Chrome.', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  API KEY
+// ══════════════════════════════════════════════
+function showModal() { document.getElementById('apiModal').style.display = 'flex'; }
+function closeModal() { document.getElementById('apiModal').style.display = 'none'; }
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val || val.length < 10) { showToast('Clé trop courte.', 'error'); return; }
+  apiKey = val;
+  updateApiStatus();
+  closeModal();
+  if (store.set('gemini_pro_api_key', apiKey) && store.get('gemini_pro_api_key') === apiKey) {
+    showToast('Clé Gemini enregistrée ✓', 'success');
+  } else {
+    showToast('Clé utilisable pour cette séance, mais le navigateur refuse de l\'enregistrer : quittez la navigation privée et désactivez « Bloquer tous les cookies » (Réglages → Safari).', 'error');
+  }
+}
+function updateApiStatus() {
+  const el = document.getElementById('apiStatus');
+  if (cloud.sample) { el.textContent = 'IA : Claude ✓'; el.className = 'api-badge connected'; }
+  else if (IN_CLAUDE && !cloud.ready) { el.textContent = 'Connexion à Claude…'; el.className = 'api-badge'; }
+  else if (apiKey) { el.textContent = 'Gemini Pro ✓'; el.className = 'api-badge connected'; }
+  else { el.textContent = 'Sans IA'; el.className = 'api-badge'; }
+  const sync = document.getElementById('syncStatus');
+  if (sync) {
+    sync.hidden = !cloud.db;
+    sync.textContent = cloud.syncing ? '☁️ Synchronisation…' : cloud.syncError ? '☁️ Hors ligne' : '☁️ Synchronisé';
+    sync.className = 'api-badge' + (cloud.db && !cloud.syncError && !cloud.syncing ? ' connected' : '');
+  }
+}
+
+// Vérifie qu'une IA est disponible (Claude dans claude.ai, sinon Gemini avec clé)
+function ensureAI() {
+  if (cloud.sample || apiKey) return true;
+  if (IN_CLAUDE && !cloud.ready) { showToast('Connexion à Claude en cours… réessayez dans quelques secondes.', 'info'); return false; }
+  showToast('Configurez d\'abord votre clé API Gemini.', 'error');
+  showModal();
+  return false;
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATION / TABS
+// ══════════════════════════════════════════════
+const tabOrder = ['classes','record','tableau','fiche','sessions','synthese','quiz'];
+const dotMap = Object.fromEntries(tabOrder.map((t, i) => [t, i]));
+
+// Classes data
+let classes = store.json('trace_classes', []);
+
+function goToTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+name));
+
+  const idx = dotMap[name] ?? 0;
+  for (let i = 0; i < tabOrder.length; i++) {
+    const dot = document.getElementById('dot-'+i);
+    const lbl = document.getElementById('lbl-'+i);
+    dot.classList.remove('active','done');
+    lbl.classList.remove('active','done');
+    if (i < idx) { dot.classList.add('done'); lbl.classList.add('done'); }
+    else if (i === idx) { dot.classList.add('active'); lbl.classList.add('active'); }
+  }
+  for (let i = 0; i < tabOrder.length - 1; i++) {
+    const conn = document.getElementById('conn-'+i);
+    conn.classList.toggle('done', i < idx);
+  }
+
+  if (name === 'sessions') updateSessionsList();
+  if (name === 'synthese') updateSyntheseInfo();
+  if (name === 'classes') renderClassesList();
+  if (name === 'tableau') updateTableauClasseSelect();
+}
+
+// ══════════════════════════════════════════════
+//  WAVEFORM
+// ══════════════════════════════════════════════
+function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  wf.innerHTML = '';
+  waveBars = [];
+  for (let i = 0; i < 40; i++) {
+    const b = document.createElement('div');
+    b.className = 'wave-bar';
+    b.style.animationDelay = (i * 0.04) + 's';
+    wf.appendChild(b);
+    waveBars.push(b);
+  }
+}
+function animateWave(active) {
+  waveBars.forEach(b => {
+    if (active) {
+      b.classList.add('active');
+      b.style.background = 'var(--red)';
+    } else {
+      b.classList.remove('active');
+      b.style.background = 'var(--indigo)';
+      b.style.height = '6px';
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+//  ENREGISTREMENT + TRANSCRIPTION EN TEMPS RÉEL
+// ══════════════════════════════════════════════
+let recognition = null;
+let finalTranscript = '';
+
+async function toggleRecording() {
+  if (!isRecording) await startRecording();
+  else stopRecording();
+}
+
+async function getMicStream() {
+  // Réutilise le stream existant si disponible
+  if (micStream && micStream.active) return micStream;
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  return micStream;
+}
+
+async function startRecording() {
+  try {
+    await getMicStream();
+  } catch (err) {
+    showToast(window.isSecureContext === false
+      ? 'Le micro exige une adresse sécurisée (https). Ouvrez l\'application depuis son lien https.'
+      : 'Accès au microphone refusé. Vérifiez les permissions du navigateur (Réglages → Safari → Microphone sur iPad).', 'error');
+    return;
+  }
+
+  // Web Speech API check
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const liveOn = document.getElementById('liveTranscribe').checked;
+  autoTranscribeAfterStop = !liveOn;
+  if (!liveOn) {
+    finalTranscript = '';
+    document.getElementById('liveInterim').textContent = '';
+  } else if (!SpeechRecognition) {
+    document.getElementById('speechCompatWarning').style.display = 'block';
+    autoTranscribeAfterStop = true;
+  } else {
+    // Démarrer la reconnaissance vocale en temps réel
+    recognition = new SpeechRecognition();
+    recognition.lang = 'fr-FR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    finalTranscript = '';
+    document.getElementById('transcriptArea').value = '';
+    document.getElementById('liveInterim').textContent = '';
+
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript + ' ';
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      document.getElementById('transcriptArea').value = finalTranscript;
+      document.getElementById('liveInterim').textContent = interim ? '✏️ ' + interim : '';
+    };
+
+    recognition.onerror = (err) => {
+      if (err.error !== 'no-speech') {
+        document.getElementById('liveInterim').textContent = '⚠️ Erreur micro : ' + err.error;
+      }
+    };
+
+    recognition.onend = () => {
+      // Redémarrage automatique si toujours en cours d'enregistrement
+      if (isRecording && recognition) { try { recognition.start(); } catch (e) {} }
+    };
+
+    recognition.start();
+  }
+
+  // Enregistrement audio réel (conservé avec la séance)
+  try {
+    audioChunks = [];
+    const mime = pickRecorderMime();
+    mediaRecorder = mime ? new MediaRecorder(micStream, { mimeType: mime, audioBitsPerSecond: 48000 })
+                         : new MediaRecorder(micStream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      if (!audioChunks.length) return;
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      setCurrentAudio(blob, 'Enregistré · ' + formatTime(timerSeconds));
+      if (autoTranscribeAfterStop && (apiKey || cloud.sample) && !document.getElementById('transcriptArea').value.trim()) {
+        transcribeAudioWithAI();
+      }
+    };
+    if (IS_IOS) mediaRecorder.start();       // Safari : un seul fichier MP4 propre
+    else mediaRecorder.start(5000);          // un morceau toutes les 5 s : rien n'est perdu en cas de souci
+    requestWakeLock();
+  } catch (e) {
+    console.warn('MediaRecorder indisponible', e);
+    mediaRecorder = null;
+  }
+
+  // Timer
+  isRecording = true;
+  timerSeconds = 0;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
+  }, 1000);
+
+  animateWave(true);
+  const btn = document.getElementById('recordBtn');
+  btn.classList.add('recording');
+  document.getElementById('recordBtnIcon').textContent = '⏹';
+  document.getElementById('recordBtnText').textContent = 'Arrêter l\'enregistrement';
+  document.getElementById('recordingHint').textContent = '🔴 Enregistrement + transcription en cours...';
+}
+
+function stopRecording() {
+  releaseWakeLock();
+  // Arrêter la reconnaissance
+  if (recognition) {
+    recognition.onend = null; // Empêcher le redémarrage automatique
+    recognition.stop();
+    recognition = null;
+  }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch (e) {}
+  }
+
+  clearInterval(timerInterval);
+  isRecording = false;
+  animateWave(false);
+
+  document.getElementById('liveInterim').textContent = '';
+  const btn = document.getElementById('recordBtn');
+  btn.classList.remove('recording');
+  document.getElementById('recordBtnIcon').textContent = '⏺';
+  document.getElementById('recordBtnText').textContent = 'Nouvel enregistrement';
+  document.getElementById('recordingHint').textContent = '✅ Terminé — vérifiez la transcription puis générez la fiche';
+
+  const transcript = document.getElementById('transcriptArea').value.trim();
+  if (transcript) {
+    showToast('Transcription prête ! Vérifiez et générez la fiche.', 'success');
+  } else {
+    showToast('Aucun texte transcrit. Saisissez le texte manuellement.', 'info');
+  }
+}
+
+function formatTime(s) {
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function clearTranscript() {
+  document.getElementById('transcriptArea').value = '';
+  document.getElementById('liveInterim').textContent = '';
+  finalTranscript = '';
+}
+
+// ══════════════════════════════════════════════
+//  FICHE DE COURS — CLAUDE AI
+// ══════════════════════════════════════════════
+function goToFiche() {
+  const transcript = document.getElementById('transcriptArea').value.trim();
+  if (!transcript) { showToast('La transcription est vide. Enregistrez les élèves ou saisissez le texte.', 'error'); return; }
+  goToTab('fiche');
+  generateFiche();
+}
+
+async function generateFiche() {
+  if (!ensureAI()) return;
+
+  const transcript = document.getElementById('transcriptArea').value.trim();
+  const classe = document.getElementById('classe').value;
+  const seanceNum = document.getElementById('seanceNum').value;
+  const sequenceTitle = document.getElementById('sequenceTitle').value;
+  const notions = document.getElementById('notionsCles').value;
+  const date = document.getElementById('seanceDate').value;
+
+  document.getElementById('ficheEmpty').style.display = 'none';
+  document.getElementById('ficheOutput').style.display = 'none';
+  document.getElementById('ficheActions').style.display = 'none';
+  document.getElementById('ficheLoading').style.display = 'flex';
+
+  const prompt = `Tu es professeur d'éducation musicale au collège. Tu aides à construire des fiches de cours pour des élèves de ${classe}.
+
+SÉANCE N°${seanceNum} — ${sequenceTitle || 'Séquence en cours'}
+Date : ${date || 'Non précisée'}
+Notions clés à aborder : ${notions || 'Non précisées'}
+
+PAROLE DES ÉLÈVES (transcription brute) :
+"""
+${transcript}
+"""
+
+Ta tâche :
+1. Analyse ce que les élèves ont retenu.
+2. Vérifie les informations et corrige les erreurs éventuelles.
+3. Complète avec les notions manquantes selon les notions clés indiquées.
+4. Rédige une fiche de cours structurée adaptée à des élèves de ${classe}.
+
+Format de la fiche (respecte exactement cette structure) :
+═══════════════════════════════════════════
+FICHE DE COURS — ${classe} | Séance ${seanceNum}
+${sequenceTitle || 'Séquence'}
+═══════════════════════════════════════════
+
+📌 CE QUE NOUS AVONS RETENU ENSEMBLE
+[Résumé valorisant ce que les élèves ont dit, en 3-5 points]
+
+🎵 L'ESSENTIEL À RETENIR
+[Les notions fondamentales de la séance, rédigées clairement]
+
+📖 VOCABULAIRE MUSICAL
+[Liste de 5-8 termes avec leur définition concise]
+
+🔍 POUR ALLER PLUS LOIN
+[1-2 anecdotes ou faits intéressants liés au thème]
+
+✅ JE SAIS...
+[3-4 compétences acquises sous forme "Je sais + verbe à l'infinitif"]
+
+✍️ RÉSUMÉ À RECOPIER
+[Un paragraphe de 4 à 5 phrases, rédigé au présent, que les élèves recopient au propre dans leur cahier et sur lequel ils seront évalués. Il reprend l'essentiel de la séance (œuvre, compositeur ou interprète, date, caractéristiques musicales, fonction ou message). Les informations doivent être exactes : corrige toute erreur des élèves.]
+
+Rédige directement la fiche, sans commentaire introductif.`;
+
+  try {
+    const resp = await callClaude(prompt);
+    currentFiche = resp;
+    document.getElementById('ficheOutput').textContent = resp;
+    document.getElementById('ficheOutput').style.display = 'block';
+    document.getElementById('ficheActions').style.display = 'block';
+    document.getElementById('ficheLoading').style.display = 'none';
+    document.getElementById('ficheEmpty').style.display = 'none';
+  } catch (err) {
+    document.getElementById('ficheLoading').style.display = 'none';
+    document.getElementById('ficheEmpty').style.display = 'block';
+    showToast('Erreur API : ' + err.message, 'error');
+  }
+}
+
+function regenerateFiche() { generateFiche(); }
+
+function saveFiche() {
+  const classe = document.getElementById('classe').value;
+  const seanceNum = parseInt(document.getElementById('seanceNum').value);
+  const sequenceTitle = document.getElementById('sequenceTitle').value;
+  const date = document.getElementById('seanceDate').value;
+  const transcript = document.getElementById('transcriptArea').value;
+
+  if (!currentFiche) { showToast('Aucune fiche à sauvegarder.', 'error'); return; }
+
+  const existing = sessions.findIndex(s => s.classe === classe && s.seanceNum === seanceNum && s.sequenceTitle === sequenceTitle);
+  const previous = existing >= 0 ? sessions[existing] : null;
+  const session = {
+    id: previous ? previous.id : Date.now(),
+    classe, seanceNum, sequenceTitle,
+    date: date || new Date().toISOString().split('T')[0],
+    transcript,
+    fiche: currentFiche,
+    hasAudio: !!(currentAudioBlob || (previous && previous.hasAudio)),
+    savedAt: new Date().toISOString()
+  };
+
+  if (existing >= 0) sessions[existing] = session;
+  else sessions.push(session);
+
+  sessions.sort((a,b) => a.seanceNum - b.seanceNum);
+  persistSessions();
+  cloudPutSession(session);
+  if (currentAudioBlob) {
+    audioDbPut(session.id, currentAudioBlob).catch(err => {
+      session.hasAudio = false; persistSessions();
+      showToast('Fiche sauvegardée, mais l\'audio n\'a pas pu être stocké : ' + err.message, 'error');
+    });
+  }
+  updateSessionsList();
+  updateSyntheseInfo();
+  showToast(`Fiche séance ${seanceNum} sauvegardée ✓`, 'success');
+
+  // Auto-increment séance number
+  document.getElementById('seanceNum').value = seanceNum + 1;
+}
+
+function persistSessions() {
+  if (!store.set('trace_sessions', JSON.stringify(sessions)) && !cloud.db) {
+    showToast('Stockage du navigateur indisponible ou plein : exportez vos données.', 'error');
+  }
+}
+
+function copyFiche() {
+  copyText(currentFiche);
+}
+
+// ══════════════════════════════════════════════
+//  SESSIONS LIST
+// ══════════════════════════════════════════════
+function updateSessionsList() {
+  const container = document.getElementById('sessionsList');
+  const count = document.getElementById('sessionCount');
+  const filterEl = document.getElementById('sessionsClassFilter');
+
+  // Mettre à jour le filtre
+  const allClasses = [...new Set(sessions.map(s => s.classe))].sort();
+  const currentFilter = filterEl ? filterEl.value : '';
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">Toutes les classes</option>' +
+      allClasses.map(c => `<option value="${c}" ${c === currentFilter ? 'selected' : ''}>${c}</option>`).join('');
+  }
+
+  const filtered = currentFilter ? sessions.filter(s => s.classe === currentFilter) : sessions;
+  count.textContent = filtered.length + ' séance' + (filtered.length > 1 ? 's' : '');
+
+  if (!sessions.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><p>Aucune fiche de cours pour l'instant.</p><p style="margin-top:6px;">Créez-en une depuis l'onglet <strong>Enregistrement</strong>.</p></div>`;
+    return;
+  }
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎵</div><p>Aucune fiche pour cette classe.</p></div>`;
+    return;
+  }
+
+  // Grouper par classe
+  const grouped = {};
+  filtered.forEach(s => {
+    if (!grouped[s.classe]) grouped[s.classe] = [];
+    grouped[s.classe].push(s);
+  });
+
+  container.innerHTML = Object.entries(grouped).map(([classe, fiches]) => `
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--gold); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border);">
+        🏫 ${classe} — ${fiches.length} séance${fiches.length > 1 ? 's' : ''}
+      </div>
+      ${fiches.map(s => `
+        <div class="session-item" id="si-${s.id}" style="margin-bottom:8px; flex-wrap:wrap;">
+          <div class="session-num">${s.seanceNum}</div>
+          <div class="session-info">
+            <div class="session-title">${escapeHtml(s.sequenceTitle || 'Sans titre')}</div>
+            <div class="session-meta">${s.date}
+              ${s.source === 'tableau' ? ' · <span class="badge badge-gold">📸 Tableau</span>' : ''}
+              ${s.hasAudio ? ' · <span class="badge badge-green">🎧 Audio</span>' : ''}</div>
+          </div>
+          <div class="session-actions">
+            ${s.hasAudio ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); playSessionAudio(${s.id})">🎧 Écouter</button>` : ''}
+            <button class="btn btn-outline btn-sm" onclick="viewSession(${s.id})">👁 Voir</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSession(${s.id})">✕</button>
+          </div>
+          <div id="sa-${s.id}" style="flex-basis:100%;"></div>
+        </div>`).join('')}
+    </div>
+  `).join('');
+}
+
+function viewSession(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('classe').value = s.classe;
+  document.getElementById('seanceNum').value = s.seanceNum;
+  document.getElementById('sequenceTitle').value = s.sequenceTitle;
+  document.getElementById('seanceDate').value = s.date;
+  document.getElementById('transcriptArea').value = s.transcript;
+  currentFiche = s.fiche;
+  document.getElementById('ficheOutput').textContent = s.fiche;
+  document.getElementById('ficheOutput').style.display = 'block';
+  document.getElementById('ficheActions').style.display = 'block';
+  document.getElementById('ficheEmpty').style.display = 'none';
+  document.getElementById('flashTestSection').style.display = 'none';
+  // Recharger l'audio de la séance s'il existe
+  resetCurrentAudio();
+  if (s.hasAudio) {
+    audioDbGet(s.id).then(blob => { if (blob) setCurrentAudio(blob, 'Séance ' + s.seanceNum); }).catch(() => {});
+  }
+  goToTab('fiche');
+}
+
+async function playSessionAudio(id) {
+  const holder = document.getElementById('sa-' + id);
+  if (!holder) return;
+  if (holder.innerHTML) { holder.innerHTML = ''; return; }
+  try {
+    const blob = await audioDbGet(id);
+    if (!blob) { showToast('Audio introuvable pour cette séance.', 'error'); return; }
+    const url = URL.createObjectURL(blob);
+    holder.innerHTML = `<audio controls autoplay src="${url}" style="width:100%; margin-top:10px;"></audio>`;
+  } catch (e) {
+    showToast('Lecture impossible : ' + e.message, 'error');
+  }
+}
+
+async function deleteSession(id) {
+  if (!(await askConfirm('Supprimer cette fiche de cours ?'))) return;
+  sessions = sessions.filter(s => s.id !== id);
+  audioDbDelete(id).catch(() => {});
+  persistSessions();
+  cloudDeleteSession(id);
+  updateSessionsList();
+  updateSyntheseInfo();
+  renderClassesList();
+  showToast('Fiche supprimée.', 'info');
+}
+
+function truncate(str, n) { return str.length > n ? str.substring(0, n) + '…' : str; }
+
+// ══════════════════════════════════════════════
+//  SYNTHÈSE
+// ══════════════════════════════════════════════
+function updateSyntheseInfo() {
+  const el = document.getElementById('syntheseInfo');
+  const filterEl = document.getElementById('syntheseClassFilter');
+
+  // Mettre à jour le sélecteur de classe
+  const allClasses = [...new Set(sessions.map(s => s.classe))].sort();
+  const current = filterEl ? filterEl.value : '';
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">— Choisir une classe —</option>' +
+      allClasses.map(c => `<option value="${c}" ${c === current ? 'selected' : ''}>${c}</option>`).join('');
+    filterEl.value = current;
+  }
+
+  const selectedClasse = filterEl ? filterEl.value : '';
+  const sessionsFiltrees = selectedClasse ? sessions.filter(s => s.classe === selectedClasse) : [];
+  const btn = document.getElementById('syntheseBtn');
+
+  if (!selectedClasse) {
+    el.innerHTML = '<div class="info-box">Choisissez une classe pour générer sa synthèse.</div>';
+    btn.disabled = true;
+  } else if (sessionsFiltrees.length < 2) {
+    el.innerHTML = `<div class="info-box"><strong>${sessionsFiltrees.length} séance</strong> pour ${selectedClasse}. Il en faut au moins 2.</div>`;
+    btn.disabled = true;
+  } else {
+    el.innerHTML = `<div class="info-box" style="border-color:var(--green)"><strong>✅ ${sessionsFiltrees.length} séances</strong> pour <strong>${selectedClasse}</strong> — prêt à synthétiser.</div>`;
+    btn.disabled = false;
+  }
+}
+
+async function generateSynthese() {
+  if (!ensureAI()) return;
+  const selectedClasse = document.getElementById('syntheseClassFilter').value;
+  if (!selectedClasse) { showToast('Choisissez une classe.', 'error'); return; }
+  const sessionsFiltrees = sessions.filter(s => s.classe === selectedClasse);
+  if (sessionsFiltrees.length < 2) { showToast('Il faut au moins 2 séances.', 'error'); return; }
+
+  document.getElementById('syntheseLoading').style.display = 'flex';
+  document.getElementById('syntheseOutput').style.display = 'none';
+
+  // Limiter la taille pour éviter le dépassement de quota
+  const fichesList = sessionsFiltrees.map(s =>
+    `SÉANCE ${s.seanceNum} (${s.date})\n${s.fiche.substring(0, 800)}`
+  ).join('\n\n═══════════════════════\n\n');
+
+  const titre = sessionsFiltrees[0]?.sequenceTitle || 'Séquence musicale';
+
+  const prompt = `Tu es professeur d'éducation musicale au collège en France. Voici les fiches de ${sessionsFiltrees.length} séances pour la classe ${selectedClasse}.
+
+CLASSE : ${selectedClasse}
+SÉQUENCE : ${titre}
+
+FICHES DE COURS :
+${fichesList.substring(0, 4000)}
+
+Rédige une fiche synthèse concise, centrée uniquement sur les éléments musicaux essentiels. Pas de remplissage, pas de répétition. Chaque ligne doit apporter une information utile pour réviser.
+
+═══════════════════════════════════════════
+FICHE SYNTHÈSE — ${selectedClasse} | ${titre}
+═══════════════════════════════════════════
+
+🗺️ EN BREF
+3-4 phrases maximum résumant l'essentiel de la séquence.
+
+📖 NOTIONS CLÉS
+5 à 8 notions musicales importantes uniquement. Pour chaque notion : 1 phrase de définition claire + 1 exemple musical concret. Rien de superflu.
+
+🎵 VOCABULAIRE MUSICAL
+10 à 12 termes musicaux incontournables de la séquence, classés alphabétiquement. Pour chaque terme : définition en 1 phrase précise. Uniquement le vocabulaire spécifiquement musical.
+
+💡 À RETENIR ABSOLUMENT
+5 points essentiels, formulés en une phrase chacun. Ce sont les 5 choses qu'un élève doit savoir par cœur.
+
+✅ JE SUIS CAPABLE DE...
+4 à 5 compétences musicales acquises, formulées simplement.
+
+Rédige directement sans commentaire. Sois précis et concis.`;
+
+  try {
+    const resp = await callClaude(prompt, 2000);
+    currentSynthese = resp;
+    document.getElementById('syntheseText').textContent = resp;
+    document.getElementById('syntheseLoading').style.display = 'none';
+    document.getElementById('syntheseOutput').style.display = 'block';
+  } catch (err) {
+    document.getElementById('syntheseLoading').style.display = 'none';
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+function copySynthese() {
+  copyText(currentSynthese);
+}
+
+// ── EXPORT DOCX (via docx-js CDN) ──
+async function exportSyntheseDocx() {
+  if (!currentSynthese) { showToast('Générez d\'abord la synthèse.', 'error'); return; }
+  showToast('Génération du fichier Word...', 'info');
+
+  try {
+    // Load docx library dynamically
+    if (!window.docx) {
+      await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');
+    }
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
+
+    const classe = sessions[0]?.classe || 'Collège';
+    const titre = sessions[0]?.sequenceTitle || 'Séquence';
+
+    // Parse lines into paragraphs
+    const lines = currentSynthese.split('\n');
+    const children = [];
+
+    for (const line of lines) {
+      if (!line.trim()) {
+        children.push(new Paragraph({ children: [] }));
+        continue;
+      }
+      if (line.startsWith('═') || line.startsWith('─')) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: '', break: 1 })],
+          border: { bottom: { style: 'single', size: 6, color: '4F7FBF', space: 1 } }
+        }));
+        continue;
+      }
+
+      const isH1 = /^[🗺️📖🎵🔗💡✅📌🔍]/.test(line.trimStart()) && line.length < 80;
+      const isBold = line.startsWith('FICHE') || line.startsWith('═');
+
+      children.push(new Paragraph({
+        heading: isH1 ? HeadingLevel.HEADING_2 : undefined,
+        children: [new TextRun({
+          text: line.replace(/^[─═]+$/, ''),
+          bold: isBold || isH1,
+          size: isH1 ? 26 : 22,
+          font: 'Arial',
+          color: isH1 ? '4F7FBF' : '1C2B3A'
+        })]
+      }));
+    }
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } }
+        },
+        children
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    downloadBlob(blob, `synthese-${titre.replace(/\s+/g,'-').toLowerCase()}-${classe}.docx`);
+    showToast('Fichier Word téléchargé ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    // Fallback : export as .txt renamed
+    const blob = new Blob([currentSynthese], { type: 'text/plain;charset=utf-8' });
+    downloadBlob(blob, 'synthese-musique.txt');
+    showToast('Export en .txt (bibliothèque Word indisponible)', 'info');
+  }
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src;
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  QCM — QCMCAM
+// ══════════════════════════════════════════════
+async function generateQuiz() {
+  if (!ensureAI()) return;
+  if (!sessions.length) { showToast('Aucune séance sauvegardée.', 'error'); return; }
+
+  document.getElementById('quizLoading').style.display = 'flex';
+  document.getElementById('quizOutput').style.display = 'none';
+
+  const fichesList = sessions.map(s => s.fiche).join('\n\n---\n\n');
+  const classe = sessions[0]?.classe || 'Collège';
+
+  const prompt = `Tu es professeur d'éducation musicale. À partir de ces fiches de cours pour des élèves de ${classe}, génère exactement 20 questions QCM.
+
+FICHES DE COURS :
+${fichesList.substring(0, 6000)}
+
+FORMAT STRICTEMENT OBLIGATOIRE — reproduis exactement cette structure pour chaque question :
+
+## Quelle est la voix la plus grave chez les hommes ?
+
+- Ténor
+- Baryton
+- [x] Basse
+- Contre-ténor
+
+## Combien de cordes possède une guitare classique ?
+
+- [x] Six cordes
+- Quatre cordes
+- Huit cordes
+- Cinq cordes
+
+RÈGLES ABSOLUES :
+- La question commence TOUJOURS par "## " (deux dièses, un espace, puis le texte de la question)
+- Chaque réponse commence par "- " (tiret, espace, puis le texte)
+- La bonne réponse commence par "- [x] " (tiret, espace, crochet, x, crochet, espace)
+- UNE ligne vide entre chaque bloc question+réponses
+- Exactement 20 blocs au total
+- Toutes les propositions ont la même longueur approximative
+- La bonne réponse est placée aléatoirement : environ 5 fois en 1ère position, 5 fois en 2ème, 5 fois en 3ème, 5 fois en 4ème
+- AUCUN texte avant la première question, AUCUN texte après la vingtième
+- AUCUN numéro devant les questions`;
+
+  try {
+    const resp = await callClaude(prompt, 4000);
+    currentQuiz = resp;
+    document.getElementById('quizText').textContent = resp;
+    document.getElementById('quizLoading').style.display = 'none';
+    document.getElementById('quizOutput').style.display = 'block';
+  } catch (err) {
+    document.getElementById('quizLoading').style.display = 'none';
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+function exportQuizQCMCam() {
+  if (!currentQuiz) { showToast('Générez d\'abord le QCM.', 'error'); return; }
+  const blob = new Blob([currentQuiz], { type: 'text/plain;charset=utf-8' });
+  downloadBlob(blob, 'qcm-musique.txt');
+  showToast('Fichier QCMCam (.txt) téléchargé ✓', 'success');
+}
+
+function copyQuiz() {
+  copyText(currentQuiz);
+}
+
+// ══════════════════════════════════════════════
+//  GEMINI PRO API CALL (avec fallback automatique)
+// ══════════════════════════════════════════════
+const GEMINI_MODELS = [
+  'gemini-flash-latest',
+  'gemini-flash-lite-latest',
+  'gemini-3.6-flash',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+];
+let workingModel = store.get('gemini_working_model', null);
+
+async function callClaude(prompt, maxTokens = 1500) {
+  const res = await callAI([{ text: prompt }], { maxTokens });
+  return res.text;
+}
+
+// Appel générique : parts = [{text}, {inline_data:{mime_type, data}}...]
+// opts : { maxTokens, temperature, json, search, system }
+// Retourne { text, sources }
+async function callAI(parts, opts = {}) {
+  // Dans claude.ai : Claude répond directement, sans clé API
+  if (cloud.sample) return callClaudeSample(parts, opts);
+  // Si on a déjà un modèle qui fonctionne, on l'essaie en premier
+  const modelsToTry = workingModel
+    ? [workingModel, ...GEMINI_MODELS.filter(m => m !== workingModel)]
+    : GEMINI_MODELS;
+
+  let lastErr = null;
+  for (const model of modelsToTry) {
+    try {
+      const result = await callGeminiWithRetry(model, parts, opts);
+      // Succès — on mémorise ce modèle pour la prochaine fois
+      if (model !== workingModel) {
+        workingModel = model;
+        store.set('gemini_working_model', model);
+        console.log('Modèle Gemini actif :', model);
+      }
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const msg = err.message || '';
+      // Modèle indisponible → on essaie le suivant
+      if (err.status === 404 || /no longer available|not found|deprecated|is not supported/i.test(msg)) {
+        if (model === workingModel) { workingModel = null; store.del('gemini_working_model'); }
+        continue;
+      }
+      // Serveur surchargé (« high demand », 503) malgré les nouveaux essais : on passe au modèle suivant
+      if (err.status === 503 || err.status === 500 || /high demand|overloaded|UNAVAILABLE|try again later/i.test(msg)) {
+        if (opts.onWait) opts.onWait(0, `${model} est surchargé, essai avec un autre modèle…`);
+        continue;
+      }
+      // Quota épuisé pour CE modèle : chaque modèle a son propre quota → on passe au suivant
+      if (err.quota) {
+        console.warn('Quota atteint sur', model, '→ modèle suivant', err.quotaId || '');
+        if (opts.onWait) opts.onWait(0, `Limite atteinte sur ${model}, essai avec un autre modèle…`);
+        continue;
+      }
+      // Autre type d'erreur (clé invalide, contenu refusé…) → on remonte directement
+      throw err;
+    }
+  }
+  if (lastErr && lastErr.quota) {
+    throw new Error(lastErr.perDay
+      ? 'Quota journalier de Gemini atteint sur tous les modèles gratuits : réessayez demain (le quota se renouvelle vers 9 h).'
+      : 'Gemini est très sollicité ou la limite par minute est atteinte sur tous les modèles : réessayez dans une minute.');
+  }
+  throw new Error('Aucun modèle Gemini disponible. ' + (lastErr ? lastErr.message : ''));
+}
+
+const DEFAULT_SYSTEM = 'Tu es un assistant pédagogique expert en éducation musicale au collège en France. Tu réponds toujours en français, avec un langage clair et adapté aux élèves de collège (6ème à 3ème).';
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Recherche Google désactivée pour la séance si Gemini la refuse (quota de recherche épuisé)
+let searchDisabledUntil = 0;
+
+// Réessaie intelligemment : recherche Google → sans recherche ; limite par minute → attente indiquée par Google
+async function callGeminiWithRetry(model, parts, opts) {
+  let useSearch = !!opts.search && Date.now() > searchDisabledUntil;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await callGemini(model, parts, { ...opts, search: useSearch });
+    } catch (err) {
+      const msg = err.message || '';
+      // 1. La recherche Google est refusée (quota de recherche, outil non disponible) → on refait SANS recherche
+      if (useSearch && (err.quota || err.status === 400 || /search|tool|grounding/i.test(msg))) {
+        console.warn('Recherche Google refusée par Gemini, nouvel essai sans recherche :', msg);
+        useSearch = false;
+        if (err.quota) searchDisabledUntil = Date.now() + 10 * 60 * 1000;
+        continue;
+      }
+      // 2. Limite PAR MINUTE : on attend le délai indiqué par Google (une seule fois), puis modèle suivant
+      if (err.quota && !err.perDay && attempt < 1) {
+        const wait = Math.min(Math.max(err.retryDelay || 20, 5), 60);
+        if (opts.onWait) opts.onWait(wait, `Limite par minute de Gemini (formule gratuite) : nouvelle tentative dans ${Math.round(wait)} s…`);
+        await sleep(wait * 1000);
+        continue;
+      }
+      // 3. Serveur surchargé (503) : courte attente puis nouvel essai
+      if ((err.status === 503 || err.status === 500 || /overloaded|UNAVAILABLE/i.test(msg)) && attempt < 2) {
+        if (opts.onWait) opts.onWait(5, 'Gemini est surchargé, nouvel essai dans 5 s…');
+        await sleep(5000);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+async function callGemini(model, parts, opts = {}) {
+  // Compatibilité avec l'ancien appel callGemini(model, prompt, maxTokens)
+  if (typeof parts === 'string') parts = [{ text: parts }];
+  if (typeof opts === 'number') opts = { maxTokens: opts };
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const generationConfig = {
+    maxOutputTokens: opts.maxTokens || 1500,
+    temperature: opts.temperature ?? 0.7
+  };
+  if (opts.json) generationConfig.responseMimeType = 'application/json';
+
+  const body = {
+    systemInstruction: { parts: [{ text: opts.system || DEFAULT_SYSTEM }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig
+  };
+  if (opts.search) {
+    body.tools = [/^gemini-1\./.test(model) ? { google_search_retrieval: {} } : { google_search: {} }];
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const e = body.error || {};
+    const error = new Error(e.message || `Erreur HTTP ${response.status}`);
+    error.status = response.status;
+    if (response.status === 429 || e.status === 'RESOURCE_EXHAUSTED') {
+      error.quota = true;
+      const details = e.details || [];
+      const failure = details.find(d => String(d['@type'] || '').includes('QuotaFailure'));
+      const ids = (failure?.violations || []).map(v => (v.quotaId || '') + ' ' + (v.quotaMetric || '')).join(' ');
+      error.quotaId = ids;
+      error.perDay = /PerDay/i.test(ids) || /per day|daily/i.test(e.message || '');
+      const retry = details.find(d => String(d['@type'] || '').includes('RetryInfo'));
+      const m = String(retry?.retryDelay || '').match(/([\d.]+)s/) || String(e.message || '').match(/retry in ([\d.]+)\s*s/i);
+      error.retryDelay = m ? parseFloat(m[1]) : 0;
+    }
+    throw error;
+  }
+
+  const data = await response.json();
+  const cand = data.candidates?.[0];
+  const text = (cand?.content?.parts || [])
+    .filter(p => typeof p.text === 'string' && !p.thought)
+    .map(p => p.text).join('');
+  if (!text) {
+    const reason = cand?.finishReason || data.promptFeedback?.blockReason || '';
+    throw new Error('Réponse vide de Gemini' + (reason ? ' (' + reason + ')' : ''));
+  }
+  const sources = (cand?.groundingMetadata?.groundingChunks || [])
+    .map(c => c.web).filter(Boolean)
+    .map(w => ({ title: w.title || w.uri, uri: w.uri }));
+  return { text, sources };
+}
+
+// ══════════════════════════════════════════════
+//  CLASSES
+// ══════════════════════════════════════════════
+function saveClasses() {
+  store.set('trace_classes', JSON.stringify(classes));
+  store.set('trace_classes_updated', String(Date.now()));
+  cloudPutClasses();
+}
+
+function updateClasseSelect() {
+  const sel = document.getElementById('classe');
+  const current = sel.value;
+  sel.innerHTML = '';
+  const defaults = ['6ème','5ème','4ème','3ème'];
+  const names = classes.length ? classes.map(c => c.nom) : defaults;
+  names.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    if (n === current) o.selected = true;
+    sel.appendChild(o);
+  });
+  updateTableauClasseSelect();
+}
+
+function classNames() {
+  return classes.length ? classes.map(c => c.nom) : ['6ème','5ème','4ème','3ème'];
+}
+
+function classOptionsHtml(selected) {
+  const names = classNames();
+  const extra = selected && !names.includes(selected) ? [selected] : [];
+  return [...names, ...extra].map(n =>
+    `<option value="${escapeAttr(n)}" ${n === selected ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('');
+}
+
+function updateTableauClasseSelect() {
+  const sel = document.getElementById('tableauClasse');
+  if (!sel) return;
+  const current = sel.value || document.getElementById('classe').value;
+  sel.innerHTML = classOptionsHtml(current);
+}
+
+function showAddClassModal() {
+  document.getElementById('newClassName').value = '';
+  document.getElementById('newClassEleves').value = '';
+  document.getElementById('addClassModal').style.display = 'flex';
+}
+function hideAddClassModal() {
+  document.getElementById('addClassModal').style.display = 'none';
+}
+
+function saveNewClass() {
+  const nom = document.getElementById('newClassName').value.trim();
+  const niveau = document.getElementById('newClassNiveau').value;
+  const elevesRaw = document.getElementById('newClassEleves').value;
+  if (!nom) { showToast('Entrez un nom de classe.', 'error'); return; }
+  const eleves = elevesRaw.split('\n').map(e => e.trim()).filter(Boolean);
+  const newClass = { id: Date.now(), nom, niveau, eleves };
+  classes.push(newClass);
+  saveClasses();
+  updateClasseSelect();
+  renderClassesList();
+  hideAddClassModal();
+  showToast(`Classe "${nom}" créée ✓`, 'success');
+}
+
+async function deleteClass(id) {
+  if (!(await askConfirm('Supprimer cette classe ?'))) return;
+  classes = classes.filter(c => c.id !== id);
+  saveClasses();
+  updateClasseSelect();
+  renderClassesList();
+}
+
+function renderClassesList() {
+  const container = document.getElementById('classesList');
+  if (!classes.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><p>Aucune classe créée.</p><p style="margin-top:6px;">Cliquez sur <strong>+ Ajouter une classe</strong> pour commencer.</p></div>`;
+    return;
+  }
+  container.innerHTML = classes.map(c => {
+    const fichesClasse = sessions.filter(s => s.classe === c.nom);
+    return `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div>
+          <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--cream);">${c.nom}</div>
+          <div style="font-size:0.75rem; color:var(--text-dim); margin-top:2px;">${c.niveau} · ${c.eleves.length} élève${c.eleves.length>1?'s':''} · ${fichesClasse.length} fiche${fichesClasse.length>1?'s':''}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-sm" onclick="openClassDetail(${c.id})">👁 Voir</button>
+          <button class="btn btn-primary btn-sm" onclick="startSessionForClass('${c.nom}')">🎙️ Nouvelle séance</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteClass(${c.id})">✕</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        ${fichesClasse.map(s => `<span class="badge badge-blue" style="cursor:pointer;" onclick="viewSession(${s.id})">Séance ${s.seanceNum}</span>`).join('')}
+        ${fichesClasse.length === 0 ? '<span style="font-size:0.78rem; color:var(--text-dim);">Aucune fiche encore</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function startSessionForClass(nom) {
+  document.getElementById('classe').value = nom;
+  // Numéro de séance = nombre de séances existantes + 1
+  const existing = sessions.filter(s => s.classe === nom);
+  document.getElementById('seanceNum').value = existing.length + 1;
+  // Effacer les champs de la séance précédente
+  document.getElementById('sequenceTitle').value = '';
+  document.getElementById('notionsCles').value = '';
+  document.getElementById('transcriptArea').value = '';
+  document.getElementById('liveInterim').textContent = '';
+  document.getElementById('seanceDate').value = new Date().toISOString().split('T')[0];
+  finalTranscript = '';
+  resetCurrentAudio();
+  goToTab('record');
+}
+
+function openClassDetail(id) {
+  const c = classes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('classDetailTitle').textContent = `🏫 ${c.nom} — ${c.niveau}`;
+  // Élèves
+  document.getElementById('classDetailEleves').innerHTML =
+    c.eleves.length
+      ? c.eleves.map((e,i) => `<span style="display:inline-block; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:2px 10px; margin:2px; font-size:0.82rem;">${i+1}. ${e}</span>`).join('')
+      : '<span style="color:var(--text-dim)">Aucun élève renseigné</span>';
+  // Fiches
+  const fichesClasse = sessions.filter(s => s.classe === c.nom);
+  document.getElementById('classDetailFiches').innerHTML = fichesClasse.length
+    ? fichesClasse.map(s => `<div class="session-item" style="margin-bottom:8px;">
+        <div class="session-num">${s.seanceNum}</div>
+        <div class="session-info">
+          <div class="session-title">${s.sequenceTitle || 'Sans titre'}</div>
+          <div class="session-meta">${s.date}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="viewSession(${s.id}); hideClassDetailModal();">👁 Voir</button>
+      </div>`).join('')
+    : '<p style="color:var(--text-dim); font-size:0.85rem;">Aucune fiche de cours pour cette classe.</p>';
+  // Synthèses
+  document.getElementById('classDetailSyntheses').innerHTML =
+    `<p style="color:var(--text-dim); font-size:0.85rem;">${fichesClasse.length >= 2 ? fichesClasse.length + ' séances disponibles — ' : 'Pas encore assez de séances — '}
+    <button class="btn btn-outline btn-sm" onclick="goToTab('synthese'); hideClassDetailModal();">Générer une synthèse</button></p>`;
+  document.getElementById('classDetailModal').style.display = 'flex';
+}
+
+function hideClassDetailModal() {
+  document.getElementById('classDetailModal').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+//  FLASH TEST (10 questions)
+// ══════════════════════════════════════════════
+let currentFlashTest = '';
+
+async function generateFlashTest() {
+  if (!ensureAI()) return;
+  if (!currentFiche) { showToast('Générez d\'abord la fiche de cours.', 'error'); return; }
+
+  document.getElementById('flashTestSection').style.display = 'block';
+  document.getElementById('flashTestLoading').style.display = 'flex';
+  document.getElementById('flashTestOutput').style.display = 'none';
+
+  const classe = document.getElementById('classe').value;
+
+  const prompt = `Tu es professeur d'éducation musicale. À partir de cette fiche de cours pour des élèves de ${classe}, génère exactement 10 questions QCM pour un flash test rapide.
+
+FICHE DE COURS :
+${currentFiche}
+
+FORMAT STRICTEMENT OBLIGATOIRE — reproduis exactement cette structure pour chaque question :
+
+## Quelle est la voix la plus grave chez les hommes ?
+
+- Ténor
+- Baryton
+- [x] Basse
+- Contre-ténor
+
+## Combien de cordes possède une guitare classique ?
+
+- [x] Six cordes
+- Quatre cordes
+- Huit cordes
+- Cinq cordes
+
+RÈGLES ABSOLUES :
+- La question commence TOUJOURS par "## " (deux dièses, un espace, puis le texte de la question)
+- Chaque réponse commence par "- " (tiret, espace, puis le texte)
+- La bonne réponse commence par "- [x] " (tiret, espace, crochet, x, crochet, espace)
+- UNE ligne vide entre chaque bloc question+réponses
+- Exactement 10 blocs au total
+- Toutes les propositions ont la même longueur approximative
+- RÉPARTITION OBLIGATOIRE de la bonne réponse : questions 1,5,9 → bonne réponse en 1ère position ; questions 2,6,10 → en 2ème position ; questions 3,7 → en 3ème position ; questions 4,8 → en 4ème position
+- AUCUN texte avant la première question, AUCUN texte après la dixième
+- AUCUN numéro devant les questions`;
+
+  try {
+    const resp = await callClaude(prompt, 2000);
+    currentFlashTest = resp;
+    document.getElementById('flashTestText').textContent = resp;
+    document.getElementById('flashTestLoading').style.display = 'none';
+    document.getElementById('flashTestOutput').style.display = 'block';
+  } catch (err) {
+    document.getElementById('flashTestLoading').style.display = 'none';
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+function exportFlashTest() {
+  if (!currentFlashTest) return;
+  const blob = new Blob([currentFlashTest], { type: 'text/plain;charset=utf-8' });
+  downloadBlob(blob, 'flash-test-qcmcam.txt');
+  showToast('Flash test exporté ✓', 'success');
+}
+
+function copyFlashTest() {
+  copyText(currentFlashTest);
+}
+// ══════════════════════════════════════════════
+//  ENVIRONNEMENT : claude.ai (iPad, PC) ou fichier local
+// ══════════════════════════════════════════════
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const cloud = { ready: false, sample: null, downloads: null, db: null, uid: null, imagesMax: 0, syncing: false, syncError: false };
+let autoTranscribeAfterStop = false;
+let wakeLock = null;
+
+async function initClaudeRuntime() {
+  updateApiStatus();
+  const use = (n) => window.claude.use(n).catch(() => null);
+  try {
+    const [sample, downloads, user, db] = await Promise.all([use('sample'), use('downloads'), use('user'), use('db')]);
+    cloud.sample = sample || null;
+    cloud.downloads = downloads || null;
+    if (cloud.sample) {
+      try { const lim = await cloud.sample.limits(); cloud.imagesMax = (lim && lim.images && lim.images.maxCount) || 0; } catch (e) {}
+    }
+    if (user && db) {
+      try { cloud.uid = await user.id(); } catch (e) { cloud.uid = null; }
+      if (cloud.uid) cloud.db = db;
+    }
+  } catch (e) { console.warn('Runtime claude.ai', e); }
+  cloud.ready = true;
+  updateApiStatus();
+  updateRecordModeUI();
+  if (!cloud.sample && !apiKey) {
+    showToast('Claude n\'est pas disponible dans cette vue : ouvrez la page depuis claude.ai.', 'error');
+  }
+  if (cloud.db) {
+    await cloudSync();
+    let last = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Date.now() - last > 20000) { last = Date.now(); cloudSync(); }
+    });
+  }
+}
+
+function updateRecordModeUI() {
+  const live = document.getElementById('liveTranscribe');
+  const hint = document.getElementById('liveHint');
+  if (!live) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    live.checked = false; live.disabled = true;
+    hint.textContent = '(non disponible dans ce navigateur : l\'audio sera retranscrit par Gemini après l\'arrêt)';
+  } else if (IS_IOS) {
+    // Sur iPad, la reconnaissance vocale de Safari et l'enregistrement se gênent : audio d'abord, Gemini ensuite
+    live.checked = store.get('trace_live_ios', '0') === '1';
+    hint.textContent = '(sur iPad, conseillé : désactivé — l\'audio est retranscrit par Gemini après l\'arrêt)';
+    live.onchange = () => store.set('trace_live_ios', live.checked ? '1' : '0');
+  }
+}
+
+async function requestWakeLock() {
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+}
+function releaseWakeLock() {
+  try { if (wakeLock) wakeLock.release(); } catch (e) {}
+  wakeLock = null;
+}
+document.addEventListener('visibilitychange', () => {
+  if (!isRecording) return;
+  if (document.visibilityState === 'visible') requestWakeLock();
+  else if (IS_IOS) showToast('⚠️ Gardez l\'application au premier plan : l\'iPad coupe le micro des pages en arrière-plan.', 'error');
+});
+
+// ── Claude (capability « sample ») ──
+function b64ToBlob(b64, type) {
+  const bin = atob(b64), arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type });
+}
+
+function sampleErrorText(e) {
+  const code = e && e.code;
+  const map = {
+    not_granted: 'Autorisez cette page à utiliser Claude (fenêtre d\'autorisation de claude.ai), puis réessayez.',
+    sampling_disabled: 'Claude n\'est pas disponible pour ce compte.',
+    rate_limited: 'Limite d\'utilisation de Claude atteinte pour le moment : réessayez un peu plus tard.',
+    session_expired: 'Votre session claude.ai a expiré : reconnectez-vous puis rechargez la page.',
+    image_rejected: 'Une photo a été refusée (format ou taille). Essayez avec une autre photo.',
+    images_unavailable: 'L\'envoi de photos à Claude n\'est pas disponible dans cette vue.',
+    prompt_too_large: 'Le texte envoyé est trop long : réduisez la transcription ou le nombre de séances.',
+    refused: 'Claude a refusé cette demande : reformulez le texte ou les consignes.',
+    empty_completion: 'Claude n\'a rien répondu : réessayez avec moins de contenu.',
+    invalid_json: 'La réponse de Claude était incomplète : réessayez.',
+    cancelled: 'Demande annulée.',
+  };
+  return map[code] || ('Claude est momentanément indisponible' + (e && e.message ? ' (' + e.message + ')' : '') + ' : réessayez.');
+}
+
+async function callClaudeSample(parts, opts = {}) {
+  if (parts.some(p => p.inline_data && /^audio\//.test(p.inline_data.mime_type))) {
+    throw new Error('Dans claude.ai, la retranscription d\'un fichier audio n\'est pas possible : utilisez la dictée du clavier de l\'iPad.');
+  }
+  const text = parts.filter(p => typeof p.text === 'string').map(p => p.text).join('\n\n');
+  const images = parts
+    .filter(p => p.inline_data && /^image\//.test(p.inline_data.mime_type))
+    .map(p => b64ToBlob(p.inline_data.data, p.inline_data.mime_type))
+    .concat(opts.images || []);
+  const prompt = (opts.system || DEFAULT_SYSTEM) + '\n\n' + text;
+  const o = { cache: false };
+  if (images.length) o.images = cloud.imagesMax ? images.slice(0, cloud.imagesMax) : images;
+  try {
+    if (opts.json) {
+      const v = await cloud.sample.json(prompt, o);
+      return { text: JSON.stringify(v), sources: [] };
+    }
+    const r = await cloud.sample(prompt, o);
+    return { text: r.text, sources: [] };
+  } catch (e) {
+    throw new Error(sampleErrorText(e));
+  }
+}
+
+// Moitiés gauche/droite (avec chevauchement) d'une photo, en JPEG
+async function photoHalves(dataUrl) {
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataUrl; });
+  const w = img.naturalWidth, h = img.naturalHeight, half = Math.round(w * 0.56);
+  const crop = (x) => new Promise(res => {
+    const c = document.createElement('canvas');
+    c.width = half; c.height = h;
+    c.getContext('2d').drawImage(img, x, 0, half, h, 0, 0, half, h);
+    c.toBlob(b => res(b), 'image/jpeg', 0.9);
+  });
+  return Promise.all([crop(0), crop(w - half)]);
+}
+
+// ── Synchronisation claude.ai (espace privé de l'utilisateur) ──
+function cloudCol() { return cloud.db.collection('data/users/' + cloud.uid); }
+
+function cloudPayload(s) {
+  let copy = { ...s };
+  if (JSON.stringify(copy).length > 200000) copy.transcript = String(copy.transcript || '').slice(0, 60000) + '\n[…transcription raccourcie pour la synchronisation]';
+  return { session: copy, updatedAt: s.savedAt || new Date().toISOString() };
+}
+
+async function cloudPutSession(s, silent) {
+  if (!cloud.db || !s) return;
+  try {
+    await cloudCol().doc('session_' + s.id).set(cloudPayload(s));
+    if (!silent) { cloud.syncError = false; updateApiStatus(); }
+  } catch (e) {
+    console.warn('sync session', e);
+    cloud.syncError = true; updateApiStatus();
+  }
+}
+
+async function cloudDeleteSession(id, silent) {
+  const tomb = store.json('trace_tombstones', {});
+  tomb[String(id)] = new Date().toISOString();
+  store.set('trace_tombstones', JSON.stringify(tomb));
+  if (!cloud.db) return;
+  try {
+    await cloudCol().doc('session_' + id).set({ deleted: true, updatedAt: tomb[String(id)] });
+    delete tomb[String(id)];
+    store.set('trace_tombstones', JSON.stringify(tomb));
+  } catch (e) {
+    console.warn('sync suppression', e);
+    if (!silent) { cloud.syncError = true; updateApiStatus(); }
+  }
+}
+
+async function cloudPutClasses(silent) {
+  if (!cloud.db) return;
+  try {
+    const updatedAt = Number(store.get('trace_classes_updated', '0')) || Date.now();
+    await cloudCol().doc('classes').set({ list: classes, updatedAt });
+  } catch (e) {
+    console.warn('sync classes', e);
+    if (!silent) { cloud.syncError = true; updateApiStatus(); }
+  }
+}
+
+async function cloudSync() {
+  if (!cloud.db || cloud.syncing) return;
+  cloud.syncing = true; cloud.syncError = false; updateApiStatus();
+  try {
+    const snap = await cloudCol().get();
+    const remote = new Map();
+    let remoteClasses = null;
+    snap.docs.forEach(d => {
+      const v = d.data() || {};
+      if (d.id === 'classes') remoteClasses = v;
+      else if (d.id.startsWith('session_')) remote.set(d.id.slice(8), v);
+    });
+    const tomb = store.json('trace_tombstones', {});
+    const pushes = [];
+    let changed = false;
+
+    for (const [id, v] of remote) {
+      const loc = sessions.find(s => String(s.id) === id);
+      if (v.deleted) {
+        if (loc && (loc.savedAt || '') <= (v.updatedAt || '')) { sessions = sessions.filter(s => String(s.id) !== id); changed = true; }
+        else if (loc) pushes.push(cloudPutSession(loc, true));   // fiche recréée après la suppression
+        continue;
+      }
+      if (tomb[id]) { pushes.push(cloudDeleteSession(id, true)); continue; }
+      const rs = v.session;
+      if (!rs) continue;
+      if (!loc) { sessions.push(rs); changed = true; }
+      else if ((rs.savedAt || '') > (loc.savedAt || '')) { Object.assign(loc, rs); changed = true; }
+      else if ((loc.savedAt || '') > (rs.savedAt || '')) pushes.push(cloudPutSession(loc, true));
+    }
+    for (const s of sessions) if (!remote.has(String(s.id))) pushes.push(cloudPutSession(s, true));
+    for (const id of Object.keys(tomb)) if (!remote.has(id)) pushes.push(cloudDeleteSession(id, true));
+
+    const localUpd = Number(store.get('trace_classes_updated', '0'));
+    if (remoteClasses && Array.isArray(remoteClasses.list) && (remoteClasses.updatedAt || 0) > localUpd) {
+      classes = remoteClasses.list;
+      store.set('trace_classes', JSON.stringify(classes));
+      store.set('trace_classes_updated', String(remoteClasses.updatedAt));
+      changed = true;
+    } else if (classes.length && (!remoteClasses || localUpd > (remoteClasses.updatedAt || 0))) {
+      pushes.push(cloudPutClasses(true));
+    }
+    await Promise.all(pushes);
+
+    if (changed) {
+      sessions.sort((a, b) => a.seanceNum - b.seanceNum);
+      store.set('trace_sessions', JSON.stringify(sessions));
+      updateClasseSelect(); renderClassesList(); updateSessionsList(); updateSyntheseInfo();
+    }
+  } catch (e) {
+    console.warn('Synchronisation', e);
+    cloud.syncError = true;
+  }
+  cloud.syncing = false;
+  updateApiStatus();
+}
+
+// ── Sauvegarde / import (transfert depuis la version fichier) ──
+function exportAllData() {
+  const data = { app: 'trace-ecrite-musique', version: 1, exportedAt: new Date().toISOString(), classes, sessions };
+  const day = new Date().toISOString().split('T')[0];
+  downloadBlob(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }), `trace-ecrite-sauvegarde-${day}.json`);
+}
+
+async function importAllData(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); } catch (e) { showToast('Fichier illisible : choisissez un fichier de sauvegarde .json.', 'error'); return; }
+  if (!data || !Array.isArray(data.sessions) || !Array.isArray(data.classes)) { showToast('Ce fichier n\'est pas une sauvegarde de Trace Écrite Musicale.', 'error'); return; }
+  let addedC = 0, addedS = 0, updatedS = 0;
+  data.classes.forEach(c => {
+    if (c && c.nom && !classes.some(x => x.nom === c.nom)) { classes.push({ id: c.id || Date.now() + Math.random(), nom: c.nom, niveau: c.niveau || '', eleves: c.eleves || [] }); addedC++; }
+  });
+  const changedSessions = [];
+  data.sessions.forEach(s => {
+    if (!s || s.id === undefined) return;
+    const loc = sessions.find(x => String(x.id) === String(s.id));
+    const clean = { ...s, hasAudio: loc ? !!loc.hasAudio : false };
+    if (!loc) { sessions.push(clean); addedS++; changedSessions.push(clean); }
+    else if ((s.savedAt || '') > (loc.savedAt || '')) { Object.assign(loc, clean); updatedS++; changedSessions.push(loc); }
+  });
+  if (addedC) saveClasses();
+  sessions.sort((a, b) => a.seanceNum - b.seanceNum);
+  persistSessions();
+  changedSessions.forEach(s => cloudPutSession(s, true));
+  updateClasseSelect(); renderClassesList(); updateSessionsList(); updateSyntheseInfo();
+  showToast(`Import terminé : ${addedC} classe(s), ${addedS} fiche(s) ajoutée(s), ${updatedS} mise(s) à jour ✓`, 'success');
+}
+
+// ── Boîtes de dialogue intégrées (confirm() est bloqué dans claude.ai) ──
+function askConfirm(message, okLabel = 'Confirmer', danger = true) {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'dlg-overlay';
+    ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <p style="color:var(--cream); font-size:0.95rem; margin-bottom:18px;">${escapeHtml(message)}</p>
+      <div class="flex gap-2" style="justify-content:flex-end;">
+        <button class="btn btn-outline" data-r="0">Annuler</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-r="1">${escapeHtml(okLabel)}</button>
+      </div></div>`;
+    const done = (v) => { ov.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') done(false); if (e.key === 'Enter') done(true); };
+    ov.addEventListener('click', e => {
+      if (e.target === ov) return done(false);
+      const b = e.target.closest('[data-r]');
+      if (b) done(b.dataset.r === '1');
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    ov.querySelector('[data-r="1"]').focus();
+  });
+}
+
+// Copie : presse-papiers, sinon texte sélectionné à copier à la main
+function copyText(t) {
+  const text = String(t || '');
+  const fallback = () => {
+    const ov = document.createElement('div');
+    ov.className = 'dlg-overlay';
+    ov.innerHTML = `<div class="modal" style="max-width:640px;">
+      <h2>📋 Copier le texte</h2>
+      <p>Le texte est sélectionné : utilisez « Copier » (ou Ctrl+C / ⌘+C).</p>
+      <textarea readonly></textarea>
+      <div style="text-align:right; margin-top:12px;"><button class="btn btn-primary">Fermer</button></div></div>`;
+    ov.querySelector('textarea').value = text;
+    ov.querySelector('button').onclick = () => ov.remove();
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+    const ta = ov.querySelector('textarea');
+    ta.focus(); ta.select();
+    try { ta.setSelectionRange(0, text.length); } catch (e) {}
+  };
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('no clipboard');
+    navigator.clipboard.writeText(text).then(() => showToast('Copié ✓', 'success'), fallback);
+  } catch (e) { fallback(); }
+}
+
+// Téléchargement : capability « downloads » dans claude.ai, lien classique sinon
+const CLAUDE_DL_EXT = ['gif','png','jpg','jpeg','webp','mp4','webm','mov','txt','json','md','docx','pptx','epub','csv','ttf','html','svg','pdf','xlsx','zip'];
+async function downloadBlob(blob, filename) {
+  if (IN_CLAUDE) {
+    if (!cloud.downloads) { showToast('Le téléchargement n\'est pas disponible dans cette vue.', 'error'); return; }
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    if (!CLAUDE_DL_EXT.includes(ext)) {
+      try {
+        if (!window.JSZip) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+        const zip = new JSZip(); zip.file(filename, blob);
+        blob = await zip.generateAsync({ type: 'blob' });
+        filename = filename.replace(/\.[^.]+$/, '') + '.zip';
+      } catch (e) { showToast('Format de fichier non téléchargeable ici.', 'error'); return; }
+    }
+    try {
+      await cloud.downloads.save({ filename, data: blob });
+      showToast('Fichier enregistré ✓', 'success');
+    } catch (e) {
+      if (e && e.code === 'declined') return;
+      showToast('Téléchargement impossible' + (e && e.message ? ' : ' + e.message : ''), 'error');
+    }
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+// ── Projection plein écran des résumés ──
+function projectResumes() {
+  const done = oeuvres.filter(o => o.result && o.result.resume);
+  if (!done.length) { showToast('Rédigez d\'abord au moins un résumé.', 'error'); return; }
+  let i = 0;
+  const pj = document.createElement('div');
+  pj.className = 'projector';
+  const draw = () => {
+    const o = done[i];
+    pj.innerHTML = `<div class="pj-body">
+        <div class="pj-classe">${escapeHtml(o.classe)}</div>
+        <h1>${escapeHtml(o.titre || o.result.titre || 'Œuvre')}</h1>
+        <p>${escapeHtml(o.result.resume)}</p>
+      </div>
+      <div class="pj-bar">
+        <button data-a="prev" ${i === 0 ? 'disabled style="opacity:.35"' : ''}>← Précédent</button>
+        <span>${i + 1} / ${done.length}</span>
+        <button data-a="next" ${i === done.length - 1 ? 'disabled style="opacity:.35"' : ''}>Suivant →</button>
+        <button data-a="full">⛶ Plein écran</button>
+        <button data-a="close">✕ Fermer</button>
+      </div>`;
+  };
+  const close = () => { pj.remove(); document.removeEventListener('keydown', onKey); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} };
+  const onKey = (e) => {
+    if (e.key === 'Escape') close();
+    if ((e.key === 'ArrowRight' || e.key === ' ') && i < done.length - 1) { i++; draw(); }
+    if (e.key === 'ArrowLeft' && i > 0) { i--; draw(); }
+  };
+  pj.addEventListener('click', e => {
+    const a = e.target.closest('[data-a]');
+    if (!a) return;
+    if (a.dataset.a === 'prev' && i > 0) { i--; draw(); }
+    if (a.dataset.a === 'next' && i < done.length - 1) { i++; draw(); }
+    if (a.dataset.a === 'close') close();
+    if (a.dataset.a === 'full') {
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) Promise.resolve(req.call(el)).catch(() => showToast('Plein écran non disponible ici.', 'info'));
+      else showToast('Plein écran non disponible ici.', 'info');
+    }
+  });
+  document.addEventListener('keydown', onKey);
+  draw();
+  document.body.appendChild(pj);
+}
+
+// ══════════════════════════════════════════════
+//  OUTILS
+// ══════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1] || '');
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+function parseJsonLoose(text) {
+  let t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+  try { return JSON.parse(t); } catch (e) {}
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) return JSON.parse(t.slice(a, b + 1));
+  throw new Error('Réponse illisible de l\'IA');
+}
+
+async function runPool(items, limit, worker) {
+  let i = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      await worker(items[idx], idx);
+    }
+  });
+  await Promise.all(runners);
+}
+
+
+function niveauFromClasse(nom) {
+  const c = classes.find(x => x.nom === nom);
+  if (c && c.niveau) return c.niveau;
+  const m = String(nom || '').match(/([3-6])/);
+  return m ? m[1] + 'ème' : 'collège';
+}
+
+// ══════════════════════════════════════════════
+//  AUDIO DE SÉANCE (IndexedDB)
+// ══════════════════════════════════════════════
+let currentAudioBlob = null;
+let currentAudioUrl = null;
+let audioDbPromise = null;
+
+function audioDb() {
+  if (!audioDbPromise) {
+    audioDbPromise = new Promise((res, rej) => {
+      const req = indexedDB.open('trace_ecrite_audio', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('audios');
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  return audioDbPromise;
+}
+async function audioDbPut(id, blob) {
+  const db = await audioDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('audios', 'readwrite');
+    tx.objectStore('audios').put(blob, String(id));
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+async function audioDbGet(id) {
+  const db = await audioDb();
+  return new Promise((res, rej) => {
+    const req = db.transaction('audios').objectStore('audios').get(String(id));
+    req.onsuccess = () => res(req.result || null); req.onerror = () => rej(req.error);
+  });
+}
+async function audioDbDelete(id) {
+  const db = await audioDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('audios', 'readwrite');
+    tx.objectStore('audios').delete(String(id));
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+
+function pickRecorderMime() {
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+  return ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+    .find(t => MediaRecorder.isTypeSupported(t)) || '';
+}
+
+function setCurrentAudio(blob, label) {
+  currentAudioBlob = blob;
+  if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+  currentAudioUrl = URL.createObjectURL(blob);
+  document.getElementById('audioPlayer').src = currentAudioUrl;
+  document.getElementById('audioLoaded').style.display = 'block';
+  document.getElementById('audioEmpty').style.display = 'none';
+  const badge = document.getElementById('audioBadge');
+  badge.textContent = (label ? label + ' · ' : '') + (blob.size / 1048576).toFixed(1) + ' Mo';
+  badge.style.display = 'inline-block';
+}
+
+function resetCurrentAudio() {
+  currentAudioBlob = null;
+  if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+  currentAudioUrl = null;
+  const p = document.getElementById('audioPlayer');
+  p.removeAttribute('src'); p.load();
+  document.getElementById('audioLoaded').style.display = 'none';
+  document.getElementById('audioEmpty').style.display = 'block';
+  document.getElementById('audioBadge').style.display = 'none';
+  document.getElementById('audioProgress').style.display = 'none';
+}
+
+async function clearCurrentAudio() {
+  if (!(await askConfirm('Retirer cet audio de la séance en cours ? (Les fiches déjà sauvegardées gardent le leur.)'))) return;
+  resetCurrentAudio();
+}
+
+function importAudioFile(input) {
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  setCurrentAudio(f, 'Importé');
+  showToast('Audio importé ✓ — vous pouvez le retranscrire avec Gemini.', 'success');
+}
+
+function downloadCurrentAudio() {
+  if (!currentAudioBlob) return;
+  const type = currentAudioBlob.type || '';
+  const ext = type.includes('webm') ? 'webm' : type.includes('ogg') ? 'ogg' : type.includes('mp4') || type.includes('m4a') ? 'm4a'
+            : type.includes('mpeg') ? 'mp3' : type.includes('wav') ? 'wav' : 'audio';
+  const classe = document.getElementById('classe').value;
+  const num = document.getElementById('seanceNum').value;
+  downloadBlob(currentAudioBlob, `seance-${num}-${classe}`.replace(/\s+/g, '-') + '.' + ext);
+}
+
+// Décodage → mono 16 kHz → morceaux WAV (format accepté par Gemini)
+async function audioToWavChunks(blob, chunkSeconds) {
+  const buf = await blob.arrayBuffer();
+  let audio;
+  try {
+    // Chrome / Edge : décodage directement rééchantillonné à 16 kHz
+    audio = await new OfflineAudioContext(1, 16000, 16000).decodeAudioData(buf.slice(0));
+  } catch (e) {
+    // Safari : décodage à la fréquence native, puis rééchantillonnage manuel
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    audio = await new Promise((res, rej) => ac.decodeAudioData(buf.slice(0), res, rej));
+    try { ac.close(); } catch (_) {}
+  }
+  const srcLen = audio.length;
+  let mono = new Float32Array(srcLen);
+  for (let c = 0; c < audio.numberOfChannels; c++) {
+    const d = audio.getChannelData(c);
+    for (let i = 0; i < srcLen; i++) mono[i] += d[i] / audio.numberOfChannels;
+  }
+  if (audio.sampleRate !== 16000) mono = resampleLinear(mono, audio.sampleRate, 16000);
+  const sr = 16000, len = mono.length;
+  const per = Math.floor(chunkSeconds * sr);
+  const chunks = [];
+  for (let start = 0; start < len; start += per) {
+    const slice = mono.subarray(start, Math.min(len, start + per));
+    chunks.push({ start: start / sr, end: Math.min(len, start + per) / sr, wav: encodeWav16(slice, sr) });
+  }
+  return { chunks, duration: len / sr };
+}
+
+function resampleLinear(data, from, to) {
+  const ratio = from / to, out = new Float32Array(Math.floor(data.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const x = i * ratio, i0 = Math.floor(x), f = x - i0;
+    out[i] = (data[i0] || 0) * (1 - f) + (data[i0 + 1] || 0) * f;
+  }
+  return out;
+}
+
+function encodeWav16(samples, sr) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buffer);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); w(8, 'WAVE');
+  w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, samples.length * 2, true);
+  let o = 44;
+  for (let i = 0; i < samples.length; i++, o += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+async function transcribeAudioWithAI() {
+  if (!ensureAI()) return;
+  if (!currentAudioBlob) { showToast('Aucun audio à retranscrire.', 'error'); return; }
+  const area = document.getElementById('transcriptArea');
+  if (area.value.trim() && !(await askConfirm('La retranscription va remplacer le texte actuel. Continuer ?'))) return;
+
+  const btn = document.getElementById('audioTranscribeBtn');
+  const prog = document.getElementById('audioProgress');
+  const progText = document.getElementById('audioProgressText');
+  const progBar = document.getElementById('audioProgressBar');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  progText.textContent = 'Préparation de l\'audio…';
+  progBar.style.width = '3%';
+
+  try {
+    const { chunks, duration } = await audioToWavChunks(currentAudioBlob, 240);
+    const classe = document.getElementById('classe').value;
+    const titre = document.getElementById('sequenceTitle').value;
+    const notions = document.getElementById('notionsCles').value;
+    const parts = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const c = chunks[i];
+      progText.textContent = `Retranscription ${i + 1}/${chunks.length} (${formatTime(Math.round(c.start))} → ${formatTime(Math.round(c.end))} sur ${formatTime(Math.round(duration))})…`;
+      progBar.style.width = Math.round(5 + 95 * i / chunks.length) + '%';
+      const data = await blobToBase64(c.wav);
+      const prompt = `Voici le passage ${i + 1}/${chunks.length} de l'enregistrement d'une séance d'éducation musicale au collège (classe : ${classe}${titre ? ', séquence : ' + titre : ''}${notions ? ', notions : ' + notions : ''}).
+Transcris INTÉGRALEMENT et FIDÈLEMENT en français tout ce qui est dit. Ne résume pas, ne commente pas, n'ajoute rien.
+- Écris « Professeur : » ou « Élève : » en début de réplique quand le changement de locuteur est clair.
+- Orthographie correctement les termes musicaux et les noms propres (compositeurs, œuvres, artistes).
+- Quand de la musique est diffusée, écris simplement [écoute musicale].
+- Si un mot est inaudible, écris [inaudible].
+- Si personne ne parle dans ce passage, réponds uniquement [silence].`;
+      const res = await callAI(
+        [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data } }],
+        { maxTokens: 8192, temperature: 0.2,
+          onWait: (s, txt) => { progText.textContent = txt || `Nouvelle tentative dans ${s} s…`; } }
+      );
+      const t = res.text.trim();
+      if (t && t !== '[silence]') parts.push(t);
+    }
+    const full = parts.join('\n\n');
+    area.value = full;
+    finalTranscript = full;
+    progBar.style.width = '100%';
+    progText.textContent = `✅ Retranscription terminée (${formatTime(Math.round(duration))}).`;
+    showToast('Retranscription terminée ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    progText.textContent = '⚠️ ' + err.message;
+    showToast('Retranscription impossible : ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════
+//  TABLEAU : PHOTOS → TEXTE → RÉSUMÉS VÉRIFIÉS
+// ══════════════════════════════════════════════
+let boardPhotos = [];   // { id, name, dataUrl, b64, status, extract }
+let oeuvres = [];       // { id, titre, classe, classeTableau, date, entete, photoIds, transcription, hypothese, result }
+const IMG_EXT = /\.(jpe?g|png|webp|gif|bmp|hei[cf])$/i;
+
+function initDropzone() {
+  const dz = document.getElementById('dropzone');
+  if (!dz) return;
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => handlePhotoFiles(e.dataTransfer.files));
+}
+
+async function handlePhotoFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  let added = 0, skipped = [];
+  for (const f of files) {
+    if (/\.zip$/i.test(f.name) || f.type === 'application/zip' || f.type === 'application/x-zip-compressed') {
+      try {
+        if (!window.JSZip) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+        const zip = await JSZip.loadAsync(f);
+        const entries = Object.values(zip.files)
+          .filter(z => !z.dir && IMG_EXT.test(z.name) && !/__MACOSX|\/\._/.test(z.name))
+          .sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }));
+        for (const z of entries) {
+          const blob = await z.async('blob');
+          if (await addPhoto(blob, z.name.split('/').pop())) added++;
+          else skipped.push(z.name);
+        }
+      } catch (e) {
+        showToast('Impossible d\'ouvrir le .zip : ' + e.message, 'error');
+      }
+    } else if (f.type.startsWith('image/') || IMG_EXT.test(f.name)) {
+      if (await addPhoto(f, f.name)) added++;
+      else skipped.push(f.name);
+    }
+  }
+  renderPhotoGrid();
+  if (added) showToast(`${added} photo${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''} ✓`, 'success');
+  if (skipped.length) showToast(`${skipped.length} image(s) illisible(s) (souvent le format HEIC). Sur iPad : Réglages → Appareil photo → Formats → « Le plus compatible ».`, 'error');
+}
+
+async function addPhoto(blob, name) {
+  try {
+    const dataUrl = await resizeImage(blob, 2000, 0.86);
+    boardPhotos.push({
+      id: Date.now() + Math.random(),
+      name: name || ('photo-' + (boardPhotos.length + 1)),
+      dataUrl, b64: dataUrl.split(',')[1],
+      status: 'new', extract: null
+    });
+    return true;
+  } catch (e) {
+    console.warn('Image illisible', name, e);
+    return false;
+  }
+}
+
+async function resizeImage(blob, maxSide, quality) {
+  let source, w, h;
+  try {
+    if (IS_IOS || !window.createImageBitmap) throw new Error('img');
+    source = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+    w = source.width; h = source.height;
+  } catch (e) {
+    const url = URL.createObjectURL(blob);
+    try {
+      source = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img); img.onerror = rej;
+        img.src = url;
+      });
+    } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    w = source.naturalWidth; h = source.naturalHeight;
+  }
+  const scale = Math.min(1, maxSide / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+  canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+function photoNumber(id) { return boardPhotos.findIndex(p => p.id === id) + 1; }
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = boardPhotos.map((p, i) => {
+    const st = p.status === 'ok' ? '<div class="ph-state ok">✓ texte extrait</div>'
+             : p.status === 'busy' ? '<div class="ph-state">⏳ lecture…</div>'
+             : p.status === 'err' ? '<div class="ph-state err">⚠️ échec — relancer</div>'
+             : `<div class="ph-state">${escapeHtml(p.name)}</div>`;
+    return `<div class="photo-thumb">
+      <img src="${p.dataUrl}" alt="Photo ${i + 1}" onclick="openLightbox(${i})">
+      <span class="ph-num">${i + 1}</span>
+      <button class="ph-del" title="Retirer" onclick="removePhoto(${i})">✕</button>
+      ${st}
+    </div>`;
+  }).join('');
+  const n = boardPhotos.length;
+  document.getElementById('photoCount').textContent = n ? `${n} photo${n > 1 ? 's' : ''}` : '';
+  document.getElementById('clearPhotosBtn').style.display = n ? 'inline-flex' : 'none';
+  document.getElementById('analyzeBtn').disabled = !n;
+}
+
+function openLightbox(i) {
+  const p = boardPhotos[i];
+  if (!p) return;
+  document.getElementById('lightboxImg').src = p.dataUrl;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+function openLightboxById(id) { openLightbox(photoNumber(id) - 1); }
+
+function removePhoto(i) {
+  boardPhotos.splice(i, 1);
+  renderPhotoGrid();
+}
+async function clearPhotos() {
+  if (!(await askConfirm('Retirer toutes les photos ?'))) return;
+  boardPhotos = [];
+  renderPhotoGrid();
+}
+
+const EXTRACT_PROMPT = `Cette photo montre un tableau de classe (cours d'éducation musicale au collège) sur lequel des élèves ont écrit un commentaire d'écoute.
+
+Transcris INTÉGRALEMENT et FIDÈLEMENT tout le texte écrit sur le tableau principal, y compris les annotations dans les marges, les mots ajoutés au-dessus des lignes, les dates et les nombres. Conserve l'orthographe des élèves. Remplace un mot illisible par [?] et fais suivre un mot incertain de [?].
+
+Repère en particulier :
+- la CLASSE, en général écrite en haut à gauche (ex : « 4ème Brahms », « 3B », « 6ème Sanson ») ;
+- le TITRE de l'œuvre, en général écrit en haut ;
+- la date et l'en-tête (séquence, écoute n°, problématique…) ;
+- les rubriques Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ? avec ce qui est écrit après chacune, même si une rubrique est restée vide.
+
+Ignore ce qui ne fait pas partie du tableau principal (affiches, horloge, morceau d'un autre tableau coupé au bord de la photo).
+
+Réponds UNIQUEMENT avec ce JSON :
+{"classe": "classe telle qu'écrite, sinon chaîne vide",
+ "titre": "titre de l'œuvre tel qu'écrit, sinon chaîne vide",
+ "date": "date telle qu'écrite, sinon chaîne vide",
+ "entete": "autres éléments d'en-tête (séquence, écoute n°, problématique…), sinon chaîne vide",
+ "texte": "transcription complète, une ligne du tableau par ligne, rubriques comprises (ex : « Qui ? homme, groupe anglais »)",
+ "rubriques_vides": ["liste des rubriques restées vides, ex : Pourquoi ?"],
+ "indices_oeuvre": "en quelques mots, de quelle musique il semble s'agir (genre, artiste, mots-clés)"}`;
+
+async function analyzePhotos() {
+  if (!ensureAI()) return;
+  if (!boardPhotos.length) return;
+  const btn = document.getElementById('analyzeBtn');
+  const prog = document.getElementById('analyzeProgress');
+  const progText = document.getElementById('analyzeProgressText');
+  const progBar = document.getElementById('analyzeProgressBar');
+  btn.disabled = true;
+  prog.style.display = 'block';
+
+  const todo = boardPhotos.filter(p => p.status !== 'ok');
+  let done = boardPhotos.length - todo.length;
+  const total = boardPhotos.length;
+  const step = () => {
+    progText.textContent = `Lecture des photos : ${done}/${total}…`;
+    progBar.style.width = Math.round(85 * done / total) + '%';
+  };
+  step();
+
+  await runPool(todo, 2, async (p) => {
+    p.status = 'busy'; renderPhotoGrid();
+    try {
+      // Claude réduit chaque image à ~1,2 mégapixel : on ajoute les deux moitiés
+      // du tableau agrandies pour que l'écriture des élèves reste lisible.
+      let extraImages = [], promptPrefix = '';
+      if (cloud.sample && (cloud.imagesMax === 0 || cloud.imagesMax >= 3)) {
+        extraImages = await photoHalves(p.dataUrl);
+        promptPrefix = 'Image 1 : la photo entière du tableau. Images 2 et 3 : la moitié gauche et la moitié droite de la même photo, agrandies pour lire les détails (elles se chevauchent un peu : ne recopie pas deux fois le même texte).\n\n';
+      }
+      const res = await callAI(
+        [{ text: promptPrefix + EXTRACT_PROMPT }, { inline_data: { mime_type: 'image/jpeg', data: p.b64 } }],
+        { json: true, temperature: 0.1, maxTokens: 6000, images: extraImages,
+          onWait: (s, txt) => { progText.textContent = txt || `Nouvelle tentative dans ${s} s…`; } }
+      );
+      p.extract = parseJsonLoose(res.text);
+      p.status = 'ok';
+    } catch (err) {
+      console.error(err);
+      p.status = 'err';
+      p.error = err.message;
+    }
+    done++; step(); renderPhotoGrid();
+  });
+
+  const ok = boardPhotos.filter(p => p.status === 'ok');
+  if (!ok.length) {
+    progText.textContent = '⚠️ Aucune photo n\'a pu être lue. ' + (boardPhotos[0]?.error || '');
+    btn.disabled = false;
+    return;
+  }
+
+  progText.textContent = 'Regroupement des photos par œuvre…';
+  progBar.style.width = '92%';
+  let groups;
+  try {
+    groups = await groupPhotosByOeuvre(ok);
+  } catch (err) {
+    console.warn('Regroupement IA impossible, regroupement simple', err);
+    groups = fallbackGroups(ok);
+  }
+
+  oeuvres = groups.map(g => buildOeuvre(g));
+  renderOeuvres();
+  progBar.style.width = '100%';
+  const failed = boardPhotos.filter(p => p.status === 'err').length;
+  progText.textContent = `✅ ${ok.length} photo(s) lue(s), ${oeuvres.length} œuvre(s) repérée(s).` + (failed ? ` ${failed} photo(s) en échec : cliquez à nouveau pour les relancer.` : '');
+  btn.disabled = false;
+  document.getElementById('oeuvresSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function groupPhotosByOeuvre(okPhotos) {
+  if (okPhotos.length === 1) {
+    const e = okPhotos[0].extract || {};
+    return [{ titre: e.titre || '', photos: [okPhotos[0].id], hypothese: '' }];
+  }
+  const hint = document.getElementById('tableauTitreHint').value.trim();
+  const listing = okPhotos.map(p => {
+    const e = p.extract || {};
+    return `PHOTO ${photoNumber(p.id)}
+Classe : ${e.classe || '(non écrite)'} | Titre : ${e.titre || '(non écrit)'} | Date : ${e.date || '-'}
+En-tête : ${e.entete || '-'}
+Indices : ${e.indices_oeuvre || '-'}
+Texte : ${String(e.texte || '').slice(0, 900)}`;
+  }).join('\n\n');
+
+  const prompt = `Voici le texte extrait de ${okPhotos.length} photos de tableaux d'un cours d'éducation musicale (commentaires d'écoute d'élèves).
+${hint ? 'Le professeur indique que l\'œuvre étudiée est peut-être : ' + hint + '\n' : ''}
+${listing}
+
+Regroupe les photos qui portent sur la MÊME œuvre musicale :
+- une même œuvre peut être répartie sur plusieurs photos (ex : une photo avec Qui/Quoi/Où et une autre avec Pourquoi, ou les deux moitiés d'un tableau) ;
+- une même œuvre peut avoir été étudiée dans plusieurs classes : regroupe-les quand même ;
+- deux œuvres différentes ne doivent jamais être mélangées.
+Pour chaque groupe :
+- "titre" : le titre s'il est écrit sur au moins une photo du groupe, sinon chaîne vide ;
+- "hypothese" : si aucun titre n'est écrit, une hypothèse prudente (titre probable + raison courte), sinon chaîne vide.
+Chaque numéro de photo doit apparaître dans un seul groupe. Ordonne les groupes selon l'ordre des photos.
+Réponds UNIQUEMENT avec ce JSON : {"oeuvres":[{"titre":"","photos":[1,2],"hypothese":""}]}`;
+
+  const res = await callAI([{ text: prompt }], { json: true, temperature: 0.1, maxTokens: 3000 });
+  const data = parseJsonLoose(res.text);
+  const used = new Set();
+  const groups = [];
+  for (const g of (data.oeuvres || [])) {
+    const ids = (g.photos || [])
+      .map(n => okPhotos.find(p => photoNumber(p.id) === Number(n)))
+      .filter(p => p && !used.has(p.id))
+      .map(p => { used.add(p.id); return p.id; });
+    if (ids.length) groups.push({ titre: g.titre || '', hypothese: g.hypothese || '', photos: ids });
+  }
+  okPhotos.filter(p => !used.has(p.id)).forEach(p => groups.push({ titre: p.extract?.titre || '', hypothese: '', photos: [p.id] }));
+  if (!groups.length) throw new Error('aucun groupe');
+  return groups;
+}
+
+function fallbackGroups(okPhotos) {
+  const map = new Map();
+  okPhotos.forEach(p => {
+    const t = (p.extract?.titre || '').trim();
+    const key = t ? t.toLowerCase() : 'photo-' + p.id;
+    if (!map.has(key)) map.set(key, { titre: t, hypothese: '', photos: [] });
+    map.get(key).photos.push(p.id);
+  });
+  return [...map.values()];
+}
+
+function normClasse(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/eme|ème|e\b/g, 'e').replace(/[^a-z0-9]/g, '');
+}
+function matchAppClass(written) {
+  const w = normClasse(written);
+  if (!w) return '';
+  const names = classNames();
+  return names.find(n => normClasse(n) === w)
+      || names.find(n => { const k = normClasse(n); return k.length > 2 && (w.includes(k) || k.includes(w)); })
+      || names.find(n => { const k = normClasse(n); return k.length === 2 && w.startsWith(k); })
+      || '';
+}
+
+function buildOeuvre(g) {
+  const photos = g.photos.map(id => boardPhotos.find(p => p.id === id)).filter(Boolean);
+  const classesEcrites = [...new Set(photos.map(p => (p.extract?.classe || '').trim()).filter(Boolean))];
+  const dates = [...new Set(photos.map(p => (p.extract?.date || '').trim()).filter(Boolean))];
+  const defaultClasse = document.getElementById('tableauClasse').value;
+  const titreHint = document.getElementById('tableauTitreHint').value.trim();
+  const transcription = photos.map(p => {
+    const e = p.extract || {};
+    const head = [`— Photo ${photoNumber(p.id)} (${p.name}) —`];
+    head.push('Classe : ' + (e.classe || 'non écrite'));
+    if (e.titre) head.push('Titre : ' + e.titre);
+    if (e.date) head.push('Date : ' + e.date);
+    if (e.entete) head.push('En-tête : ' + e.entete);
+    return head.join('\n') + '\n' + String(e.texte || '').trim();
+  }).join('\n\n');
+  return {
+    id: Date.now() + Math.random(),
+    titre: g.titre || (photos.map(p => (p.extract?.titre || '').trim()).find(Boolean)) || (titreHint && !g.hypothese ? titreHint : '') || '',
+    hypothese: g.hypothese || '',
+    classeTableau: classesEcrites.join(' / '),
+    classe: matchAppClass(classesEcrites[0]) || defaultClasse,
+    date: dates.join(' / '),
+    photoIds: g.photos,
+    transcription,
+    result: null
+  };
+}
+
+function addEmptyOeuvre() {
+  oeuvres.push({
+    id: Date.now() + Math.random(),
+    titre: '', hypothese: '', classeTableau: '', date: '',
+    classe: document.getElementById('tableauClasse').value || document.getElementById('classe').value,
+    photoIds: [], transcription: '', result: null, sansPhoto: true
+  });
+  renderOeuvres();
+  const last = document.getElementById('oc-' + oeuvres[oeuvres.length - 1].id);
+  if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.querySelector('input')?.focus(); }
+}
+
+function renderOeuvres() {
+  const section = document.getElementById('oeuvresSection');
+  const list = document.getElementById('oeuvresList');
+  section.style.display = oeuvres.length ? 'block' : 'none';
+  document.getElementById('oeuvresCount').textContent = oeuvres.length + ' œuvre' + (oeuvres.length > 1 ? 's' : '');
+  list.innerHTML = '';
+  oeuvres.forEach(o => list.appendChild(renderOeuvreCard(o)));
+  updateExportBar();
+}
+
+function refreshOeuvreCard(o) {
+  const old = document.getElementById('oc-' + o.id);
+  if (old) old.replaceWith(renderOeuvreCard(o));
+  updateExportBar();
+}
+
+function updateExportBar() {
+  document.getElementById('tableauExportBar').style.display = oeuvres.some(o => o.result) ? 'block' : 'none';
+}
+
+function oeuvreById(id) { return oeuvres.find(o => String(o.id) === String(id)); }
+
+function renderOeuvreCard(o) {
+  const el = document.createElement('div');
+  el.className = 'oeuvre-card';
+  el.id = 'oc-' + o.id;
+  const idx = oeuvres.indexOf(o) + 1;
+  const warnings = [];
+  if (!o.sansPhoto && !o.classeTableau) warnings.push('⚠️ Classe non écrite sur le tableau : vérifiez la classe choisie.');
+  else if (o.classeTableau && !matchAppClass(o.classeTableau.split(' / ')[0])) warnings.push(`⚠️ Classe écrite au tableau (« ${o.classeTableau} ») non reconnue parmi vos classes : choisissez la bonne classe.`);
+  if (!o.titre) warnings.push('⚠️ Titre de l\'œuvre non écrit : complétez-le pour un résumé exact.' + (o.hypothese ? ' Piste de l\'IA : ' + o.hypothese : ''));
+
+  const r = o.result;
+  const list = (arr) => arr && arr.length ? `<ul>${arr.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : '<div style="font-size:0.8rem; color:var(--text-dim);">Rien à signaler.</div>';
+
+  el.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px;">
+      <div class="card-title" style="margin:0;"><span class="num" style="background:var(--gold); color:#1C2B3A;">${idx}</span>
+        ${o.sansPhoto ? 'Œuvre sans photo' : `Œuvre ${idx} · ${o.photoIds.length} photo${o.photoIds.length > 1 ? 's' : ''}`}</div>
+      <button class="btn btn-danger btn-sm" onclick="removeOeuvre('${o.id}')">✕</button>
+    </div>
+    <div class="oeuvre-head">
+      <div class="meta-group">
+        <label>Titre de l'œuvre (et compositeur / interprète)</label>
+        <input type="text" value="${escapeAttr(o.titre)}" placeholder="ex : Boléro – Maurice Ravel"
+          oninput="oeuvreById('${o.id}').titre = this.value">
+      </div>
+      <div class="meta-group">
+        <label>Classe${o.classeTableau ? ' · au tableau : « ' + escapeHtml(o.classeTableau) + ' »' : ''}</label>
+        <select onchange="oeuvreById('${o.id}').classe = this.value">${classOptionsHtml(o.classe)}</select>
+      </div>
+    </div>
+    ${o.photoIds.length ? `<div class="oeuvre-photos">${o.photoIds.map(id => {
+        const p = boardPhotos.find(x => x.id === id);
+        return p ? `<img src="${p.dataUrl}" title="Photo ${photoNumber(id)}" onclick="openLightboxById(${id})">` : '';
+      }).join('')}</div>` : ''}
+    ${warnings.map(w => `<div class="hint-line">${escapeHtml(w)}</div>`).join('')}
+    <div class="meta-group">
+      <label>${o.sansPhoto ? 'Ce que les élèves ont dit (facultatif — sinon le résumé est rédigé à partir de l\'œuvre)' : 'Texte extrait du tableau (modifiable)'}</label>
+      <textarea class="transcr" oninput="oeuvreById('${o.id}').transcription = this.value"
+        placeholder="Qui ? …&#10;Quoi ? …&#10;Où ? …&#10;Quand ? …&#10;Comment ? …&#10;Pourquoi ? …">${escapeHtml(o.transcription)}</textarea>
+    </div>
+    <div class="flex gap-2 mt-3" style="flex-wrap:wrap; justify-content:flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="copyText(oeuvreById('${o.id}').transcription)">📋 Copier le texte</button>
+      <button class="btn btn-gold btn-sm" id="sumbtn-${o.id}" onclick="summarizeOeuvre('${o.id}')">${r ? '🔄 Refaire le résumé' : '✍️ Vérifier et rédiger le résumé'}</button>
+    </div>
+    <div id="sumload-${o.id}" style="display:none;">
+      <div class="loading-indicator"><div class="spinner"></div><span id="sumloadtxt-${o.id}">Vérification des informations et rédaction…</span></div>
+    </div>
+    ${r ? `
+      <div class="divider"></div>
+      ${r.titre && r.titre !== o.titre ? `<div class="hint-line">🎵 Œuvre identifiée : <strong>${escapeHtml(r.titre)}</strong>
+        <button class="btn btn-outline btn-sm" style="margin-left:8px;" onclick="useSuggestedTitle('${o.id}')">Utiliser ce titre</button></div>` : ''}
+      <div class="result-block corr"><h4 style="color:var(--red);">Erreurs corrigées</h4>${list(r.corrections)}</div>
+      <div class="result-block ajout"><h4 style="color:var(--green);">Éléments importants ajoutés</h4>${list(r.ajouts)}</div>
+      ${r.doutes && r.doutes.length ? `<div class="result-block doute"><h4 style="color:var(--gold);">À vérifier par vous</h4>${list(r.doutes)}</div>` : ''}
+      <div class="result-block">
+        <h4 style="color:var(--gold-light);">✍️ Résumé à recopier (modifiable)</h4>
+        <textarea class="resume-box" oninput="oeuvreById('${o.id}').result.resume = this.value">${escapeHtml(r.resume)}</textarea>
+        <div style="font-size:0.72rem; color:var(--text-dim); margin-top:4px;">${countSentences(r.resume)} phrases · ${r.resume.split(/\s+/).filter(Boolean).length} mots</div>
+      </div>
+      ${r.sources && r.sources.length ? `<div class="sources-line">🔎 Vérifié avec : ${r.sources.slice(0, 6).map(s => `<a href="${escapeAttr(s.uri)}" target="_blank" rel="noopener">${escapeHtml(s.title)}</a>`).join(' · ')}</div>`
+        : `<div class="sources-line">ℹ️ ${cloud.sample ? 'Vérifié par Claude à partir de ses connaissances (pas de recherche web depuis claude.ai)' : 'Vérification faite sans recherche web (modèle sans accès Google Search)'} : relisez les dates et les noms.</div>`}
+      <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="copyText(oeuvreById('${o.id}').result.resume)">📋 Copier le résumé</button>
+        <button class="btn btn-gold btn-sm" onclick="saveOeuvreAsSession('${o.id}')">💾 Enregistrer comme fiche de séance</button>
+      </div>` : ''}
+  `;
+  return el;
+}
+
+function countSentences(t) { return (String(t || '').match(/[.!?…](\s|$)/g) || []).length; }
+
+function useSuggestedTitle(id) {
+  const o = oeuvreById(id);
+  if (!o || !o.result) return;
+  o.titre = o.result.titre;
+  refreshOeuvreCard(o);
+}
+
+async function removeOeuvre(id) {
+  if (!(await askConfirm('Retirer cette œuvre ?'))) return;
+  oeuvres = oeuvres.filter(o => String(o.id) !== String(id));
+  renderOeuvres();
+}
+
+
+async function summarizeOeuvre(id) {
+  const o = oeuvreById(id);
+  if (!o) return;
+  if (!ensureAI()) return;
+  if (!o.titre.trim() && !o.transcription.trim()) { showToast('Indiquez au moins le titre de l\'œuvre.', 'error'); return; }
+
+  const btn = document.getElementById('sumbtn-' + o.id);
+  const load = document.getElementById('sumload-' + o.id);
+  if (btn) btn.disabled = true;
+  if (load) load.style.display = 'block';
+
+  const niveau = niveauFromClasse(o.classe);
+  const consignes = document.getElementById('tableauConsignes').value.trim();
+  const useTr = document.getElementById('tableauUseTranscript').checked;
+  const transcriptAudio = useTr ? document.getElementById('transcriptArea').value.trim().slice(0, 8000) : '';
+
+  const prompt = `Tu es professeur d'éducation musicale au collège en France. Des élèves de ${niveau} (classe : ${o.classe}) ont réalisé au tableau le commentaire d'écoute d'une œuvre en répondant aux questions Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ?
+
+ŒUVRE : ${o.titre.trim() || 'non précisée par le professeur' + (o.hypothese ? ' (piste : ' + o.hypothese + ')' : '')}
+${consignes ? 'PRÉCISIONS DU PROFESSEUR : ' + consignes + '\n' : ''}${transcriptAudio ? 'TRANSCRIPTION AUDIO DE LA SÉANCE (extrait) :\n"""\n' + transcriptAudio + '\n"""\n' : ''}
+TEXTE RELEVÉ AU TABLEAU :
+"""
+${o.transcription.trim() || '(aucun : la photo a été perdue — rédige le résumé à partir de l\'œuvre elle-même, en suivant Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ?)'}
+"""
+
+Ta mission :
+1. VÉRIFIE chaque information factuelle (compositeur ou interprète, nationalité, dates de composition / de sortie / de création, lieux, effectif, instruments, genre, contexte historique, chiffres) à l'aide de sources fiables. Ne te fie jamais aux élèves : ils se trompent souvent sur les dates et les nationalités. Si un élément ne peut pas être vérifié, ne l'écris pas dans le résumé.
+2. Liste les ERREURS des élèves sous la forme « ce qui est écrit → ce qui est exact ». N'invente pas d'erreur : si tout est juste, écris « - Aucune ».
+3. Liste 1 à 3 éléments IMPORTANTS absents du tableau qu'un élève de ${niveau} doit connaître sur cette œuvre (caractéristique musicale essentielle, contexte, message ou fonction).
+4. Signale ce qui reste INCERTAIN (mot illisible, titre non confirmé, instrument douteux…).
+5. Rédige le RÉSUMÉ À RECOPIER : un seul paragraphe de 4 à 5 phrases (5 à 7 lignes de cahier), au présent, avec un vocabulaire adapté à des élèves de ${niveau}. Il répond dans un ordre naturel à Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ?, commence par le titre de l'œuvre et son auteur, utilise le vocabulaire musical précis quand il est pertinent (ostinato, crescendo, a cappella, call and response, nuances, timbre, formation…), et intègre les ajouts importants. Uniquement des informations exactes. Si le titre est inconnu, écris [titre de l'œuvre] et n'invente rien.
+
+FORMAT OBLIGATOIRE (respecte exactement ces intitulés, sans gras ni markdown) :
+TITRE: <titre exact de l'œuvre – compositeur ou interprète, année ; ou [titre à confirmer]>
+CORRECTIONS:
+- <écrit par les élèves> → <exact>
+AJOUTS:
+- <élément ajouté>
+À VÉRIFIER:
+- <point incertain> (ou « - Rien »)
+RÉSUMÉ:
+<le paragraphe>`;
+
+  try {
+    const res = await callAI([{ text: prompt }], {
+      search: true, temperature: 0.3, maxTokens: 6000,
+      onWait: (s, txt) => { const t = document.getElementById('sumloadtxt-' + o.id); if (t) t.textContent = txt || `Nouvelle tentative dans ${s} s…`; }
+    });
+    o.result = parseSummary(res.text);
+    o.result.sources = res.sources || [];
+    if (!o.result.resume) throw new Error('le résumé est vide, réessayez');
+    refreshOeuvreCard(o);
+    showToast('Résumé rédigé ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Erreur : ' + err.message, 'error');
+    if (btn) btn.disabled = false;
+    if (load) load.style.display = 'none';
+  }
+}
+
+function parseSummary(text) {
+  const clean = String(text || '').replace(/\*\*/g, '').replace(/^#+\s*/gm, '').replace(/\r/g, '');
+  const keys = { 'TITRE': 'titre', 'CORRECTIONS': 'corrections', 'AJOUTS': 'ajouts', 'À VÉRIFIER': 'doutes', 'A VÉRIFIER': 'doutes', 'A VERIFIER': 'doutes', 'RÉSUMÉ': 'resume', 'RESUME': 'resume', 'RÉSUMÉ À RECOPIER': 'resume' };
+  const out = { titre: '', corrections: [], ajouts: [], doutes: [], resume: '' };
+  let cur = null; const buf = {};
+  for (const line of clean.split('\n')) {
+    const m = line.match(/^\s*(TITRE|CORRECTIONS|AJOUTS|[ÀA] V[ÉE]RIFIER|R[ÉE]SUM[ÉE](?: [ÀA] RECOPIER)?)\s*:\s*(.*)$/i);
+    if (m) {
+      const k = m[1].toUpperCase();
+      cur = keys[k] || (k.startsWith('R') ? 'resume' : k.startsWith('T') ? 'titre' : 'doutes');
+      buf[cur] = buf[cur] || [];
+      if (m[2].trim()) buf[cur].push(m[2].trim());
+      continue;
+    }
+    if (cur) { buf[cur] = buf[cur] || []; buf[cur].push(line); }
+  }
+  const items = (arr) => (arr || []).map(l => l.trim()).filter(Boolean)
+    .map(l => l.replace(/^[-•*]\s*/, '').trim())
+    .filter(l => l && !/^(aucune?|rien|néant|neant)\.?$/i.test(l));
+  out.titre = (buf.titre || []).join(' ').trim().replace(/^\[|\]$/g, '');
+  if (/titre à confirmer/i.test(out.titre)) out.titre = '';
+  out.corrections = items(buf.corrections);
+  out.ajouts = items(buf.ajouts);
+  out.doutes = items(buf.doutes);
+  out.resume = (buf.resume || []).join('\n').trim().replace(/\n{2,}/g, '\n');
+  if (!out.resume && !buf.titre) out.resume = clean.trim(); // format non respecté : on garde tout
+  return out;
+}
+
+async function summarizeAllOeuvres() {
+  const todo = oeuvres.filter(o => o.titre.trim() || o.transcription.trim());
+  if (!todo.length) { showToast('Rien à résumer.', 'error'); return; }
+  for (const o of todo) await summarizeOeuvre(o.id);
+}
+
+function buildOeuvreFiche(o, seanceNum) {
+  const r = o.result || {};
+  const L = '═══════════════════════════════════════════';
+  const parts = [
+    L,
+    `FICHE D'ÉCOUTE — ${o.classe} | Séance ${seanceNum}`,
+    o.titre || r.titre || 'Œuvre',
+    L, '',
+    '✍️ RÉSUMÉ À RECOPIER',
+    r.resume || '', ''
+  ];
+  if (r.corrections?.length) parts.push('⚠️ ERREURS CORRIGÉES', ...r.corrections.map(x => '- ' + x), '');
+  if (r.ajouts?.length) parts.push('➕ À AJOUTER', ...r.ajouts.map(x => '- ' + x), '');
+  if (o.transcription.trim()) parts.push('📝 COMMENTAIRE D\'ÉCOUTE DES ÉLÈVES (tableau)', o.transcription.trim(), '');
+  return parts.join('\n').trim();
+}
+
+function saveOeuvreAsSession(id) {
+  const o = oeuvreById(id);
+  if (!o || !o.result) return;
+  const classe = o.classe;
+  const existingSame = sessions.find(s => s.classe === classe && s.source === 'tableau' && s.sequenceTitle === (o.titre || o.result.titre));
+  const seanceNum = existingSame ? existingSame.seanceNum
+    : Math.max(0, ...sessions.filter(s => s.classe === classe).map(s => Number(s.seanceNum) || 0)) + 1;
+  const session = {
+    id: existingSame ? existingSame.id : Date.now(),
+    classe, seanceNum,
+    sequenceTitle: o.titre || o.result.titre || 'Commentaire d\'écoute',
+    date: document.getElementById('seanceDate').value || new Date().toISOString().split('T')[0],
+    transcript: o.transcription,
+    fiche: buildOeuvreFiche(o, seanceNum),
+    source: 'tableau',
+    hasAudio: existingSame ? !!existingSame.hasAudio : false,
+    savedAt: new Date().toISOString()
+  };
+  if (existingSame) sessions[sessions.indexOf(existingSame)] = session;
+  else sessions.push(session);
+  sessions.sort((a, b) => a.seanceNum - b.seanceNum);
+  persistSessions();
+  cloudPutSession(session);
+  updateSessionsList(); updateSyntheseInfo(); renderClassesList();
+  showToast(`Fiche « ${session.sequenceTitle} » enregistrée pour ${classe} (séance ${seanceNum}) ✓`, 'success');
+}
+
+function resumesAsText() {
+  return oeuvres.filter(o => o.result).map(o =>
+    `🎵 ${o.titre || o.result.titre || 'Œuvre'}\nClasse : ${o.classe}\n\n${o.result.resume}`
+  ).join('\n\n────────────────────\n\n');
+}
+
+function copyAllResumes() { copyText(resumesAsText()); }
+
+async function exportResumesDocx() {
+  const done = oeuvres.filter(o => o.result);
+  if (!done.length) return;
+  showToast('Génération du fichier Word...', 'info');
+  try {
+    if (!window.docx) await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+    const children = [];
+    done.forEach((o, i) => {
+      children.push(new Paragraph({
+        heading: HeadingLevel.HEADING_1, pageBreakBefore: i > 0,
+        children: [new TextRun({ text: o.titre || o.result.titre || 'Œuvre', bold: true, size: 32, font: 'Arial', color: '1C2B3A' })]
+      }));
+      children.push(new Paragraph({ children: [new TextRun({ text: 'Classe : ' + o.classe, size: 22, font: 'Arial', color: '4F7FBF' })] }));
+      children.push(new Paragraph({ children: [] }));
+      children.push(new Paragraph({ children: [new TextRun({ text: 'Résumé à recopier', bold: true, size: 24, font: 'Arial' })] }));
+      o.result.resume.split('\n').forEach(line => children.push(new Paragraph({
+        spacing: { line: 400 },
+        children: [new TextRun({ text: line, size: 26, font: 'Arial' })]
+      })));
+      if (o.result.corrections.length || o.result.ajouts.length) {
+        children.push(new Paragraph({ children: [] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Pour le professeur', bold: true, size: 20, font: 'Arial', color: '8A9BAC' })] }));
+        o.result.corrections.forEach(x => children.push(new Paragraph({ children: [new TextRun({ text: '⚠ ' + x, size: 20, font: 'Arial', color: 'C05B5B' })] })));
+        o.result.ajouts.forEach(x => children.push(new Paragraph({ children: [new TextRun({ text: '+ ' + x, size: 20, font: 'Arial', color: '5BA87A' })] })));
+      }
+    });
+    const doc = new Document({
+      sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } }, children }]
+    });
+    downloadBlob(await Packer.toBlob(doc), 'resumes-ecoutes.docx');
+    showToast('Fichier Word téléchargé ✓', 'success');
+  } catch (err) {
+    console.error(err);
+    downloadBlob(new Blob([resumesAsText()], { type: 'text/plain;charset=utf-8' }), 'resumes-ecoutes.txt');
+    showToast('Export en .txt (bibliothèque Word indisponible)', 'info');
+  }
+}
+
+function printResumes() {
+  const done = oeuvres.filter(o => o.result);
+  if (!done.length) return;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Autorisez les fenêtres pop-up pour imprimer.', 'error'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Résumés d'écoute</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #1C2B3A; margin: 0; }
+    section { padding: 40px 56px; page-break-after: always; min-height: 90vh; box-sizing: border-box; }
+    section:last-child { page-break-after: auto; }
+    .cl { color: #4F7FBF; font-size: 15pt; margin-bottom: 4px; }
+    h1 { font-size: 26pt; margin: 0 0 24px; border-bottom: 3px solid #D4A843; padding-bottom: 10px; }
+    p { font-size: 20pt; line-height: 1.7; white-space: pre-wrap; }
+  </style></head><body>
+  ${done.map(o => `<section><div class="cl">${escapeHtml(o.classe)}</div><h1>${escapeHtml(o.titre || o.result.titre || 'Œuvre')}</h1><p>${escapeHtml(o.result.resume)}</p></section>`).join('')}
+  <script>window.onload = () => setTimeout(() => window.print(), 300);<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3200);
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════
+   INTÉGRATION À SUIVI DE CLASSE (V27)
+   - même mot de passe / mode classe que Suivi de classe (verrou.js)
+   - classes et élèves repris de Suivi de classe
+   - clé Gemini partagée avec le module Progression
+   ══════════════════════════════════════════════ */
+let suiviData = null, suiviProg = null;
+function readKV(dbName) {
+  return new Promise(res => {
+    let r; try { r = indexedDB.open(dbName); } catch (e) { return res(null); }
+    r.onupgradeneeded = () => { try { r.transaction.abort(); } catch (_) {} };
+    r.onsuccess = () => { const db = r.result; if (!db.objectStoreNames.contains('kv')) { db.close(); return res(null); }
+      const q = db.transaction('kv', 'readonly').objectStore('kv').get('data');
+      q.onsuccess = () => { db.close(); res(q.result || null); }; q.onerror = () => { db.close(); res(null); }; };
+    r.onerror = () => res(null);
+  });
+}
+const suiviReady = Promise.all([readKV('suivi-classe-db'), readKV('progression-classe-db')]).then(([a, b]) => { suiviData = a; suiviProg = b; });
+async function shareGeminiKey() {
+  await suiviReady;
+  const k = suiviProg && suiviProg.config && suiviProg.config.ai && suiviProg.config.ai.geminiKey;
+  if (k && !apiKey) { apiKey = k; store.set('gemini_pro_api_key', k); updateApiStatus(); showToast('Clé Gemini reprise du module Progression ✓', 'success'); return true; }
+  return !!apiKey;
+}
+function niveauLabel(nom) { const m = String(nom).match(/([3-6])/); return m ? m[1] + 'ème' : '4ème'; }
+async function importSuiviClasses() {
+  await suiviReady;
+  const list = (suiviData && suiviData.classes) || [];
+  if (!list.length) { showToast('Aucune classe trouvée dans Suivi de classe.', 'error'); return; }
+  let added = 0, updated = 0;
+  list.forEach((c, i) => {
+    const nom = String(c.name || '').trim(); if (!nom) return;
+    const eleves = (c.students || []).map(s => s.name).filter(Boolean);
+    const ex = classes.find(x => (x.nom || '').toLowerCase() === nom.toLowerCase());
+    if (ex) { const set = new Set(ex.eleves || []); eleves.forEach(e => set.add(e)); ex.eleves = [...set]; updated++; }
+    else { classes.push({ id: Date.now() + i, nom, niveau: niveauLabel(nom), eleves }); added++; }
+  });
+  saveClasses(); updateClasseSelect(); renderClassesList();
+  showToast(`${added} classe(s) ajoutée(s), ${updated} mise(s) à jour ✓`, 'success');
+}
+// ?classe=… : ouvrir directement l'enregistrement pour cette classe
+window.addEventListener('load', () => {
+  const c = new URLSearchParams(location.search).get('classe');
+  if (c) setTimeout(() => {
+    const hit = classes.find(x => (x.nom || '').toLowerCase() === c.toLowerCase());
+    if (hit) startSessionForClass(hit.nom);
+  }, 300);
+});
+// Mot de passe : Trace écrite fait partie des fonctions protégées (comme Progression)
+suiviReady.then(() => {
+  const needAdmin = () => { if (Verrou.protectOn() && !Verrou.isAdmin()) Verrou.requireAdmin(() => {}, 'Trace écrite', () => { location.href = 'index.html'; }); };
+  Verrou.boot(suiviData && suiviData.lock, { afterUnlock: needAdmin });
+  setInterval(() => { const l = document.getElementById('vrLock'); if (!l || !l.classList.contains('show')) needAdmin(); }, 5000);
+});
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {}));
+</script>
+</body>
+
+</html>

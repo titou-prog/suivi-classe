@@ -35,11 +35,47 @@ input,select,textarea{width:100%;border:1px solid var(--line);background:var(--c
 .actions .bplus{background:rgba(21,128,61,.12);border-color:rgba(21,128,61,.4)}.actions .bminus{background:rgba(220,38,38,.10);border-color:rgba(220,38,38,.35)}
 .pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.pickbtn{display:flex;align-items:center;gap:10px;text-align:left;min-height:54px;font-size:16px}.pickbtn.bonus{background:rgba(21,128,61,.10)}.pickbtn.malus{background:rgba(220,38,38,.09)}.sheet{max-width:860px}
 @media print{.bottom,.sidebar,.topbar,.noprint,.toast,.modal{display:none!important}body{padding:0}.main{padding:0}.panel{box-shadow:none;break-inside:avoid}.recap th,.recap td{padding:5px 6px;font-size:12px}}
+/* ===== V27 : interface allégée (menu ☰, barre d'outils compacte) ===== */
+.main{padding-bottom:28px!important;max-width:1400px;margin:0 auto!important}
+.topbar{position:sticky;top:0;z-index:25;background:var(--bg);padding:8px 0 10px;margin-bottom:8px}
+.topbar .title{font-size:21px}
+#topBtns{display:flex;gap:8px;align-items:center}
+.menubtn{min-height:46px;padding:8px 16px;font-size:16px;font-weight:800;border-radius:14px}
+.tb{flex-wrap:nowrap;gap:8px}
+.clsel{font-size:18px;font-weight:800;min-height:48px;min-width:0}
+.iconbtn{min-width:48px;min-height:48px;font-size:19px;padding:6px;border-radius:14px}
+.iconbtn.on{background:var(--soft,#eef2ff);border-color:var(--accent)}
+.tbbtn{min-height:48px;padding:8px 14px;font-size:15px;white-space:nowrap;border-radius:14px}
+.statline{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.statline b{font-weight:800}
+.edt{padding:8px 10px!important;margin-bottom:10px!important;border-radius:18px!important}
+.edt-row{flex-wrap:nowrap;gap:8px}
+.edt-mid{min-width:0;cursor:pointer;line-height:1.3;padding:4px 2px}
+.edt-mid b{font-size:17px}
+.edt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-top:8px}
+.edt-box{border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+.edt-box .h{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.03em}
+.edt-box.dv{border-color:rgba(79,70,229,.35);background:rgba(79,70,229,.07)}
+.dvchip{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(79,70,229,.12);color:var(--accent);white-space:nowrap}
+#menuWrap{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.28);display:none}
+#menuWrap.show{display:block}
+#menuPanel{position:absolute;top:calc(62px + env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:min(400px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.25);padding:8px}
+.msec{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:12px 10px 4px}
+.mi{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;min-height:48px;padding:8px 10px;border-radius:12px;font-size:16px;font-weight:650}
+.mi:active,.mi:hover{background:var(--bg)}
+.mi:disabled{opacity:.4}
+.mi-ic{width:28px;text-align:center;font-size:19px}
+.mi-lock{font-size:13px;opacity:.7}
+.seg{display:flex;gap:4px;padding:2px 10px 6px;flex-wrap:wrap}
+.seg button{min-height:38px;padding:4px 12px;border-radius:999px;font-size:14px}
+.seg button.on{background:var(--text);color:var(--card);border-color:var(--text)}
+.mfoot{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+@media(max-width:640px){.tbbtn .lbl{display:none}}
 </style></head>
 <body>
 <script src="verrou.js"></script>
-<div class="app"><aside class="sidebar"><div class="title">🎵 Suivi de classe</div><div class="sub" style="margin:4px 0 18px">Version iPad · V26</div><button class="sidebtn" onclick="setTab('class')">👥 Élèves</button><button class="sidebtn" onclick="setTab('behaviors')">⭐ Comportements</button><button class="sidebtn" onclick="setTab('recap')">📊 Tableau récap</button><button class="sidebtn" onclick="setTab('data')">💾 Données</button><button class="sidebtn" onclick="goProgression('progression.html')">📅 Progression</button><div style="flex:1"></div><button class="sidebtn" onclick="openSettings()">⚙️ Réglages</button></aside>
-<main class="main"><div class="topbar"><div><div class="title">Suivi de classe</div><div class="sub" id="status">Version V26</div></div><div style="display:flex;gap:8px" id="topBtns"><button onclick="openSettings()" title="Réglages">⚙️</button><button onclick="toggleTheme()">🌓</button></div></div><div id="view"><div class="panel empty"><p class="small">Chargement des données…</p></div></div></main></div>
-<nav class="bottom"><button id="nav-class" onclick="setTab('class')">👥<br>Élèves</button><button onclick="randomStudent()">🎲<br>Aléatoire</button><button id="nav-behaviors" onclick="setTab('behaviors')">⭐<br>Comportements</button><button id="nav-recap" onclick="setTab('recap')">📊<br>Récap</button><button id="nav-reports" onclick="setTab('reports')">📋<br>Rapports</button><button id="nav-data" onclick="setTab('data')">💾<br>Données</button><button onclick="goProgression('progression.html')">📅<br>Progression</button></nav>
-<div id="modal" class="modal"><div class="sheet" id="sheet"></div></div><div id="toast" class="toast"></div>
+<div class="app">
+<main class="main"><div class="topbar"><div><div class="title">🎵 Suivi de classe</div><div class="sub" id="status">Version V27</div></div><div id="topBtns"><button class="menubtn" onclick="openMenu()">☰ Menu</button></div></div><div id="view"><div class="panel empty"><p class="small">Chargement des données…</p></div></div></main></div>
+
+<div id="menuWrap" onclick="if(event.target===this)closeMenu()"><div id="menuPanel"></div></div><div id="modal" class="modal"><div class="sheet" id="sheet"></div></div><div id="toast" class="toast"></div>
 <script src="app.js"></script></body></html>

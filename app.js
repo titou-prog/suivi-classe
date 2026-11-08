@@ -363,7 +363,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=26;
+ exportData._version=27;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -512,7 +512,8 @@ async function edtAutoSelect(reason){
 function edtMove(dir){if(!edtFocus||!edtFocus.slot.start)return;const n=edtNeighbor(edtFocus,dir);if(!n)return toast('Aucun autre cours');edtFocus=n;edtManual=true;const sc=edtSuiviClass(edtClass(n.slot.classId));if(sc)currentClassId=sc.id;else toast('Classe non reliée : choisis-la dans Progression › Réglages › Classes',4500);render()}
 function edtBack(){edtAutoKey='';edtAutoSelect('resume').then(render)}
 function edtBanner(){
- if(!edt||!edtFocus)return `<div class="panel tight noprint" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small grow">📅 Relie l’emploi du temps pour ouvrir automatiquement la bonne classe et voir la séance précédente.</span><button onclick="goProgression('progression.html')">📅 Progression</button></div>`;
+ // Bandeau compact du cours (emploi du temps) : une ligne, détails au toucher
+ if(!edt||!edtFocus)return '';
  const pc=edtClass(edtFocus.slot.classId);if(!pc)return '';
  const e=edtEtab(pc.etab),d=edtFocus.date,t=edtYmd(new Date());
  const ses=(edt.sessions||[]).filter(s=>s.classId===pc.id&&!s.skipped);
@@ -520,20 +521,85 @@ function edtBanner(){
  let due=ses.filter(s=>s.devoirsPour===d&&s.date<d&&(s.devoirs||'').trim());
  if(!due.length&&prev&&(prev.devoirs||'').trim()&&(!prev.devoirsPour||prev.devoirsPour>=d))due=[prev];
  const sc=edtSuiviClass(pc);
- const when=d===t?(edtFocus.live?'● En cours':'Aujourd’hui'):edtParse(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'});
- const short=s=>esc(String(s||'').length>160?String(s).slice(0,157)+'…':s||'');
- return `<div class="panel tight noprint" style="border-left:6px solid ${e.color}">
- <div class="row" style="justify-content:space-between"><button onclick="edtMove(-1)" ${edtFocus.slot.start?'':'disabled'}>◀ Cours précédent</button><div style="text-align:center"><div style="font-weight:800;font-size:17px">${esc(pc.label)} <span class="small">${esc(e.short)}</span></div><div class="small">${esc(when)}${edtFocus.slot.start?' · '+edtT(edtFocus.slot.start)+'–'+edtT(edtFocus.slot.end):''}${edtManual?` · <a href="#" onclick="edtBack();return false">revenir au cours actuel</a>`:''}</div></div><button onclick="edtMove(1)" ${edtFocus.slot.start?'':'disabled'}>Cours suivant ▶</button></div>
- ${sc?'':`<div class="small" style="margin-top:6px;color:var(--bad)">Cette classe n’est pas reliée à une classe de Suivi : Progression › Réglages › Établissements & classes.</div>`}
- <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-top:8px">
-  <div style="border:1px solid var(--line);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">⏮ SÉANCE PRÉCÉDENTE${prev?' · '+esc(edtParse(prev.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})):''}</div><div style="margin-top:3px">${prev?(prev.title?'<b>'+esc(prev.title)+'</b> — ':'')+short(prev.contenu):'<span class="small">Aucune séance saisie</span>'}</div></div>
-  <div style="border:1px solid rgba(79,70,229,.35);background:rgba(79,70,229,.07);border-radius:14px;padding:9px 11px"><div class="small" style="font-weight:800">📒 TRAVAIL POUR CETTE SÉANCE</div><div style="margin-top:3px">${due.length?due.map(s=>short(s.devoirs)).join('<br>'):'<span class="small">Rien de prévu</span>'}</div></div>
+ const when=d===t?(edtFocus.live?'en cours':'aujourd’hui'):edtParse(d).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+ const short=s=>esc(String(s||'').length>220?String(s).slice(0,217)+'…':s||'');
+ const open=edtOpen();
+ return `<div class="panel tight edt noprint" style="border-left:6px solid ${e.color}">
+ <div class="row edt-row"><button class="iconbtn" onclick="edtMove(-1)" ${edtFocus.slot.start?'':'disabled'} title="Cours précédent">◀</button>
+  <div class="grow edt-mid" onclick="edtToggle()"><b>${esc(pc.label)}</b> <span class="small">${esc(e.short)} · ${esc(when)}${edtFocus.slot.start?' · '+edtT(edtFocus.slot.start)+'–'+edtT(edtFocus.slot.end):''}</span>${due.length&&!open?' <span class="dvchip">📒 devoirs</span>':''} <span class="small">${open?'▴ masquer':'▾ séance précédente'}</span>${edtManual?` · <a href="#" class="small" onclick="event.stopPropagation();edtBack();return false">revenir au cours actuel</a>`:''}</div>
+  <button class="iconbtn" onclick="edtMove(1)" ${edtFocus.slot.start?'':'disabled'} title="Cours suivant">▶</button></div>
+ ${sc?'':`<div class="small" style="margin-top:4px;color:var(--bad)">Classe non reliée à Suivi : Progression › Réglages › Établissements & classes.</div>`}
+ ${open?`<div class="edt-grid">
+  <div class="edt-box"><div class="h">⏮ SÉANCE PRÉCÉDENTE${prev?' · '+esc(edtParse(prev.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})):''}</div><div style="margin-top:3px">${prev?(prev.title?'<b>'+esc(prev.title)+'</b> — ':'')+short(prev.contenu):'<span class="small">Aucune séance saisie</span>'}</div></div>
+  <div class="edt-box dv"><div class="h">📒 TRAVAIL POUR CETTE SÉANCE</div><div style="margin-top:3px">${due.length?due.map(s=>short(s.devoirs)).join('<br>'):'<span class="small">Rien de prévu</span>'}</div></div>
  </div>
- <div class="row" style="margin-top:8px"><button class="primary" onclick="goProgression('progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}&saisir=1')">🎤 Fin de cours : dicter la séance</button><button onclick="goProgression('progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}')">📅 Détails & historique</button></div>
+ <div class="row" style="margin-top:8px"><button class="primary" onclick="goEndOfLesson()">🎤 Fin de cours : dicter la séance</button><button onclick="goTrace()">✍️ Trace écrite</button><button onclick="goProgression('progression.html?classe=${encodeURIComponent(pc.id)}&date=${d}')">📅 Historique</button></div>`:''}
  </div>`;
 }
+function edtOpen(){try{return localStorage.getItem('sc-edt-open')==='1'}catch(_){return false}}
+function edtToggle(){try{localStorage.setItem('sc-edt-open',edtOpen()?'0':'1')}catch(_){}render()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')edtAutoSelect('resume')});
 setInterval(()=>{if(document.visibilityState==='visible')edtAutoSelect('tick')},60000);
+// ===== V27 : page Élèves allégée + menu ☰ =====
+let searchOpen=false;
+function toggleSearch(){searchOpen=!(searchOpen||search);if(!searchOpen)search='';render();if(searchOpen)setTimeout(()=>document.getElementById('searchBox')?.focus(),30)}
+classView=function(){
+ const c=currentClass();
+ if(!c)return `${edtBanner()}<div class="panel empty"><div style="font-size:45px">🏫</div><h2>Aucune classe</h2><p>Crée une classe ou importe une base existante (menu ☰).</p><div class="row" style="justify-content:center;margin-top:12px"><button class="primary" onclick="addClass()">➕ Créer une classe</button><button onclick="importDatabase()">📥 Importer une base</button></div></div>`;
+ const total=c.students.reduce((a,s)=>{const k=counts(s.id);return{b:a.b+k.bonus,m:a.m+k.malus}},{b:0,m:0});
+ const showSearch=searchOpen||!!search;
+ return `${edtBanner()}<div class="panel tight">
+ <div class="row tb"><select class="grow clsel" aria-label="Classe" onchange="currentClassId=this.value;search='';searchOpen=false;render()">${data.classes.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  <button class="iconbtn ${showSearch?'on':''}" onclick="toggleSearch()" title="Rechercher un élève">🔎</button>
+  <button class="tbbtn primary" onclick="randomStudent()" title="Élève au hasard">🎲<span class="lbl"> Hasard</span></button>
+  <button class="tbbtn primary" onclick="giveAll()" title="Bonus ou malus à toute la classe">👥<span class="lbl"> Toute la classe</span></button>
+  ${lastEvents.length?`<button class="tbbtn" onclick="undo()" title="Annuler la dernière action">↩️<span class="lbl"> Annuler</span></button>`:''}
+ </div>
+ ${showSearch?`<input id="searchBox" style="margin-top:8px" placeholder="🔎 Rechercher un élève…" value="${esc(search)}" oninput="onSearch(this.value)">`:''}
+ <div class="small statline"><span>${c.students.length} élèves</span>·<b class="plus">+${total.b}</b>·<b class="minus">−${total.m}</b>·<span>${todayOnly?'aujourd’hui':'depuis le début'}</span>${sort!=='name'?`·<span>tri : ${sort==='bonus'?'bonus':'malus'}</span>`:''}</div>
+ </div>${alertBanner()}<div id="studentGrid" class="grid students sz-${sizeKey()}">${studentsGrid(c)}</div>`;
+};
+function goEndOfLesson(){if(edt&&edtFocus){const pc=edtClass(edtFocus.slot.classId);if(pc)return goProgression('progression.html?classe='+encodeURIComponent(pc.id)+'&date='+edtFocus.date+'&saisir=1')}goProgression('progression.html')}
+function goTrace(){const c=currentClass();Verrou.requireAdmin(()=>{flushSave();location.href='trace.html'+(c?'?classe='+encodeURIComponent(c.name):'')},'Trace écrite')}
+function openLockSettings(){Verrou.requireAdmin(()=>lockSettings(),'Mot de passe')}
+function locked(){return Verrou.protectOn()&&!Verrou.isAdmin()}
+function mi(icon,label,action,o={}){return `<button class="mi" ${o.disabled?'disabled':''} onclick="${o.keep?'':'closeMenu();'}${action}"><span class="mi-ic">${icon}</span><span class="grow">${label}</span>${o.lock&&locked()?'<span class="mi-lock">🔒</span>':''}</button>`}
+function seg(items,cur,fn){return `<div class="seg">${items.map(([v,l])=>`<button class="${v===cur?'on':''}" onclick="${fn}('${v}')">${l}</button>`).join('')}</div>`}
+function menuHTML(){
+ const L={lock:true};
+ return `<div class="msec">En classe</div>
+ ${mi('👥','Bonus/malus à toute la classe','giveAll()')}
+ ${mi('🎲','Élève au hasard','randomStudent()')}
+ ${mi('↩️','Annuler la dernière action','undo()',{disabled:!lastEvents.length})}
+ <div class="msec">Cours</div>
+ ${mi('🎤','Fin de cours : dicter la séance','goEndOfLesson()',L)}
+ ${mi('📅','Progression & cahier de textes',"goProgression('progression.html')",L)}
+ ${mi('✍️','Trace écrite (fiches, synthèses, QCM)','goTrace()',L)}
+ <div class="msec">Suivi des élèves</div>
+ ${mi('📊','Tableau récapitulatif',"setTab('recap')",L)}
+ ${mi('📋','Rapports d’alerte (5 malus)',"setTab('reports')",L)}
+ ${mi('⭐','Liste des bonus et malus',"setTab('behaviors')",L)}
+ <div class="msec">Classe</div>
+ ${mi('➕','Ajouter des élèves','addStudents()',L)}
+ ${mi('⚙️','Réglages de la classe (remise à zéro…)','openClassSettings()',L)}
+ ${mi('🏫','Nouvelle classe','addClass()',L)}
+ <div class="msec">Affichage</div>
+ <div class="small" style="padding:2px 10px">Vignettes</div>${seg([['s','Petites'],['m','Moyennes'],['l','Grandes']],sizeKey(),'menuSize')}
+ <div class="small" style="padding:2px 10px">Tri</div>${seg([['name','Nom'],['bonus','Bonus'],['malus','Malus']],sort,'menuSort')}
+ <div class="small" style="padding:2px 10px">Compteurs</div>${seg([['total','Depuis le début'],['today','Aujourd’hui']],todayOnly?'today':'total','menuPeriod')}
+ ${mi('🌓','Thème : '+({automatic:'automatique',dark:'sombre',light:'clair'}[data.theme]||'automatique'),'toggleTheme();openMenu()',{keep:true})}
+ <div class="msec">Application</div>
+ ${mi('💾','Données & sauvegarde',"setTab('data')",L)}
+ ${mi('🔐','Mot de passe & mode classe','openLockSettings()',L)}
+ ${mi('🔊','Sons & réglages','openSettings()',L)}
+ ${mi('🔄','Rechercher une mise à jour','checkUpdate(true)')}
+ <div class="mfoot">Suivi de classe · ${APP_VERSION}${locked()?' · 🔒 mode classe':''}</div>`;
+}
+function openMenu(){const w=document.getElementById('menuWrap'),p=document.getElementById('menuPanel');if(!w)return;p.innerHTML=menuHTML();w.classList.add('show')}
+function closeMenu(){document.getElementById('menuWrap')?.classList.remove('show')}
+function menuSize(v){data.cardSize=v;save();render();openMenu()}
+function menuSort(v){sort=v;render();openMenu()}
+function menuPeriod(v){todayOnly=v==='today';render();openMenu()}
 // ===== V22 : MOT DE PASSE & MODE CLASSE (voir verrou.js) =====
 // Sur la page Élèves, seules les fonctions de cours restent libres. Tout le reste passe par Verrou.requireAdmin().
 const _orig={setTab,openSettings,openMore,addClass,openClassSettings,studentMenu,behaviorForm,addStudents,backup,importDatabase,wipe};
@@ -549,7 +615,7 @@ function updateLockUI(){
  const tb=document.querySelector('.topbar');if(!tb)return;
  let b=document.getElementById('lockBtn');
  if(!Verrou.protectOn()){if(b)b.remove();document.getElementById('lockPill')?.remove();return}
- if(!b){b=document.createElement('button');b.id='lockBtn';(document.getElementById('topBtns')||tb).appendChild(b)}
+ if(!b){b=document.createElement('button');b.id='lockBtn';(document.getElementById('topBtns')||tb).prepend(b)}
  const admin=Verrou.isAdmin();
  b.textContent=admin?'🔓':'🔒';b.title=admin?'Repasser en mode classe':'Accès complet (mot de passe)';
  b.onclick=()=>admin?lockClassMode():Verrou.requireAdmin(()=>{toast('🔓 Accès complet');render()},'Accès complet');
@@ -595,7 +661,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V26';
+const APP_VERSION='V27';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
