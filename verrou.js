@@ -8,7 +8,7 @@
    ===================================================================== */
 const Verrou=(()=>{
  let cfg=null,fails=0,blockedUntil=0,hiddenAt=0,pending=null,onChange=()=>{};
- const HINT='sc-lock-hint',UNLOCKED='sc-unlocked',ADMIN='sc-admin-until';
+ const HINT='sc-lock-hint',UNLOCKED='sc-unlocked',ADMIN='sc-admin-until',GRACE='sc-grace-until',GRACE_MS=120000;
  const ss={get:k=>{try{return sessionStorage.getItem(k)}catch(_){return null}},set:(k,v)=>{try{sessionStorage.setItem(k,v)}catch(_){}},del:k=>{try{sessionStorage.removeItem(k)}catch(_){}}};
  const ls={get:k=>{try{return localStorage.getItem(k)}catch(_){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}},del:k=>{try{localStorage.removeItem(k)}catch(_){}}};
  const escH=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -89,7 +89,7 @@ const Verrou=(()=>{
  /* ---------- API ---------- */
  function startupScreen(after){
   show({title:'Suivi de classe',sub:'Saisis ton mot de passe pour ouvrir l’appli.',sub0:'Saisis ton mot de passe pour ouvrir l’appli.',icon0:'🔒',
-   onOk:r=>{ss.set(UNLOCKED,'1');if(r.recovery){setAdmin(true)}onChange();after&&after(r)}});
+   onOk:r=>{ss.set(UNLOCKED,'1');ss.set(GRACE,String(Date.now()+GRACE_MS));if(r.recovery){setAdmin(true)}onChange();after&&after(r)}});
  }
  function boot(lockCfg,opt={}){
   cfg=lockCfg&&lockCfg.hash?lockCfg:null;onChange=opt.onChange||onChange;
@@ -98,12 +98,15 @@ const Verrou=(()=>{
   else{hide();opt.afterUnlock&&opt.afterUnlock({})}
   onChange();
  }
+ // juste après le mot de passe d'ouverture (2 min), on ne le redemande pas pour une fonction protégée
+ const inGrace=()=>Number(ss.get(GRACE)||0)>Date.now();
  function requireAdmin(next,label,onCancel){
   if(isAdmin())return next();
+  if(inGrace()){ss.del(GRACE);setAdmin(true);return next()}
   show({title:'Accès protégé',sub:(label?label+' · ':'')+'mot de passe nécessaire (mode classe actif).',sub0:(label?label+' · ':'')+'mot de passe nécessaire (mode classe actif).',icon:'🔐',icon0:'🔐',dim:true,cancellable:true,onCancel,
    onOk:r=>{setAdmin(true);next(r)}});
  }
- function lockNow(){setAdmin(false)}
+ function lockNow(){ss.del(GRACE);setAdmin(false)}
  document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'){hiddenAt=Date.now();return}
   if(!enabled()||!hiddenAt)return;

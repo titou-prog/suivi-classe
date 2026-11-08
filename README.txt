@@ -1,4 +1,8 @@
-Suivi de classe — PWA iPad V24
+Suivi de classe — PWA iPad V25
+
+V25 : le mot de passe n’est plus demandé deux fois. Après le mot de passe d’ouverture, les fonctions protégées restent accessibles 2 minutes sans le redemander (Progression comprise).
+
+V24
 
 V24 : numéro de version affiché sous le titre ; bandeau « Nouvelle version disponible » + bouton « Rechercher une mise à jour » dans ⚙️ Réglages.
 À chaque nouvelle version, modifier aussi version.json.
