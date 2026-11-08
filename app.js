@@ -363,7 +363,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=25;
+ exportData._version=26;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -595,7 +595,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V25';
+const APP_VERSION='V26';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
@@ -612,9 +612,12 @@ function showUpdateBar(v){
  document.body.appendChild(d);
 }
 async function applyUpdate(){
+ // Installe la nouvelle version : on retire l'ancien service worker et ses fichiers (jamais les données élèves), puis on recharge.
  try{flushSave()}catch(_){}
- try{const reg=await navigator.serviceWorker?.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage('skip')}}catch(_){}
- try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(_){} // vide seulement les fichiers de l'appli, jamais les données élèves
+ const bar=document.getElementById('updBar');if(bar)bar.querySelector('span').textContent='⏳ Mise à jour en cours…';
+ try{await persistNow()}catch(_){}
+ try{const regs=await navigator.serviceWorker?.getRegistrations()||[];await Promise.all(regs.map(r=>r.unregister()))}catch(_){}
+ try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(_){}
  location.replace(location.pathname+'?v='+Date.now());
 }
 setTimeout(()=>checkUpdate(false),2500);

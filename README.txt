@@ -1,4 +1,8 @@
-Suivi de classe — PWA iPad V25
+Suivi de classe — PWA iPad V26
+
+V26 : correctif des mises à jour sur iPad (le service worker restait bloqué sur l’ancienne version) ; « Mettre à jour » réinstalle proprement l’appli sans toucher aux données ; les requêtes vers d’autres sites ne sont plus mises en cache.
+
+V25
 
 V25 : le mot de passe n’est plus demandé deux fois. Après le mot de passe d’ouverture, les fonctions protégées restent accessibles 2 minutes sans le redemander (Progression comprise).
 
