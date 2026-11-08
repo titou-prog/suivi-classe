@@ -618,6 +618,7 @@ async function applyUpdate(){
  location.replace(location.pathname+'?v='+Date.now());
 }
 setTimeout(()=>checkUpdate(false),2500);
+setInterval(()=>{if(document.visibilityState==='visible')checkUpdate(false)},10*60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate(false)});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 init().catch(e=>console.error(e)).then(()=>{Verrou.boot(data.lock,{onChange:()=>{try{updateLockUI()}catch(_){}},afterUnlock:r=>{if(r&&r.recovery){toast('Code de secours accepté : choisis un nouveau mot de passe',5000);changeLockPw()}}})});
