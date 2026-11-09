@@ -1,4 +1,8 @@
-Suivi de classe — PWA iPad V27
+Suivi de classe — PWA iPad V28
+
+V28 : fin de cours — bouton « 🎙️ Enregistrer » : l’audio est enregistré puis Gemini l’écoute, le transcrit et remplit titre, contenu et devoirs (la reconnaissance vocale de Safari ne fonctionne pas dans l’appli écran d’accueil).
+
+V27
 
 Nouveautés V27 :
 - Page Élèves allégée : sélecteur de classe, 🔎, 🎲 Hasard, 👥 Toute la classe, ↩️ Annuler (seulement après une action). Tout le reste passe dans le menu ☰.

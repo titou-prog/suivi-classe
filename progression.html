@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P10';
+const APP_VERSION='P11';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -707,7 +707,9 @@ function openEditor(p){
  ${draft&&!s?'<div class="small" style="margin-top:6px">↺ Brouillon récupéré.</div>':''}
  <div class="box" style="margin-top:12px">
   <div class="row between"><b>🎙️ Dictée de fin de cours</b><span class="small">Dicte tout d’un coup : ce qu’on a fait, puis les devoirs</span></div>
-  <div class="row" style="margin-top:8px;align-items:stretch;flex-wrap:nowrap"><textarea id="eDictee" rows="4" class="grow" placeholder="Ex. : « On a écouté le Boléro de Ravel, repéré l’ostinato et le crescendo, commencé le commentaire d’écoute. Pour la prochaine fois, apprendre la fiche sur l’orchestre. »" oninput="saveDraft()">${esc(v.dictee||'')}</textarea><button class="mic" onclick="dictate('eDictee',this)">🎤</button></div>
+  <div class="row" style="margin-top:8px;align-items:stretch;flex-wrap:nowrap"><textarea id="eDictee" rows="4" class="grow" placeholder="Touche « 🎙️ Enregistrer » et raconte la séance, ou dicte avec le 🎤 du clavier. Ex. : « On a écouté le Boléro de Ravel, repéré l’ostinato… Pour la prochaine fois, apprendre la fiche. »" oninput="saveDraft()">${esc(v.dictee||'')}</textarea></div>
+  <button class="big good" style="width:100%;margin-top:8px" id="recBtn" onclick="toggleAudioRec(this)">🎙️ Enregistrer</button>
+  <div class="small" style="margin-top:4px">Raconte la séance puis les devoirs, touche ⏹ : Gemini écoute, transcrit et remplit les champs ci-dessous.</div>
   <div class="row" style="margin-top:8px">
    <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec ${aiName()}</button>
    <button onclick="localSplit()">✂️ Répartir sans IA</button>
@@ -729,7 +731,7 @@ function openEditor(p){
   ${s?`<button class="big danger" onclick="delSession('${s.id}')">🗑</button>`:''}
  </div>`);
 }
-function closeEditor(){stopDictation();closeModal()}
+function closeEditor(){stopDictation();if(arec){clearInterval(arec.timer);try{arec.mr.onstop=null;arec.mr.stop()}catch(_){}try{arec.stream.getTracks().forEach(t=>t.stop())}catch(_){}arec=null}closeModal()}
 function editorDateChanged(d){
  if(!editing||!d)return;
  const nx=nextOcc(editing.classId,d);editing.pourDefault=nx?nx.date:'';
@@ -800,6 +802,71 @@ function dictate(id,btn){
   r.start();recUI(btn,true);toast('Je t’écoute… touche ⏹ pour arrêter');
  }catch(e){rec=null;recUI(btn,false);ta.focus();toast('Dictée indisponible ici : utilise le 🎤 du clavier',4500)}
 }
+/* ---------- Enregistrement audio de fin de cours → Gemini (transcription + reformulation) ----------
+   Sur iPad (appli écran d'accueil), la reconnaissance vocale de Safari n'est pas disponible :
+   on enregistre l'audio (MediaRecorder), on le convertit en WAV 16 kHz mono, et Gemini l'écoute directement. */
+let arec=null; // {mr,stream,chunks,t0,timer,btn}
+const AREC_MAX_S=8*60;
+function audioRecSupported(){return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder)}
+function fmtDur(s){return Math.floor(s/60)+':'+pad(Math.floor(s%60))}
+async function toggleAudioRec(btn){
+ if(arec){stopAudioRec();return}
+ if(!audioRecSupported()){toast('Enregistrement audio impossible ici : utilise le 🎤 du clavier',5000);document.getElementById('eDictee').focus();return}
+ if(cfg.ai.provider!=='gemini'||!geminiKey()){toast('L’écoute de l’audio nécessite Gemini : Réglages › Dictée & IA › Gemini + clé',6000);return}
+ stopDictation();
+ let stream;
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+ catch(e){toast('Micro refusé : Réglages de l’iPad › Safari › Microphone › Autoriser (ou réponds « Autoriser » à la question)',7000);return}
+ const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg'].find(m=>{try{return MediaRecorder.isTypeSupported(m)}catch(_){return false}})||'';
+ let mr;try{mr=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream)}catch(e){stream.getTracks().forEach(t=>t.stop());toast('Enregistrement impossible : '+e.message,6000);return}
+ arec={mr,stream,chunks:[],t0:Date.now(),btn,timer:null};
+ mr.ondataavailable=e=>{if(e.data&&e.data.size)arec&&arec.chunks.push(e.data)};
+ mr.onstop=()=>onAudioRecStop();
+ mr.start(1000);
+ btn.classList.add('rec');
+ const tick=()=>{if(!arec)return;const s=(Date.now()-arec.t0)/1000;btn.innerHTML='⏹ Arrêter · '+fmtDur(s);if(s>=AREC_MAX_S)stopAudioRec()};
+ tick();arec.timer=setInterval(tick,500);
+ toast('🎙️ J’enregistre… parle normalement, puis touche ⏹',3500);
+}
+function stopAudioRec(){if(!arec)return;clearInterval(arec.timer);try{arec.mr.state!=='inactive'&&arec.mr.stop()}catch(_){onAudioRecStop()}}
+async function onAudioRecStop(){
+ const r=arec;if(!r)return;arec=null;
+ try{r.stream.getTracks().forEach(t=>t.stop())}catch(_){}
+ const btn=r.btn;btn.classList.remove('rec');
+ const blob=new Blob(r.chunks,{type:(r.mr.mimeType||'audio/mp4')});
+ if(!blob.size){btn.innerHTML='🎙️ Enregistrer';return toast('Aucun son enregistré')}
+ const er=document.getElementById('aiErr');if(er)er.textContent='';
+ btn.disabled=true;btn.innerHTML='⏳ Gemini écoute…';
+ try{
+  const wav=await blobToWav16k(blob);
+  const b64=await blobToB64(wav);
+  const g=id=>document.getElementById(id);
+  const c=classById(editing.classId);const seq=seqById(g('eSeq').value);
+  const res=await callGemini('',{classe:c.label,niveau:c.niveau,sequence:seq?seq.name:'',date:fmtLong(g('eDate').value||editing.date)},b64);
+  if(res.transcription){const d=g('eDictee');d.value=(d.value?d.value.replace(/\s*$/,'\n'):'')+res.transcription}
+  if(res.titre)g('eTitre').value=res.titre;
+  if(res.contenu)g('eContenu').value=res.contenu;
+  g('eDevoirs').value=res.devoirs||'';
+  saveDraft();toast('✨ Séance transcrite et reformulée — relis avant d’enregistrer',4000);
+ }catch(e){console.error(e);if(er)er.textContent='⚠️ Gemini : '+e.message;toast('Gemini : erreur (détail sous le bouton)',5000)}
+ finally{btn.disabled=false;btn.innerHTML='🎙️ Enregistrer'}
+}
+async function blobToWav16k(blob){
+ const buf=await blob.arrayBuffer();
+ const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC();
+ let audio;try{audio=await new Promise((res,rej)=>{const p=ac.decodeAudioData(buf,res,rej);if(p&&p.then)p.then(res,rej)})}finally{try{ac.close()}catch(_){}}
+ const SR=16000,len=Math.max(1,Math.ceil(audio.duration*SR));
+ const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+ let data;
+ if(OAC){const oc=new OAC(1,len,SR);const src=oc.createBufferSource();src.buffer=audio;src.connect(oc.destination);src.start(0);const out=await new Promise((res,rej)=>{const p=oc.startRendering();if(p&&p.then)p.then(res,rej);else oc.oncomplete=e=>res(e.renderedBuffer)});data=out.getChannelData(0)}
+ else{const ch=audio.getChannelData(0),ratio=audio.sampleRate/SR;data=new Float32Array(len);for(let i=0;i<len;i++)data[i]=ch[Math.min(ch.length-1,Math.floor(i*ratio))]||0}
+ const bytes=new DataView(new ArrayBuffer(44+data.length*2));
+ const w=(o,s)=>{for(let i=0;i<s.length;i++)bytes.setUint8(o+i,s.charCodeAt(i))};
+ w(0,'RIFF');bytes.setUint32(4,36+data.length*2,true);w(8,'WAVE');w(12,'fmt ');bytes.setUint32(16,16,true);bytes.setUint16(20,1,true);bytes.setUint16(22,1,true);bytes.setUint32(24,SR,true);bytes.setUint32(28,SR*2,true);bytes.setUint16(32,2,true);bytes.setUint16(34,16,true);w(36,'data');bytes.setUint32(40,data.length*2,true);
+ for(let i=0;i<data.length;i++)bytes.setInt16(44+i*2,Math.max(-1,Math.min(1,data[i]))*32767,true);
+ return new Blob([bytes.buffer],{type:'audio/wav'});
+}
+function blobToB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=()=>rej(new Error('lecture audio impossible'));r.readAsDataURL(b)})}
 function localSplit(){
  const g=id=>document.getElementById(id);
  const t=g('eDictee').value.trim();if(!t)return toast('Dicte d’abord dans la zone « Dictée »');
@@ -816,7 +883,7 @@ async function aiReformulate(){
  const g=id=>document.getElementById(id);
  let raw=g('eDictee').value.trim();
  if(!raw){const a=g('eContenu').value.trim(),b=g('eDevoirs').value.trim();raw=a+(b?'\nDevoirs : '+b:'')}
- if(!raw)return toast('Dicte d’abord ce que vous avez fait');
+ if(!raw){const er=document.getElementById('aiErr');if(er)er.textContent='Rien à reformuler : touche d’abord « 🎙️ Enregistrer » ou dicte avec le 🎤 du clavier.';return toast('Rien à reformuler pour l’instant')}
  const c=classById(editing.classId);const seq=seqById(g('eSeq').value);
  const btn=g('aiBtn');stopDictation();const er0=document.getElementById('aiErr');if(er0)er0.textContent='';btn.disabled=true;btn.textContent='⏳ '+aiName()+' reformule…';
  try{
@@ -838,7 +905,7 @@ function aiName(){return cfg.ai.provider==='gemini'?'Gemini':'Claude'}
 function geminiKey(){let k=(cfg.ai.geminiKey||'').trim();if(!k){try{k=(localStorage.getItem('gemini_pro_api_key')||'').trim()}catch(_){}}return k}
 function aiIsReady(){return cfg.ai.provider==='gemini'?!!geminiKey():!!(cfg.ai.key||'').trim()}
 function aiUserMsg(raw,ctx){return `Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`}
-function aiParse(txt){const mm=String(txt||'').match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');const o=JSON.parse(mm[0]);return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim()}}
+function aiParse(txt){const mm=String(txt||'').match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');const o=JSON.parse(mm[0]);return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim(),transcription:String(o.transcription||'').trim()}}
 function callAI(raw,ctx){return cfg.ai.provider==='gemini'?callGemini(raw,ctx):callClaude(raw,ctx)}
 const GEM_FALLBACK=['gemini-flash-latest','gemini-flash-lite-latest','gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
 const GEM_API='https://generativelanguage.googleapis.com/v1beta/';
@@ -851,10 +918,11 @@ async function gemListModels(key){
  const{res,j}=await gemFetch(GEM_API+'models?pageSize=200',key);if(!res.ok)return[];
  return(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/i.test(m.name)&&!/image|tts|audio|live|embed|vision|exp|preview/i.test(m.name)).map(m=>m.name.replace(/^models\//,'')).sort((a,b)=>(/latest/.test(b)-/latest/.test(a))||b.localeCompare(a));
 }
-async function callGemini(raw,ctx){
+async function callGemini(raw,ctx,audioB64){
  const key=geminiKey();if(!key)throw new Error('clé Gemini manquante (Réglages)');
  const first=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
- const body=json=>({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:[{text:aiUserMsg(raw,ctx)}]}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:1500},json?{responseMimeType:'application/json'}:{})});
+ const userParts=audioB64?[{inline_data:{mime_type:'audio/wav',data:audioB64}},{text:aiUserMsg('(dictée enregistrée : écoute l’audio joint)',ctx)+'\n\nÉcoute l’enregistrement audio joint (dictée du professeur en fin de cours). Ajoute au JSON une clé "transcription" : la transcription fidèle et ponctuée de ce qui est dit.'}]:[{text:aiUserMsg(raw,ctx)}];
+ const body=json=>({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:userParts}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:1500},json?{responseMimeType:'application/json'}:{})});
  let queue=[first,...GEM_FALLBACK.filter(m=>m!==first)],listed=false,last='',tried=[],busy=[],rounds=0;
  while(queue.length){
   const model=queue.shift();if(tried.includes(model))continue;tried.push(model);

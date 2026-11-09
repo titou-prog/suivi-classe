@@ -4,7 +4,7 @@
 //   On redemande maintenant l'adresse (URL) elle-même.
 // - Icônes et manifeste : copie locale d'abord.
 // - Requêtes vers d'autres sites (IA, Pronote…) : jamais interceptées ni mises en cache.
-const CACHE='suivi-classe-ipad-v27';
+const CACHE='suivi-classe-ipad-v28';
 const ASSETS=['./','./index.html','./app.js','./progression.html','./trace.html','./verrou.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 const FRESH=/\/(index\.html|progression\.html|trace\.html|app\.js|verrou\.js|sw\.js|version\.json)?$/;
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting())));
