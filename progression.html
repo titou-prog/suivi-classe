@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P13';
+const APP_VERSION='P14';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -637,7 +637,7 @@ function skipOcc(classId,date,slotId){
 }
 function pronotePendingPanel(){
  const l=S.sessions.filter(s=>!s.pronote&&!s.skipped).sort((a,b)=>a.date<b.date?1:-1);if(!l.length)return '';
- return `<div class="panel"><div class="row between"><div class="section-title" style="margin:0">📋 À reporter dans Pronote <span class="chip todo">${l.length}</span></div><button class="mini primary" onclick="exportForClaude()">🤖 Copier pour Claude</button></div><div class="small" style="margin:4px 0 6px">« Copier pour Claude » prépare toutes ces séances pour que Claude les saisisse dans Pronote web via Chrome sur ton ordinateur.</div><div class="list">${l.slice(0,15).map(s=>{const c=classById(s.classId)||{label:'?',etab:''};return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${esc(c.label)}</b> · ${esc(fmtShort(s.date))}<div class="small">${esc((s.title||s.contenu||'').slice(0,90))}</div></div><button class="mini good" onclick="openPronote('${s.id}')">📋 Copier</button></div>`}).join('')}</div></div>`;
+ return `<div class="panel"><div class="row between"><div class="section-title" style="margin:0">📋 À reporter dans Pronote <span class="chip todo">${l.length}</span></div></div><div class="row" style="margin:6px 0 4px">${cfg.etabs.map(e=>{const n=l.filter(x=>(classById(x.classId)||{}).etab===e.id).length;return n?`<button class="mini primary" onclick="prepareSend('${e.id}')">📤 Préparer l’envoi ${esc(e.short)} (${n})</button><button class="mini" onclick="markEtabReported('${e.id}')">✅ ${esc(e.short)} : tout est reporté</button>`:''}).join('')}</div><div class="small" style="margin:0 0 6px">« Préparer l’envoi » copie les séances ; dans Safari, ouvre ${'l’ENT (Vayrac) ou Pronote (Martel)'} sur la séance et touche le favori « Remplir le cahier de textes ».</div><div class="list">${l.slice(0,15).map(s=>{const c=classById(s.classId)||{label:'?',etab:''};return `<div class="item">${etabDot(c.etab)}<div class="grow"><b>${esc(c.label)}</b> · ${esc(fmtShort(s.date))}<div class="small">${esc((s.title||s.contenu||'').slice(0,90))}</div></div><button class="mini good" onclick="openPronote('${s.id}')">📋 Copier</button></div>`}).join('')}</div></div>`;
 }
 
 /* ---------- VUE : semaine ---------- */
@@ -992,6 +992,19 @@ function openPronote(id){
  <button style="width:100%;margin-bottom:8px" onclick="copyText(window._pt.titre+'\\n\\n'+window._pt.contenu+(window._pt.devoirs?'\\n\\nTravail à faire${s.devoirsPour?' pour le '+esc(fmtShort(s.devoirsPour)):''} : '+window._pt.devoirs:''),'Tout copié')">📋 Tout copier en un bloc</button>
  <button class="big good" style="width:100%" onclick="markPronote('${s.id}')">✅ C’est fait dans Pronote</button>`);
 }
+function cdtPayload(etab){
+ const l=S.sessions.filter(s=>!s.pronote&&!s.skipped&&(classById(s.classId)||{}).etab===etab).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1);
+ return{sc:'cdt',v:1,etab,at:new Date().toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),items:l.map(s=>{const c=classById(s.classId);const t=pronoteTexts(s);return{id:s.id,cls:c.name,label:c.label,date:s.date,start:s.start||'',titre:t.titre,contenu:t.contenu,devoirs:t.devoirs,pour:s.devoirsPour||''}})};
+}
+function prepareSend(etab){
+ const p=cdtPayload(etab);if(!p.items.length)return toast('Rien à reporter pour '+etabById(etab).short);
+ copyText(JSON.stringify(p),p.items.length+' séance(s) prêtes pour '+etabById(etab).short+' — ouvre '+(etab==='vayrac'?'l’ENT':'Pronote')+' et touche le favori « Remplir »');
+}
+function markEtabReported(etab){
+ const l=S.sessions.filter(s=>!s.pronote&&!s.skipped&&(classById(s.classId)||{}).etab===etab);if(!l.length)return;
+ if(!confirm('Marquer les '+l.length+' séance(s) de '+etabById(etab).short+' comme reportées dans le cahier de textes ?'))return;
+ l.forEach(s=>{s.pronote=true;s.updatedAt=new Date().toISOString()});save();render();toast('Séances marquées comme reportées ✅');
+}
 function exportForClaude(){
  const l=S.sessions.filter(s=>!s.pronote&&!s.skipped).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1);
  if(!l.length)return toast('Rien à reporter');
@@ -1056,6 +1069,65 @@ function pronoteDiag(){
  var b2=document.createElement('button');b2.textContent='Fermer';b2.style.cssText='min-height:46px;border-radius:12px;border:1px solid #ccc;background:#fff;font-size:16px;padding:0 16px';b2.onclick=function(){d.remove();};
  row.appendChild(b1);row.appendChild(b2);d.appendChild(ta);d.appendChild(row);document.body.appendChild(d);
 }
+/* ---------- Favori « Remplir le cahier de textes » (s'exécute DANS la page de l'ENT, Safari iPad) ----------
+   ENT Kosmos (Vayrac) : remplit le formulaire d'activité ouvert (titre + contenu, ou travail à faire).
+   Rien n'est enregistré automatiquement : on vérifie puis on touche « Enregistrer » de l'ENT. */
+function cdtFill(){
+ var K='sc_cdt_payload',D='sc_cdt_done';
+ function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}}
+ function norm(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+ function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+ function html(t){return String(t||'').split(/\n{2,}/).map(function(p){return '<p>'+esc(p).replace(/\n/g,'<br>')+'</p>';}).join('');}
+ var MOIS=['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
+ var pageTxt=norm((document.body.innerText||'').slice(0,60000));
+ var done={};try{done=JSON.parse(ls(D)||'{}')||{};}catch(e){done={};}
+ var old=document.getElementById('scfill');if(old)old.remove();
+ var box=document.createElement('div');box.id='scfill';
+ box.style.cssText='position:fixed;left:10px;right:10px;top:10px;max-height:80vh;overflow:auto;-webkit-overflow-scrolling:touch;z-index:2147483647;background:#fff;color:#111;border:3px solid #15803d;border-radius:16px;padding:12px;font:15px -apple-system,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.45)';
+ document.body.appendChild(box);
+ function btn(t,bg,fn){var b=document.createElement('button');b.type='button';b.textContent=t;b.style.cssText='min-height:42px;border-radius:12px;border:'+(bg?'0':'1px solid #bbb')+';background:'+(bg||'#fff')+';color:'+(bg?'#fff':'#111')+';font-weight:700;font-size:15px;padding:6px 12px;margin:4px 6px 0 0';b.onclick=fn;return b;}
+ function msg(t,col){var m=document.getElementById('scfillmsg');if(m){m.textContent=t;m.style.color=col||'#15803d';}}
+ function load(){try{return JSON.parse(ls(K)||'null');}catch(e){return null;}}
+ function take(txt){var p=null;try{p=JSON.parse(String(txt||'').trim());}catch(e){}if(!p||p.sc!=='cdt'||!p.items){msg('Ce n’est pas un envoi de Suivi de classe. Recommence « Préparer l’envoi » dans l’appli.','#dc2626');return false;}ls(K,JSON.stringify(p));render();return true;}
+ function paste(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){if(!take(t))showPasteZone();},function(){showPasteZone();});}else showPasteZone();}
+ function showPasteZone(){var z=document.getElementById('scfillzone');if(z)z.style.display='block';msg('Appui long dans la zone ci-dessous › Coller.','#b45309');}
+ function score(it){var s=0;var c=norm(it.cls),l=norm(it.label);if(c&&pageTxt.indexOf(c)>=0)s+=3;else if(l&&pageTxt.indexOf(l)>=0)s+=2;var d=it.date.split('-');var jj=String(+d[2]);var dm=norm(d[2]+'/'+d[1]+'/'+d[0]);var lg=norm(jj+' '+MOIS[+d[1]-1]+' '+d[0]);var lg2=norm(jj+' '+MOIS[+d[1]-1]);if(pageTxt.indexOf(dm)>=0||pageTxt.indexOf(lg)>=0)s+=3;else if(pageTxt.indexOf(lg2)>=0)s+=2;if(it.start){var h=it.start.split(':');if(pageTxt.indexOf(norm(+h[0]+'h'+h[1]))>=0||pageTxt.indexOf(norm(h[0]+':'+h[1]))>=0)s+=1;}return s;}
+ function form(){var t=document.querySelector('input[name=title]');var ed=(window.CKEDITOR&&CKEDITOR.instances&&(CKEDITOR.instances.content||CKEDITOR.instances[Object.keys(CKEDITOR.instances)[0]]))||null;var ta=document.querySelector('textarea[name=content]');return {title:t,ed:ed,ta:ta,ok:!!(t&&(ed||ta))};}
+ function fill(it,part){
+  var f=form();
+  if(!f.ok){msg('Ouvre d’abord le formulaire dans l’ENT : « une activité en séance » pour le contenu, ou « un travail à faire suite à la séance » pour les devoirs. Puis retouche le favori.','#dc2626');return;}
+  var titre=part==='devoirs'?('Travail à faire'+(it.titre?' — '+it.titre:'')):(it.titre||'Séance');
+  var corps=part==='devoirs'?it.devoirs:it.contenu;
+  f.title.focus();f.title.value=titre.slice(0,250);f.title.dispatchEvent(new Event('input',{bubbles:true}));f.title.dispatchEvent(new Event('change',{bubbles:true}));
+  if(f.ed){f.ed.setData(html(corps));try{f.ed.updateElement();}catch(e){}}else{f.ta.value=corps;f.ta.dispatchEvent(new Event('input',{bubbles:true}));}
+  done[it.id+'|'+part]=Date.now();ls(D,JSON.stringify(done));
+  var sub=document.querySelector('form input[type=submit].btn--primary, form button[type=submit].btn--primary');
+  render();
+  msg('✅ Rempli ('+(part==='devoirs'?'travail à faire':'contenu')+'). Vérifie, puis touche « Enregistrer » dans l’ENT.');
+  if(sub){sub.style.outline='4px solid #15803d';sub.style.outlineOffset='3px';}
+  box.style.maxHeight='110px';try{f.title.scrollIntoView({block:'center'});}catch(e){}
+ }
+ function render(){
+  var p=load();box.innerHTML='';
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b>'+(p?' <span style="color:#666;font-size:13px">('+p.items.length+' séance(s) préparée(s) le '+esc(p.at||'')+')</span>':'');box.appendChild(h);
+  var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
+  var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
+  if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
+  var items=p.items.map(function(it){return {it:it,s:score(it)};}).sort(function(a,b){return b.s-a.s||(a.it.date<b.it.date?-1:1);});
+  items.forEach(function(o,i){var it=o.it;var c=document.createElement('div');c.style.cssText='border:'+(i===0&&o.s>=4?'3px solid #15803d':'1px solid #ddd')+';border-radius:12px;padding:8px 10px;margin:8px 0';
+   var d=it.date.split('-');var dc=done[it.id+'|contenu'],dd=done[it.id+'|devoirs'];
+   c.innerHTML=(i===0&&o.s>=4?'<div style="color:#15803d;font-weight:800;font-size:13px">➜ Séance probablement affichée</div>':'')+'<b>'+esc(it.label)+'</b> · '+d[2]+'/'+d[1]+(it.start?' · '+esc(it.start.replace(':','h')):'')+'<div style="font-size:14px;margin-top:2px">'+esc(it.titre||'')+'</div>'+(it.devoirs?'<div style="font-size:13px;color:#444">📒 '+esc(it.devoirs.slice(0,120))+'</div>':'');
+   c.appendChild(btn((dc?'✓ ':'')+'Contenu de séance','#4f46e5',function(){fill(it,'contenu');}));
+   if(it.devoirs)c.appendChild(btn((dd?'✓ ':'')+'Travail à faire','#b45309',function(){fill(it,'devoirs');}));
+   box.appendChild(c);});
+  box.appendChild(btn('📋 Recoller un nouvel envoi','',paste));
+  box.appendChild(btn('Réduire','',function(){box.style.maxHeight=box.style.maxHeight==='60px'?'80vh':'60px';}));
+  box.appendChild(btn('Fermer','',function(){box.remove();}));
+ }
+ if(/index-education\.net/.test(location.host)){box.innerHTML='<b>📒 Remplir le cahier de textes</b><p>Pronote n’est pas encore pris en charge : envoie à Claude le « Diagnostic CDT » de la page de saisie Pronote.</p>';box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
+ render();
+ if(!load())paste();
+}
 function bookmarkletCode(fn){return 'javascript:'+encodeURIComponent('('+fn.toString().replace(/\n\s*/g,' ')+')();void 0')}
 function pronoteHelpHTML(){
  return `<div class="box" style="margin-top:12px"><b>🤖 Remplissage automatique du cahier de textes depuis l’iPad (en préparation)</b>
@@ -1067,6 +1139,15 @@ function pronoteHelpHTML(){
   <li><b>Vayrac (ENT)</b> : connecte-toi à l’ENT dans Safari › ouvre le <b>cahier de textes</b> › saisis normalement une vraie séance et enregistre-la › puis rouvre le formulaire d’une nouvelle séance › touche le signet « Diagnostic CDT » › <b>📋 Copier</b> › colle le texte dans la conversation avec Claude.</li>
   <li><b>Martel (Pronote via l’ENT)</b> : depuis l’ENT, ouvre Pronote (s’il s’ouvre dans un nouvel onglet, reste dans cet onglet) › Cahier de textes › Saisie › un cours sans contenu › touche « Diagnostic CDT » › Copier › colle-le aussi. Si possible, refais-le après avoir touché « Ajouter un travail à faire ».</li>
  </ol>
+ <div class="box" style="margin:10px 0;border-color:rgba(21,128,61,.45)"><b>✅ Vayrac (ENT) : favori « Remplir le cahier de textes » disponible</b>
+ <ol class="small" style="padding-left:18px;line-height:1.55;margin:6px 0">
+  <li>Touche « Copier le favori Remplir » › dans Safari, crée un signet « Remplir CDT » et colle ce code comme adresse (comme pour le diagnostic).</li>
+  <li>Chaque jour : écran « Cours » de Progression › <b>📤 Préparer l’envoi Vayrac</b>.</li>
+  <li>Dans l’ENT : ouvre la séance › « une activité en séance » › touche le signet <b>Remplir CDT</b> › « Coller les séances » › touche <b>Contenu de séance</b> sur la bonne séance › vérifie › <b>Enregistrer</b>.</li>
+  <li>Pour les devoirs : « un travail à faire suite à la séance » › signet › <b>Travail à faire</b> › Enregistrer.</li>
+  <li>Quand tout est fait : <b>✅ Vayrac : tout est reporté</b> dans l’appli.</li>
+ </ol>
+ <button class="good" onclick="copyText(bookmarkletCode(cdtFill),'Favori Remplir copié')">📋 Copier le favori Remplir</button></div>
  <button class="primary" onclick="copyText(bookmarkletCode(pronoteDiag),'Favori de diagnostic copié')">📋 Copier le favori de diagnostic</button>
  <p class="small" style="margin-top:6px">Le diagnostic ne modifie rien et n’envoie rien : il affiche la liste des zones de saisie et des adresses techniques de la page (sans contenu), que tu copies toi-même.</p></div>`;
 }
