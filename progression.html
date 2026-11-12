@@ -173,7 +173,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P12';
+const APP_VERSION='P13';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -1029,7 +1029,7 @@ function pronoteDiag(){
  }
  function desc(el,doc){
   var r=el.getBoundingClientRect(),c=(typeof el.className==='string'&&el.className.trim())?'.'+el.className.trim().split(/\s+/).slice(0,4).join('.'):'';
-  return [el.tagName.toLowerCase(),el.type||'',el.id?'#'+el.id:'',c,el.getAttribute('role')?'role='+el.getAttribute('role'):'',el.isContentEditable?'CE':'',Math.round(r.left)+','+Math.round(r.top)+' '+Math.round(r.width)+'x'+Math.round(r.height),lab(el,doc)].filter(Boolean).join(' ');
+  return [el.tagName.toLowerCase(),el.type||'',el.id?'#'+el.id:'',el.getAttribute('name')?'name='+el.getAttribute('name'):'',c,el.getAttribute('role')?'role='+el.getAttribute('role'):'',el.isContentEditable?'CE':'',Math.round(r.left)+','+Math.round(r.top)+' '+Math.round(r.width)+'x'+Math.round(r.height),lab(el,doc)].filter(Boolean).join(' ');
  }
  function scan(doc,pre){
   doc.querySelectorAll('input:not([type=hidden]),textarea,select,[contenteditable],[role=textbox],[role=combobox]').forEach(function(el){var r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;out.push(pre+'F '+desc(el,doc));});
@@ -1040,8 +1040,11 @@ function pronoteDiag(){
  var hints=['angular','entcore','model','Behaviours','GInterface','GApplication','Pronote','IE','kd','kdecole','Skolengo','Vue','React','jQuery','tinymce','CKEDITOR'].filter(function(k){try{return typeof window[k]!=='undefined';}catch(e){return false;}}).join(',');
  var scripts=[].slice.call(document.scripts).map(function(x){return (x.src||'').replace(/^https?:\/\/[^/]+/,'').split('?')[0];}).filter(Boolean).slice(0,30).join(' ');
  var api=[];try{performance.getEntriesByType('resource').forEach(function(r){if(r.initiatorType==='xmlhttprequest'||r.initiatorType==='fetch'){var u=r.name.replace(/^https?:\/\/[^/]+/,'').split('?')[0].replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi,':id').replace(/\/\d{2,}/g,'/:n');if(api.indexOf(u)<0)api.push(u);}});}catch(e){}
- var head='CDT-DIAG v2 | '+location.host.replace(/^[^.]+/,'***')+location.pathname+location.hash.slice(0,40)+' | titre: '+clean(document.title)+' | globals: '+hints+' | ecran '+innerWidth+'x'+innerHeight+' | '+out.length+' elements\nSCRIPTS: '+scripts+'\nAPI: '+api.slice(-60).join(' ');
- var txt=head+'\n'+out.slice(0,300).join('\n');
+ function mask(u){return String(u||'').replace(/^https?:\/\/[^/]+/,'').replace(/\d{4,}/g,':n').slice(0,160);}
+ var forms=[];[].slice.call(document.forms).forEach(function(f,i){var fl=[].slice.call(f.elements).map(function(e){var v=e.type==='hidden'&&/^[A-Za-z_]{2,40}$/.test(e.value||'')?'='+e.value:(e.type==='hidden'?'(len'+String(e.value||'').length+')':'');return (e.tagName.toLowerCase()+':'+(e.type||'')+':'+(e.getAttribute('name')||'')+(e.id?'#'+e.id:'')+v);}).slice(0,60);forms.push('FORM '+i+' '+(f.id?'#'+f.id+' ':'')+(f.getAttribute('method')||'get')+' '+mask(f.getAttribute('action'))+' :: '+fl.join(' | '));});
+ var links=[];[].slice.call(document.querySelectorAll('a[href],[data-href],[data-url],.dropdown__menu *,[role=menuitem]')).forEach(function(a){var t=clean(a.innerText||a.getAttribute('title')||'');var h=a.getAttribute('href')||a.getAttribute('data-href')||a.getAttribute('data-url')||'';if((/s[ée]ance|travail|ajout|cahier|cdt|contenu/i.test(t+' '+h))&&t.length<60&&links.length<40)links.push('L '+t+' -> '+mask(h));});
+ var head='CDT-DIAG v3 | '+location.host.replace(/^[^.]+/,'***')+location.pathname+mask(location.search)+location.hash.slice(0,40)+' | titre: '+clean(document.title)+' | globals: '+hints+' | ecran '+innerWidth+'x'+innerHeight+' | '+out.length+' elements\nSCRIPTS: '+scripts+'\nAPI: '+api.slice(-60).join(' ');
+ var txt=head+'\n'+forms.join('\n')+'\n'+links.join('\n')+'\n'+out.slice(0,300).join('\n');
  var old=document.getElementById('pdiag');if(old)old.remove();
  var d=document.createElement('div');d.id='pdiag';
  d.style.cssText='position:fixed;inset:20px;z-index:2147483647;background:#fff;color:#111;border:3px solid #4f46e5;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;font:15px -apple-system,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.4)';
