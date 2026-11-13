@@ -1,4 +1,8 @@
-Suivi de classe — PWA iPad V28
+Suivi de classe — PWA iPad V29
+
+V29 : QCM pour QCMCam (menu ☰ › QCM, ou onglet 🎯 QCM de Progression) : fichiers de classes avec numéros de cartes stables, QCM express depuis la dictée d’une séance, évaluation de fin de séquence (séances + fiches Trace écrite). Bouton « 🎯 QCM express » dans la fiche de fin de cours.
+
+V28
 
 V28 : fin de cours — bouton « 🎙️ Enregistrer » : l’audio est enregistré puis Gemini l’écoute, le transcrit et remplit titre, contenu et devoirs (la reconnaissance vocale de Safari ne fonctionne pas dans l’appli écran d’accueil).
 

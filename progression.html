@@ -81,7 +81,7 @@ table.prog th,table.prog td{border-bottom:1px solid var(--line);padding:8px 6px;
 table.prog th{font-size:12px;text-transform:uppercase;color:var(--muted)}
 table.prog td.pre{white-space:pre-wrap}
 .seqhead{margin:18px 0 6px;display:flex;align-items:center;gap:8px}
-.bottom{position:fixed;left:0;right:0;bottom:0;padding:6px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr);gap:4px;background:var(--nav);border-top:1px solid var(--line);z-index:20;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:6px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--nav);border-top:1px solid var(--line);z-index:20;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .bottom button{border:0;background:transparent;font-size:12px;min-height:50px;padding:4px 2px;line-height:1.25}
 .bottom button.active{background:var(--soft);color:var(--accent)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none;align-items:flex-end;justify-content:center}
@@ -140,6 +140,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
   <button class="sidebtn" id="side-week" onclick="setTab('week')">🗓️ Semaine</button>
   <button class="sidebtn" id="side-classes" onclick="setTab('classes')">📚 Classes</button>
   <button class="sidebtn" id="side-prog" onclick="setTab('prog')">🧭 Progressions</button>
+  <button class="sidebtn" id="side-qcm" onclick="setTab('qcm')">🎯 QCM (QCMCam)</button>
   <button class="sidebtn" id="side-settings" onclick="setTab('settings')">⚙️ Réglages</button>
   <div style="flex:1"></div>
   <button class="sidebtn" onclick="goSuivi()">👥 Suivi de classe</button>
@@ -157,6 +158,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
  <button id="nav-week" onclick="setTab('week')">🗓️<br>Semaine</button>
  <button id="nav-classes" onclick="setTab('classes')">📚<br>Classes</button>
  <button id="nav-prog" onclick="setTab('prog')">🧭<br>Progressions</button>
+ <button id="nav-qcm" onclick="setTab('qcm')">🎯<br>QCM</button>
  <button id="nav-settings" onclick="setTab('settings')">⚙️<br>Réglages</button>
  <button onclick="goSuivi()">👥<br>Suivi</button>
 </nav>
@@ -173,7 +175,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P15';
+const APP_VERSION='P16';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -289,7 +291,7 @@ async function loadSuiviClasses(){
     const q=db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).get(DB_KEY);q.onsuccess=()=>{db.close();res(q.result||null)};q.onerror=()=>{db.close();res(null)}};
    r.onerror=()=>res(null);
   });
-  suiviClasses=d&&Array.isArray(d.classes)?d.classes.map(c=>({id:c.id,name:c.name})):[];
+  suiviClasses=d&&Array.isArray(d.classes)?d.classes.map(c=>({id:c.id,name:c.name,students:(c.students||[]).map(s=>({id:s.id,name:s.name}))})):[];
   suiviLock=d&&d.lock&&d.lock.hash?d.lock:null;
  }catch(e){suiviClasses=[]}
 }
@@ -541,7 +543,7 @@ function render(){
  document.querySelectorAll('.bottom button,.sidebtn').forEach(b=>b.classList.remove('active'));
  document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('side-'+tab)?.classList.add('active');
  const v=document.getElementById('view');
- v.innerHTML=tab==='home'?homeView():tab==='week'?weekView():tab==='classes'?classesView():tab==='prog'?progView():settingsView();
+ v.innerHTML=tab==='home'?homeView():tab==='week'?weekView():tab==='classes'?classesView():tab==='prog'?progView():tab==='qcm'?qcmView():settingsView();
 }
 
 /* ---------- VUE : cours actuel ---------- */
@@ -713,6 +715,7 @@ function openEditor(p){
   <div class="row" style="margin-top:8px">
    <button class="primary grow" id="aiBtn" onclick="aiReformulate()" ${aiReady?'':'disabled'}>✨ Reformuler avec ${aiName()}</button>
    <button onclick="localSplit()">✂️ Répartir sans IA</button>
+   <button onclick="openQcmFromEditor()" title="Créer un QCM QCMCam à partir de cette séance">🎯 QCM express</button>
   </div>
   <div class="small" id="aiErr" style="margin-top:6px;color:var(--bad);font-weight:700"></div>
   ${aiReady?'':'<div class="small" style="margin-top:6px">Pour activer la reformulation : Réglages › Dictée & IA › colle ta clé Gemini ou Claude.</div>'}
@@ -918,11 +921,11 @@ async function gemListModels(key){
  const{res,j}=await gemFetch(GEM_API+'models?pageSize=200',key);if(!res.ok)return[];
  return(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/i.test(m.name)&&!/image|tts|audio|live|embed|vision|exp|preview/i.test(m.name)).map(m=>m.name.replace(/^models\//,'')).sort((a,b)=>(/latest/.test(b)-/latest/.test(a))||b.localeCompare(a));
 }
-async function callGemini(raw,ctx,audioB64){
+async function callGemini(raw,ctx,audioB64,ov){
  const key=geminiKey();if(!key)throw new Error('clé Gemini manquante (Réglages)');
  const first=(cfg.ai.geminiModel||'gemini-flash-latest').trim().replace(/^models\//,'');
- const userParts=audioB64?[{inline_data:{mime_type:'audio/wav',data:audioB64}},{text:aiUserMsg('(dictée enregistrée : écoute l’audio joint)',ctx)+'\n\nÉcoute l’enregistrement audio joint (dictée du professeur en fin de cours). Ajoute au JSON une clé "transcription" : la transcription fidèle et ponctuée de ce qui est dit.'}]:[{text:aiUserMsg(raw,ctx)}];
- const body=json=>({systemInstruction:{parts:[{text:aiSystemPrompt()}]},contents:[{role:'user',parts:userParts}],generationConfig:Object.assign({temperature:0.3,maxOutputTokens:1500},json?{responseMimeType:'application/json'}:{})});
+ const userParts=ov?[{text:ov.user}]:audioB64?[{inline_data:{mime_type:'audio/wav',data:audioB64}},{text:aiUserMsg('(dictée enregistrée : écoute l’audio joint)',ctx)+'\n\nÉcoute l’enregistrement audio joint (dictée du professeur en fin de cours). Ajoute au JSON une clé "transcription" : la transcription fidèle et ponctuée de ce qui est dit.'}]:[{text:aiUserMsg(raw,ctx)}];
+ const body=json=>({systemInstruction:{parts:[{text:ov?ov.system:aiSystemPrompt()}]},contents:[{role:'user',parts:userParts}],generationConfig:Object.assign({temperature:ov?0.5:0.3,maxOutputTokens:ov?(ov.max||4000):1500},json?{responseMimeType:'application/json'}:{})});
  let queue=[first,...GEM_FALLBACK.filter(m=>m!==first)],listed=false,last='',tried=[],busy=[],rounds=0;
  while(queue.length){
   const model=queue.shift();if(tried.includes(model))continue;tried.push(model);
@@ -932,7 +935,7 @@ async function callGemini(raw,ctx,audioB64){
    const txt=((r.j.candidates||[])[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
    if(!txt){last='réponse vide de '+model+' ('+((r.j.candidates||[])[0]?.finishReason||r.j.promptFeedback?.blockReason||'?')+')';continue}
    if(model!==first){cfg.ai.geminiModel=model;save()}
-   return aiParse(txt);
+   return ov?txt:aiParse(txt);
   }
   const st=r.res.status,m=r.msg;last=m+' ['+model+']';
   if(/api key not valid|API_KEY_INVALID|invalid api key/i.test(m))throw new Error('clé refusée par Google : vérifie que tu as copié toute la clé (elle commence par AIza).');
@@ -951,18 +954,19 @@ async function callGemini(raw,ctx,audioB64){
  if(/high demand|overloaded|UNAVAILABLE|try again later/i.test(last))throw new Error('Google est surchargé en ce moment (tous les modèles gratuits essayés). Réessaie dans quelques minutes, ou utilise « Répartir sans IA ».');
  throw new Error(/quota|exhausted|429|rate/i.test(last)?'limite gratuite de Google atteinte, réessaie dans une minute ('+last+')':'aucun modèle Gemini n’a répondu. Dernier message : '+last);
 }
-async function callClaude(raw,ctx){
+async function callClaude(raw,ctx,ov){
  const key=(cfg.ai.key||'').trim();if(!key)throw new Error('clé API manquante (Réglages)');
- const user=`Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`;
+ const user=ov?ov.user:`Classe : ${ctx.classe} (niveau ${ctx.niveau})${ctx.sequence?`\nSéquence : ${ctx.sequence}`:''}\nDate : ${ctx.date}\n\nDictée :\n"""${raw}"""`;
  let res;
  try{
   res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-   body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:900,system:aiSystemPrompt(),messages:[{role:'user',content:user}]})});
+   body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:ov?(ov.max||4000):900,system:ov?ov.system:aiSystemPrompt(),messages:[{role:'user',content:user}]})});
  }catch(e){throw new Error('pas de connexion Internet ?')}
  if(res.status===529||res.status===503){await new Promise(r=>setTimeout(r,2000));try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:cfg.ai.model||'claude-haiku-5-5',max_tokens:900,system:aiSystemPrompt(),messages:[{role:'user',content:user}]})})}catch(e){throw new Error('pas de connexion Internet ?')}}
  const j=await res.json().catch(()=>({}));
  if(!res.ok){const m=j&&j.error&&j.error.message||('HTTP '+res.status);throw new Error(res.status===401?'clé refusée — vérifie-la dans les Réglages':res.status===404?'modèle introuvable ('+(cfg.ai.model)+') — change-le dans les Réglages':m)}
  const txt=(j.content||[]).map(b=>b.text||'').join('');
+ if(ov)return txt;
  const mm=txt.match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');
  const o=JSON.parse(mm[0]);
  return{titre:String(o.titre||'').trim(),contenu:String(o.contenu||'').trim(),devoirs:String(o.devoirs||'').trim()};
@@ -1023,6 +1027,138 @@ function copyText(t,msg){
  const ok=()=>toast((msg||'Copié')+' ✅');
  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='0';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,t.length);let r=false;try{r=document.execCommand('copy')}catch(_){}ta.remove();r?ok():toast('Copie impossible — sélectionne le texte à la main',4000)};
  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok).catch(fb);else fb();
+}
+
+/* =====================================================================
+   QCM POUR QCMCAM
+   1. Classes : fichier texte (un élève par ligne, UTF-8) — QCMCam attribue les cartes dans l'ordre de la liste.
+      Les numéros de carte sont mémorisés : un nouvel élève reçoit le numéro suivant, les autres ne changent pas.
+   2. QCM express : à partir de la dictée / du contenu d'une séance, pour interroger la classe en direct.
+   3. Évaluation de fin de séquence : à partir des séances de la séquence et des fiches « Trace écrite ».
+   Format des questions (fichier .txt) :  ## Question / - réponse / - [x] bonne réponse
+   ===================================================================== */
+let qcm={mode:'express',cls:'',sessionId:'',src:'',n:5,seq:'',out:'',title:'',busy:false,picked:null};
+function suiviClassById(id){return suiviClasses.find(c=>c.id===id)}
+function cardMap(sc){
+ cfg.qcmCards=cfg.qcmCards||{};const m=cfg.qcmCards[sc.id]=cfg.qcmCards[sc.id]||{};
+ let max=Object.values(m).reduce((a,b)=>Math.max(a,b),0);let changed=false;
+ sc.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(st=>{if(!m[st.id]){m[st.id]=++max;changed=true}});
+ if(changed)save();
+ return sc.students.map(st=>({n:m[st.id],name:st.name})).sort((a,b)=>a.n-b.n);
+}
+function qcmClassFile(id){
+ const sc=suiviClassById(id);if(!sc)return;
+ const list=cardMap(sc);
+ // trous dans la numérotation (élève supprimé) : ligne « Absent » pour que les numéros restent alignés avec les cartes
+ const lines=[];let k=1;list.forEach(x=>{while(k<x.n){lines.push('(carte libre '+k+')');k++}lines.push(x.name);k++});
+ downloadFile(lines.join('\n')+'\n','Classe QCMCam - '+sc.name.replace(/[\\/:*?"<>|]/g,'-')+'.txt','text/plain;charset=utf-8');
+}
+function qcmPrintCards(id){
+ const sc=suiviClassById(id);if(!sc)return;const list=cardMap(sc);
+ document.getElementById('printArea').innerHTML=`<h1>Cartes QCMCam — ${esc(sc.name)}</h1><table><tr><th>Carte n°</th><th>Élève</th></tr>${list.map(x=>`<tr><td style="text-align:center;font-weight:700">${x.n}</td><td>${esc(x.name)}</td></tr>`).join('')}</table>`;
+ setTimeout(()=>window.print(),100);
+}
+function traceSessions(){try{return JSON.parse(localStorage.getItem('trace_sessions')||'[]')||[]}catch(_){return[]}}
+function sessText(s){return[s.title,s.contenu,s.dictee&&s.dictee!==s.contenu?'Dictée : '+s.dictee:'',s.devoirs?'Travail : '+s.devoirs:''].filter(Boolean).join('\n')}
+function stripHtml(h){const d=document.createElement('div');d.innerHTML=String(h||'');return(d.innerText||d.textContent||'').trim()}
+function qcmSystem(){return `Tu es professeur d'éducation musicale au collège (France, cycle 4). Tu rédiges des QCM projetés en classe et lus avec des cartes QCMCam (réponses A, B, C, D).
+Réponds UNIQUEMENT avec un JSON valide : {"questions":[{"q":"…","choix":["…","…","…","…"],"bonne":0}]}
+Règles :
+- exactement 4 choix par question, une seule bonne réponse ; "bonne" = indice (0 à 3) de la bonne réponse dans "choix" ;
+- questions courtes (une ligne), vocabulaire adapté à l'âge, pas de négation piégeuse, pas de « toutes les réponses » ;
+- distracteurs plausibles, de longueur comparable à la bonne réponse ;
+- uniquement à partir du contenu fourni : n'invente pas d'œuvres, de dates ou de notions qui n'y figurent pas ;
+- orthographe et typographie françaises soignées.`}
+async function aiText(system,user,max){return cfg.ai.provider==='gemini'?callGemini('',{},null,{system,user,max}):callClaude('',{},{system,user,max})}
+function shuffleBalanced(qs){
+ // répartit la bonne réponse sur A, B, C, D de façon équilibrée
+ const pos=qs.map((_,i)=>i%4).sort(()=>Math.random()-.5);
+ return qs.map((q,i)=>{const good=q.choix[q.bonne]||q.choix[0];const others=q.choix.filter((_,k)=>k!==q.bonne).slice(0,3);while(others.length<3)others.push('—');const p=pos[i];const ch=others.slice();ch.splice(p,0,good);return{q:q.q,choix:ch,bonne:p}});
+}
+function qcmToText(qs){return qs.map(q=>'## '+q.q.replace(/\s+/g,' ').trim()+'\n\n'+q.choix.map((c,k)=>'- '+(k===q.bonne?'[x] ':'')+String(c).replace(/\s+/g,' ').trim()).join('\n')).join('\n\n')+'\n'}
+function qcmCount(t){return(String(t||'').match(/^##\s/gm)||[]).length}
+async function qcmGenerate(kind){
+ if(!aiIsReady())return toast('Ajoute ta clé Gemini (Réglages › Dictée & IA)',5000);
+ const c=classById(qcm.cls);if(!c)return toast('Choisis une classe');
+ let content='',label='';
+ if(kind==='express'){content=(document.getElementById('qcmSrc')?.value||'').trim();label='QCM express';if(!content)return toast('Rien à partir de quoi créer le QCM : choisis une séance ou écris le contenu')}
+ else{
+  const boxes=[...document.querySelectorAll('.qcmPick:checked')].map(x=>x.value);
+  if(!boxes.length)return toast('Coche au moins une séance ou une fiche');
+  const ps=S.sessions.filter(s=>boxes.includes('s:'+s.id)).sort((a,b)=>a.date<b.date?-1:1).map(s=>'Séance du '+fmtNum(s.date)+' :\n'+sessText(s));
+  const ts=traceSessions().filter(t=>boxes.includes('t:'+t.id)).map(t=>'Fiche de cours (Trace écrite'+(t.sequenceTitle?' — '+t.sequenceTitle:'')+') :\n'+stripHtml(t.fiche).slice(0,4000));
+  content=[...ps,...ts].join('\n\n---\n\n');label='Évaluation '+((seqById(qcm.seq)||{}).name||'séquence');
+ }
+ const n=Math.max(2,Math.min(30,Number(qcm.n)||5));
+ const seq=seqById(qcm.seq);
+ const user=`Classe : ${c.label} (niveau ${c.niveau})${seq?`\nSéquence : ${seq.name}`:''}
+Type : ${kind==='express'?'questions rapides de vérification pendant le cours, sur ce qui vient d’être vu':'évaluation finale de la séquence : couvre l’ensemble des notions, du plus simple au plus exigeant'}
+Nombre de questions : exactement ${n}
+
+CONTENU :
+"""${content.slice(0,14000)}"""`;
+ qcm.busy=true;render();
+ try{
+  const txt=await aiText(qcmSystem(),user,Math.min(8000,400+n*220));
+  const mm=String(txt).match(/\{[\s\S]*\}/);if(!mm)throw new Error('réponse inattendue');
+  const o=JSON.parse(mm[0]);
+  let qs=(o.questions||[]).filter(q=>q&&q.q&&Array.isArray(q.choix)&&q.choix.length>=2).map(q=>({q:String(q.q),choix:q.choix.map(String).slice(0,4),bonne:Math.max(0,Math.min(3,Number(q.bonne)||0))}));
+  if(!qs.length)throw new Error('aucune question reçue');
+  qcm.out=qcmToText(shuffleBalanced(qs));qcm.title=label+' - '+c.label+(seq?' - '+seq.name:'');
+  toast(qs.length+' questions prêtes ✨ — relis-les avant de les utiliser',4000);
+ }catch(e){console.error(e);toast(aiName()+' : '+e.message,7000)}
+ finally{qcm.busy=false;render();setTimeout(()=>document.getElementById('qcmOutBox')?.scrollIntoView({behavior:'smooth'}),80)}
+}
+function qcmDownload(){const t=document.getElementById('qcmOut')?.value||qcm.out;if(!qcmCount(t))return toast('Pas de question');downloadFile(t,(qcm.title||'QCM').replace(/[\\/:*?"<>|]/g,'-')+'.txt','text/plain;charset=utf-8')}
+function qcmSetSession(id){qcm.sessionId=id;const s=S.sessions.find(x=>x.id===id);qcm.src=s?sessText(s):'';render()}
+function qcmView(){
+ if(!qcm.cls){const a=courseNow();qcm.cls=a?a.occ.slot.classId:(cfg.classes[0]||{}).id||''}
+ const c=classById(qcm.cls)||cfg.classes[0];if(c)qcm.cls=c.id;
+ const sess=c?sessionsOf(c.id).filter(s=>!s.skipped).slice().reverse():[];
+ if(qcm.mode==='express'&&!qcm.sessionId&&sess[0]&&!qcm.src){qcm.sessionId=sess[0].id;qcm.src=sessText(sess[0])}
+ const seqs=c?seqsFor(c.niveau):[];
+ if(qcm.mode==='eval'&&!qcm.seq&&c)qcm.seq=lastSeqOf(c.id)||(seqs[0]||{}).id||'';
+ const traces=c?traceSessions().filter(t=>{const k=norm(t.classe);return k&&(k===norm(c.label)||k===norm(c.name)||(matchSuivi(c)&&k===norm(matchSuivi(c).name)))}):[];
+ const seq=seqById(qcm.seq);
+ const evalSess=c?sessionsOf(c.id).filter(s=>!s.skipped&&(!qcm.seq||s.sequenceId===qcm.seq)):[];
+ const evalTraces=traces.filter(t=>!seq||!t.sequenceTitle||norm(t.sequenceTitle).includes(norm(seq.name).replace(/^s\d+/,'').slice(0,12))||norm(seq.name).includes(norm(t.sequenceTitle).slice(0,12)));
+ const ready=aiIsReady();
+ return `
+ <div class="panel"><div class="section-title">🎯 QCM pour QCMCam</div>
+  <div class="tabs"><button class="${qcm.mode==='express'?'on':''}" onclick="qcm.mode='express';render()">⚡ QCM express (en cours)</button><button class="${qcm.mode==='eval'?'on':''}" onclick="qcm.mode='eval';render()">📝 Évaluation de séquence</button><button class="${qcm.mode==='classes'?'on':''}" onclick="qcm.mode='classes';render()">👥 Classes QCMCam</button></div>
+  ${ready?'':'<div class="small" style="margin-top:8px;color:var(--bad)">Pour générer des questions, ajoute ta clé Gemini : Réglages › Dictée & IA.</div>'}
+ </div>
+ ${qcm.mode==='classes'?`<div class="panel"><div class="section-title">👥 Classes pour QCMCam</div>
+  <p class="small">Un fichier texte par classe (un élève par ligne). Dans QCMCam : <b>Classes › Importer</b> ce fichier. Chaque élève garde toujours le même numéro de carte, même si tu ajoutes des élèves plus tard.</p>
+  ${suiviClasses.length?`<div class="list">${suiviClasses.map(sc=>`<div class="item"><div class="grow"><b>${esc(sc.name)}</b> <span class="small">${(sc.students||[]).length} élèves</span></div><button class="mini primary" onclick="qcmClassFile('${sc.id}')">📥 Fichier QCMCam</button><button class="mini" onclick="qcmPrintCards('${sc.id}')">🖨️ Numéros de cartes</button></div>`).join('')}</div>`:'<div class="small">Aucune classe trouvée dans Suivi de classe (ouvre ce module depuis l’appli Suivi de classe).</div>'}
+ </div>`:`
+ <div class="panel">
+  <div class="row"><div class="grow" style="min-width:180px"><label class="lbl" style="margin-top:0">Classe</label><select onchange="qcm.cls=this.value;qcm.sessionId='';qcm.src='';qcm.seq='';render()">${classOptions(qcm.cls)}</select></div>
+  <div style="width:150px"><label class="lbl" style="margin-top:0">Questions</label><select onchange="qcm.n=Number(this.value)">${(qcm.mode==='express'?[3,5,8,10]:[10,15,20,25]).map(n=>`<option ${n===qcm.n?'selected':''}>${n}</option>`).join('')}</select></div></div>
+  ${qcm.mode==='express'?`
+  <label class="lbl">À partir de la séance</label><select onchange="qcmSetSession(this.value)"><option value="">— Texte libre —</option>${sess.slice(0,12).map(s=>`<option value="${s.id}" ${s.id===qcm.sessionId?'selected':''}>${esc(fmtShort(s.date))} · ${esc((s.title||s.contenu||'').slice(0,60))}</option>`).join('')}</select>
+  <label class="lbl">Contenu utilisé (modifiable)</label><textarea id="qcmSrc" rows="6" oninput="qcm.src=this.value" placeholder="Ce qui vient d’être vu en cours (dictée, notions, œuvres écoutées…)">${esc(qcm.src)}</textarea>
+  `:`
+  <label class="lbl">Séquence</label><select onchange="qcm.seq=this.value;render()"><option value="">— Toutes les séances —</option>${seqs.map(q=>`<option value="${q.id}" ${q.id===qcm.seq?'selected':''}>${esc(q.name)}</option>`).join('')}</select>
+  <label class="lbl">Sources (décoche ce qui ne doit pas être évalué)</label>
+  <div class="box" style="max-height:300px;overflow:auto">
+   ${evalSess.map(s=>`<label class="row" style="margin:4px 0;flex-wrap:nowrap"><input type="checkbox" class="qcmPick" value="s:${s.id}" checked style="width:22px;height:22px;flex:none"><span>📘 ${esc(fmtShort(s.date))} · ${esc((s.title||s.contenu||'').slice(0,80))}</span></label>`).join('')||'<div class="small">Aucune séance enregistrée pour cette séquence.</div>'}
+   ${evalTraces.map(t=>`<label class="row" style="margin:4px 0;flex-wrap:nowrap"><input type="checkbox" class="qcmPick" value="t:${t.id}" checked style="width:22px;height:22px;flex:none"><span>✍️ Fiche ${esc(t.sequenceTitle||'')} ${t.seanceNum?'· séance '+esc(t.seanceNum):''} ${t.date?'· '+esc(fmtShort(t.date)):''}</span></label>`).join('')}
+   ${!evalTraces.length?'<div class="small" style="margin-top:6px">Aucune fiche Trace écrite trouvée pour cette classe.</div>':''}
+  </div>`}
+  <button class="big primary" style="width:100%;margin-top:12px" ${qcm.busy||!ready?'disabled':''} onclick="qcmGenerate('${qcm.mode}')">${qcm.busy?'⏳ '+aiName()+' prépare les questions…':'✨ Créer le QCM'}</button>
+ </div>
+ ${qcm.out?`<div class="panel" id="qcmOutBox"><div class="row between"><div class="section-title" style="margin:0">📄 ${esc(qcm.title)}</div><span class="chip">${qcmCount(qcm.out)} questions</span></div>
+  <p class="small">Relis et corrige si besoin (la bonne réponse est marquée <b>[x]</b>). Puis télécharge le fichier et ouvre-le dans QCMCam.</p>
+  <textarea id="qcmOut" rows="16" style="font-family:ui-monospace,monospace;font-size:14px" oninput="qcm.out=this.value">${esc(qcm.out)}</textarea>
+  <div class="row" style="margin-top:8px"><button class="primary" onclick="qcmDownload()">📥 Télécharger pour QCMCam (.txt)</button><button onclick="copyText(document.getElementById('qcmOut').value,'QCM copié')">📋 Copier</button><button onclick="window.open('https://qcmcam.net','_blank')">🌐 Ouvrir QCMCam</button></div></div>`:''}`}`;
+}
+function openQcmFromEditor(){
+ if(!editing)return;const g=id=>document.getElementById(id);
+ const txt=[g('eTitre').value,g('eContenu').value,g('eDictee').value].filter(Boolean).join('\n');
+ if(!txt.trim())return toast('Enregistre ou dicte d’abord la séance');
+ qcm.mode='express';qcm.cls=editing.classId;qcm.sessionId='';qcm.src=txt;qcm.out='';
+ closeEditor();setTab('qcm');
 }
 
 /* ---------- Pronote web : favori de diagnostic (étape 1 du remplissage automatique) ----------
@@ -1440,7 +1576,7 @@ async function init(){
  lockBoot();
  const p=new URLSearchParams(location.search);
  const pc=p.get('classe'),pd=p.get('date'),pt=p.get('tab');
- if(pt&&['home','week','classes','prog','settings'].includes(pt))tab=pt;
+ if(pt&&['home','week','classes','prog','qcm','settings'].includes(pt))tab=pt;
  if(pc&&classById(pc)){const d=pd||todayYmd();focus=occOfClassOn(pc,d)||null;if(!focus)pickClassFocus(pc)}
  render();
  if(p.get('saisir')==='1'&&focus)openEditor({classId:focus.slot.classId,date:focus.date,slotId:focus.slot.id});
