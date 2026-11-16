@@ -175,7 +175,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P18';
+const APP_VERSION='P19';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -1246,7 +1246,7 @@ function cdtFill(){
   var before=[].slice.call(((tinymce.get&&tinymce.get())||[])).map(function(e){return e.id;});
   b.click();
   var n=0;(function wait(){n++;var eds=[].slice.call(((window.tinymce&&tinymce.get&&tinymce.get())||[])).filter(function(e){return before.indexOf(e.id)<0&&!e.isHidden();});
-   var ta=[].slice.call(document.querySelectorAll('[role=dialog] textarea, .ObjetFenetre textarea, [role=dialog] [contenteditable=true]')).filter(function(x){return x.offsetParent;})[0];
+   var ta=[].slice.call(document.querySelectorAll('textarea[id$="_Valeur"], [role=dialog] textarea, .ObjetFenetre textarea, [role=dialog] [contenteditable=true]')).filter(function(x){return x.offsetParent;})[0];
    if(eds.length){setEd(eds[eds.length-1],html(it.devoirs));msg('✅ Travail à faire rempli. Vérifie la date « Pour le » puis valide la fenêtre.');}
    else if(ta){if(ta.isContentEditable){ta.innerHTML=html(it.devoirs);ta.dispatchEvent(new Event('input',{bubbles:true}));}else setVal(ta,it.devoirs);msg('✅ Travail à faire rempli. Vérifie la date « Pour le » puis valide la fenêtre.');}
    else if(n<20)setTimeout(wait,250);
@@ -1374,12 +1374,81 @@ function cdtFill(){
   msg((ko?'⚠️ ':'✅ ')+ok+' reportée(s), '+sk+' déjà faite(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Vayrac : tout est reporté ».'),ko?'#b45309':'#15803d');
   if(miss.length){var det=document.createElement('details');det.innerHTML='<summary style="font-size:13px">Détail pour Claude (si une séance est introuvable)</summary>';var ta=document.createElement('textarea');ta.readOnly=true;ta.style.cssText='width:100%;height:90px;font:11px monospace';ta.value='MANQUANTES: '+miss.map(function(m){return m.cls+' '+m.date+' '+m.start;}).join(', ')+'\nTROUVEES('+cands.length+'): '+cands.slice(0,25).map(function(c){return c.date+' '+c.time+' '+norm(c.text).slice(0,40);}).join(' | ');det.appendChild(ta);log.appendChild(det);}
  }
+ /* ===== Pronote web : report automatique (clics à l'écran, comme l'utilisateur) ===== */
+ function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+ async function waitFor(fn,ms,step){var t0=Date.now();ms=ms||6000;step=step||150;while(Date.now()-t0<ms){try{var v=fn();if(v)return v;}catch(e){}await sleep(step);}return null;}
+ function vis(el){return !!(el&&el.offsetParent!==null&&el.getClientRects().length);}
+ function press(el){if(!el)return false;try{el.scrollIntoView({block:'center'});}catch(e){}['pointerdown','mousedown','pointerup','mouseup','click'].forEach(function(t){try{var E=t.indexOf('pointer')===0&&window.PointerEvent?PointerEvent:MouseEvent;el.dispatchEvent(new E(t,{bubbles:true,cancelable:true,view:window}));}catch(e){}});return true;}
+ function pnTitre(){return [].slice.call(document.querySelectorAll('input[id$="_Titre"]')).filter(vis)[0]||null;}
+ function pnHeader(){
+  var t=pnTitre();var el=t;var re=/(\d{1,2})\s+(janv|f[ée]vr|mars|avr|mai|juin|juil|ao[uû]t|sept|oct|nov|d[ée]c)[a-zéû]*\.?\s+(\d{4})\s*[-–]\s*([^\n–-]{1,30}?)\s*[-–]/i;
+  for(var i=0;i<12&&el;i++){el=el.parentElement;if(!el)break;var m=String(el.innerText||'').match(re);if(m){var k=norm(m[2]);var mo=ABR.findIndex(function(a){return k.indexOf(a)===0;});if(mo<0)mo=ABR.findIndex(function(a){return k.slice(0,3)===a.slice(0,3);});return {date:m[3]+'-'+pad2(mo+1)+'-'+pad2(+m[1]),cls:norm(m[4]),key:m[0]};}}
+  return null;
+ }
+ function pnSaveBtn(){
+  var all=[].slice.call(document.querySelectorAll('button,[role=button],a,i,div,span,img'));
+  return all.filter(function(e){if(!vis(e))return false;var lab=(e.getAttribute('title')||'')+' '+(e.getAttribute('aria-label')||'')+' '+(e.getAttribute('ie-hint')||'')+' '+(e.getAttribute('data-tooltip')||'');var own=e.children.length===0?(e.textContent||''):'';var cls=typeof e.className==='string'?e.className:'';
+   return /^\s*enregistrer\s*$/i.test(own)||/\benregistrer\b/i.test(lab)||/enregistr|disquette|Image_Save/i.test(cls);}).filter(function(e){return !/travail/i.test(e.textContent||'');}).sort(function(a,b){return b.getBoundingClientRect().right-a.getBoundingClientRect().right;})[0]||null;
+ }
+ function pnDialogBtn(re){var d=[].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace')).filter(vis).pop();if(!d)return null;return [].slice.call(d.querySelectorAll('button,[role=button]')).filter(function(b){return vis(b)&&re.test(b.textContent||b.getAttribute('aria-label')||'');})[0]||null;}
+ async function pnConfirmDialogs(){for(var i=0;i<3;i++){var b=pnDialogBtn(/^\s*(oui|enregistrer|valider|ok)\s*$/i);if(!b)return;press(b);await sleep(700);}}
+ async function pnSelectClass(it){
+  var c1=norm(it.cls),c2=norm(it.label);
+  var h0=pnHeader();
+  var el=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element')).filter(function(e){var t=norm(e.textContent||'').replace('ouverturedesdetailsducours','');return t===c1||t===c2||t.indexOf(c1)>=0;})[0];
+  if(!el)return !!(h0&&(h0.cls===c1||h0.cls===c2));press(el);await sleep(500);await pnConfirmDialogs();
+  return !!(await waitFor(function(){var x=pnHeader();return x&&(x.cls===c1||x.cls===c2)&&(!h0||x.key!==h0.key||h0.cls===c1||h0.cls===c2);},6000));
+ }
+ async function pnGoToDate(it){
+  for(var step=0;step<20;step++){
+   var h=pnHeader();if(!h)return false;if(h.date===it.date)return true;
+   var dir=h.date<it.date?'_suiv':'_prec';var b=[].slice.call(document.querySelectorAll('span[id$="'+dir+'"],[id$="'+dir+'"]')).filter(vis)[0];
+   if(!b)return false;var before=h.key;press(b);await sleep(300);await pnConfirmDialogs();
+   var moved=await waitFor(function(){var x=pnHeader();return x&&x.key!==before;},6000);if(!moved)return false;
+   var x=pnHeader();if(x&&((dir==='_suiv'&&x.date>it.date)||(dir==='_prec'&&x.date<it.date)))return false;
+  }
+  return false;
+ }
+ async function pnDoOne(it,force){
+  if(!(await pnSelectClass(it)))return {status:'err',msg:'classe introuvable dans l’emploi du temps affiché (affiche la semaine en cours)'};
+  if(!(await pnGoToDate(it)))return {status:'err',msg:'cours du '+frDate(it.date)+' introuvable'};
+  var t=pnTitre(),ed=pnEditor(true);if(!t||!ed)return {status:'err',msg:'zone de saisie introuvable'};
+  var already=(t.value||'').trim()||stripTags(ed.getContent()).trim();
+  if(already&&!force)return {status:'skip',msg:'déjà renseigné dans Pronote'};
+  setVal(t,(it.titre||'Séance').slice(0,250));setEd(ed,html(it.contenu||''));await sleep(400);
+  if(it.devoirs){
+   var b=[].slice.call(document.querySelectorAll('button[id$="_btnCreation"]')).filter(function(x){return vis(x)&&/travail/i.test(x.textContent||'');})[0];
+   if(b){press(b);var ta=await waitFor(function(){return [].slice.call(document.querySelectorAll('[role=dialog] textarea[id$="_Valeur"], textarea[id$="_Valeur"]')).filter(vis)[0];},5000);
+    if(ta){setVal(ta,it.devoirs);await sleep(250);var v=pnDialogBtn(/^\s*valider\s*$/i);if(v){press(v);await waitFor(function(){return !vis(ta);},5000);}else return {status:'err',msg:'bouton Valider du travail introuvable'};}
+    else return {status:'err',msg:'fenêtre « Saisir un travail » introuvable'};}
+  }
+  await sleep(300);var sb=pnSaveBtn();
+  if(!sb)return {status:'err',msg:'bouton « Enregistrer » introuvable : touche-le toi-même, en haut à droite'};
+  press(sb);await sleep(900);await pnConfirmDialogs();await sleep(500);
+  var t2=pnTitre();return {status:'ok',msg:'reportée'+(t2&&t2.value?'':' (à vérifier)')};
+ }
+ function stripTags(h){var d=document.createElement('div');d.innerHTML=h||'';return d.textContent||'';}
+ async function pnBatch(onlyOne){
+  var p=load();if(!p)return;var todo=p.items.filter(function(it){return !done[it.id+'|auto'];});if(onlyOne)todo=todo.slice(0,1);
+  if(!todo.length){msg('Toutes les séances de cet envoi sont déjà reportées ✅');return;}
+  box.style.maxHeight='45vh';var log=document.getElementById('scfilllog');log.innerHTML='';
+  function line(t,c){var d=document.createElement('div');d.style.cssText='font-size:14px;margin:3px 0;color:'+(c||'#111');d.textContent=t;log.appendChild(d);}
+  var ok=0,ko=0,sk=0;
+  for(var i=0;i<todo.length;i++){var it=todo[i];var lab=it.label+' · '+frDate(it.date).slice(0,5);msg('⏳ '+(i+1)+'/'+todo.length+' : '+lab+' — ne touche pas l’écran','#4f46e5');
+   try{var r=await pnDoOne(it,false);
+    if(r.status==='ok'){ok++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line('✅ '+lab+' : '+r.msg,'#15803d');}
+    else if(r.status==='skip'){sk++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line('⏭️ '+lab+' : '+r.msg,'#555');}
+    else{ko++;line('⚠️ '+lab+' : '+r.msg,'#dc2626');if(/Enregistrer/.test(r.msg))break;}}catch(e){ko++;line('⚠️ '+lab+' : '+e.message,'#dc2626');}
+  }
+  msg((ko?'⚠️ ':'✅ ')+ok+' reportée(s), '+sk+' déjà faite(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Martel : tout est reporté ».'),ko?'#b45309':'#15803d');
+ }
  function render(){
   var p=load();box.innerHTML='';
   var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b>'+(p?' <span style="color:#666;font-size:13px">('+p.items.length+' séance(s) préparée(s) le '+esc(p.at||'')+')</span>':'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
+  if(PRONOTE){var pa=document.createElement('div');pa.style.cssText='background:#eef2ff;border:2px solid #4f46e5;border-radius:12px;padding:8px 10px;margin:6px 0';pa.innerHTML='<b>⚡ Tout reporter dans Pronote</b><div style="font-size:13px;color:#333">Ouvre Cahier de textes › Saisie sur la semaine en cours. Le favori ouvre chaque cours, remplit titre, contenu et travail à faire, puis touche « Enregistrer ». Ne touche pas l’écran pendant ce temps. Les cours déjà remplis ne sont pas modifiés.</div>';var nn=p.items.filter(function(it){return !done[it.id+'|auto'];}).length;pa.appendChild(btn('▶︎ Tester sur 1 séance','#4f46e5',function(){pnBatch(true);}));pa.appendChild(btn('⚡ Tout reporter ('+nn+')','#15803d',function(){pnBatch(false);}));var lg2=document.createElement('div');lg2.id='scfilllog';pa.appendChild(lg2);box.appendChild(pa);var sep2=document.createElement('div');sep2.style.cssText='font-size:13px;color:#666;margin-top:8px';sep2.textContent='Ou séance par séance (cours sélectionné) :';box.appendChild(sep2);}
   if(!PRONOTE){var auto=document.createElement('div');auto.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:8px 10px;margin:6px 0';auto.innerHTML='<b>⚡ Tout reporter automatiquement</b><div style="font-size:13px;color:#333">Retrouve chaque séance dans le cahier de textes et enregistre contenu + travail à faire. Les séances déjà renseignées dans l’ENT sont laissées telles quelles.</div>';auto.appendChild(btn('⚡ Tout reporter ('+p.items.filter(function(it){return !done[it.id+'|auto'];}).length+')','#15803d',function(){entBatch(false);}));var lg=document.createElement('div');lg.id='scfilllog';auto.appendChild(lg);box.appendChild(auto);var sep=document.createElement('div');sep.style.cssText='font-size:13px;color:#666;margin-top:8px';sep.textContent='Ou séance par séance (formulaire ouvert) :';box.appendChild(sep);}
   var items=p.items.map(function(it){return {it:it,s:score(it)};}).sort(function(a,b){return b.s-a.s||(a.it.date<b.it.date?-1:1);});
   items.forEach(function(o,i){var it=o.it;var c=document.createElement('div');c.style.cssText='border:'+(i===0&&o.s>=4?'3px solid #15803d':'1px solid #ddd')+';border-radius:12px;padding:8px 10px;margin:8px 0';
@@ -1414,7 +1483,7 @@ function pronoteHelpHTML(){
   <li>Les séances déjà renseignées dans l’ENT ne sont jamais modifiées. Si une séance est introuvable, envoie à Claude le « Détail » affiché.</li>
   <li>Quand tout est fait : <b>✅ Vayrac : tout est reporté</b> dans l’appli.</li>
  </ol>
- <div class="small" style="margin:6px 0"><b>Martel (Pronote)</b> : même favori. Prépare l’envoi Martel, ouvre Pronote depuis l’ENT › Cahier de textes › Saisie › touche le cours dans l’emploi du temps › signet <b>Remplir CDT</b> › <b>Contenu de séance</b> (titre + contenu) › puis <b>Travail à faire</b> (il ouvre « Ajouter un travail à effectuer » et remplit la description ; vérifie la date « Pour le » et valide).</div>
+ <div class="small" style="margin:6px 0"><b>Martel (Pronote)</b> : même favori. Prépare l’envoi Martel › ouvre Pronote depuis l’ENT › Cahier de textes › <b>Saisie</b> (semaine en cours) › signet <b>Remplir CDT</b> › « Coller les séances » › <b>▶︎ Tester sur 1 séance</b> la première fois, puis <b>⚡ Tout reporter</b>. Le favori ouvre chaque cours, remplit titre, contenu et travail à faire, et touche « Enregistrer ». Ne touche pas l’écran pendant ce temps.</div>
  <button class="good" onclick="copyText(bookmarkletCode(cdtFill),'Favori Remplir copié')">📋 Copier le favori Remplir</button></div>
  <button class="primary" onclick="copyText(bookmarkletCode(pronoteDiag),'Favori de diagnostic copié')">📋 Copier le favori de diagnostic</button>
  <p class="small" style="margin-top:6px">Le diagnostic ne modifie rien et n’envoie rien : il affiche la liste des zones de saisie et des adresses techniques de la page (sans contenu), que tu copies toi-même.</p></div>`;
