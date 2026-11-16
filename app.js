@@ -363,7 +363,7 @@ function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='
 function backup(){
  const exportData=JSON.parse(JSON.stringify(data));
  exportData._format='suivi-classe';
- exportData._version=29;
+ exportData._version=30;
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');
  const stamp=new Date().toISOString().slice(0,10);
@@ -576,6 +576,7 @@ function menuHTML(){
  ${mi('📅','Progression & cahier de textes',"goProgression('progression.html')",L)}
  ${mi('✍️','Trace écrite (fiches, synthèses, QCM)','goTrace()',L)}
  ${mi('🎯','QCM pour QCMCam (express, évaluation, classes)',"goProgression('progression.html?tab=qcm')",L)}
+ ${mi('📤','Reporter les séances (Pronote / ENT)',"goProgression('progression.html#reportPanel')",L)}
  <div class="msec">Suivi des élèves</div>
  ${mi('📊','Tableau récapitulatif',"setTab('recap')",L)}
  ${mi('📋','Rapports d’alerte (5 malus)',"setTab('reports')",L)}
@@ -662,7 +663,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V29';
+const APP_VERSION='V30';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
