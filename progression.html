@@ -175,7 +175,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P19';
+const APP_VERSION='P20';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -1395,7 +1395,11 @@ function cdtFill(){
  async function pnSelectClass(it){
   var c1=norm(it.cls),c2=norm(it.label);
   var h0=pnHeader();
-  var el=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element')).filter(function(e){var t=norm(e.textContent||'').replace('ouverturedesdetailsducours','');return t===c1||t===c2||t.indexOf(c1)>=0;})[0];
+  var els=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element,[id*="_cours_"]')).filter(function(e){return e.getClientRects().length;});
+  function etxt(e){var t=[e.getAttribute('aria-label'),e.getAttribute('title'),e.getAttribute('ie-hint'),e.textContent,e.innerText].concat([].slice.call(e.querySelectorAll('[aria-label],[title]')).map(function(x){return (x.getAttribute('aria-label')||'')+' '+(x.getAttribute('title')||'');})).join(' ');return norm(t).replace(/ouverturedesdetailsducours/g,' ');}
+  function hasCls(t){var re=new RegExp('(^|[^a-z0-9])?'+c1);return t.indexOf(c1)>=0&&!(new RegExp(c1+'[0-9]').test(t));}
+  var el=els.filter(function(e){var t=etxt(e);return hasCls(t)||(c2&&t.indexOf(c2)>=0);})[0];
+  if(!el){window.__scDebugCours=els.slice(0,20).map(function(e){return etxt(e).slice(0,60);});}
   if(!el)return !!(h0&&(h0.cls===c1||h0.cls===c2));press(el);await sleep(500);await pnConfirmDialogs();
   return !!(await waitFor(function(){var x=pnHeader();return x&&(x.cls===c1||x.cls===c2)&&(!h0||x.key!==h0.key||h0.cls===c1||h0.cls===c2);},6000));
  }
@@ -1410,7 +1414,7 @@ function cdtFill(){
   return false;
  }
  async function pnDoOne(it,force){
-  if(!(await pnSelectClass(it)))return {status:'err',msg:'classe introuvable dans l’emploi du temps affiché (affiche la semaine en cours)'};
+  if(!(await pnSelectClass(it)))return {status:'err',msg:'classe introuvable dans l’emploi du temps affiché (affiche la semaine en cours)'+(window.__scDebugCours?' — vu : '+window.__scDebugCours.join(' | ').slice(0,300):'')};
   if(!(await pnGoToDate(it)))return {status:'err',msg:'cours du '+frDate(it.date)+' introuvable'};
   var t=pnTitre(),ed=pnEditor(true);if(!t||!ed)return {status:'err',msg:'zone de saisie introuvable'};
   var already=(t.value||'').trim()||stripTags(ed.getContent()).trim();
