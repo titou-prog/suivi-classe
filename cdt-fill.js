@@ -260,7 +260,10 @@ function cdtFill(){
      var ce=d.querySelector('[contenteditable=true]');if(ce&&ce.getClientRects().length)return {d:d,ce:ce};}
     return null;}
    function tafBtn(){return [].slice.call(document.querySelectorAll('button[id$="_btnCreation"]')).filter(function(x){return vis(x)&&x.isConnected&&/travail/i.test(x.textContent||'');})[0]||[].slice.call(document.querySelectorAll('button,[role=button]')).filter(function(x){return vis(x)&&/ajouter un travail/i.test(x.textContent||'');})[0]||null;}
-   async function openTaf(){for(var a=0;a<2;a++){var b=tafBtn();if(!b)return null;try{b.focus();}catch(e){}if(a===0)b.click();else press(b);var f=await waitFor(dlgField,a===0?3000:5000);if(f)return f;}return null;}
+   async function openTaf(){for(var a=0;a<2;a++){var b=tafBtn();if(!b)return null;try{b.focus();}catch(e){}if(a===0)b.click();else press(b);
+     var got=await waitFor(function(){return dlgField()||(pnPopupItems().length?'menu':null);},a===0?3000:5000);
+     if(got==='menu'){await sleep(250);var mi=pnPickItem(pnPopupItems(),it.pour);if(mi){press(mi);var f2=await waitFor(dlgField,5000);if(f2)return f2;}}
+     else if(got)return got;}return null;}
    var f=await openTaf();
    if(!f){var sb0=pnSaveBtn();if(sb0){press(sb0);await sleep(1200);await pnConfirmDialogs();await sleep(600);}f=await openTaf();}
    if(!f){var bb=tafBtn();tafNote=' — ⚠️ travail à faire NON ajouté (fenêtre « Saisir un travail » restée fermée'+(bb?(bb.disabled||bb.getAttribute('aria-disabled')==='true'?', bouton désactivé':''):', bouton absent')+') : ajoute-le à la main ; texte copié';try{navigator.clipboard&&navigator.clipboard.writeText(it.devoirs);}catch(e){}}
@@ -281,21 +284,32 @@ function cdtFill(){
   press(sb);await sleep(900);await pnConfirmDialogs();await sleep(500);
   var t2=pnTitre();return {status:'ok',msg:'contenu reporté'+(t2&&t2.value?'':' (à vérifier)')+tafNote,warn:!!tafNote,taf:(it.devoirs&&!window.__scTafAuto)?it.devoirs:''};
  }
+ function pnPopupItems(){return [].slice.call(document.querySelectorAll('[role=menuitem],[role=menuitemradio],[role=option],[role=menu] li,[role=menu] [tabindex],.ObjetMenuContextuel li,[class*="MenuContextuel"] [role],[class*="menu-contextuel"] li')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill')&&(x.textContent||'').trim();}).filter(function(x,i,a){return !a.some(function(y){return y!==x&&x.contains(y)&&y.matches('[role=menuitem],[role=menuitemradio],[role=option]');});});}
+ function pnPickItem(items,pour){if(!items.length)return null;var sc=items.map(function(x){var t=(x.textContent||'').toLowerCase();var s=0;if(pour){var d=pour.split('-');var mois=['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'][+d[1]-1];var tn=t.normalize('NFD').replace(/[̀-ͯ]/g,'');if(t.indexOf(d[2]+'/'+d[1])>=0)s+=10;if(new RegExp('\\b0?'+(+d[2])+'(er)?\\s+'+mois).test(tn))s+=10;}if(/biblioth|copier|reprendre|dupliquer|modele|modèle|qcm|questionnaire|ressource|kiosque|devoir sur table|evaluation|évaluation/.test(t))s-=20;if(/prochain|suivant|travail|nouveau|saisir|créer|creer/.test(t))s+=3;return {x:x,s:s};});sc.sort(function(a,b){return b.s-a.s;});return sc[0].x;}
  function stripTags(h){var d=document.createElement('div');d.innerHTML=h||'';return d.textContent||'';}
  function strip(h){return String(h||'').replace(/<svg[\s\S]*?<\/svg>/g,'<svg/>').replace(/\s+/g,' ');}
  function tafArea(){var hs=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.children.length<4&&/travail à effectuer/i.test(e.textContent||'')&&e.getClientRects().length;});var h=hs[hs.length-1];if(!h)return null;var el=h;for(var i=0;i<4&&el.parentElement;i++){el=el.parentElement;if(String(el.textContent||'').length>300)break;}return el;}
  async function pnTafEnquete(){
   var p=load();var it=(p&&p.items.filter(function(x){return x.devoirs;})[0])||{devoirs:'TEST enquête – ne pas enregistrer'};
-  var log=document.getElementById('scfilllog');var out=['PN-TAF v34 '+new Date().toISOString()];
-  var area=tafArea();out.push('LISTE AVANT: '+(area?strip(area.outerHTML).slice(0,1800):'(zone introuvable)'));
+  var log=document.getElementById('scfilllog');var out=['PN-TAF v35 '+new Date().toISOString()+' pour='+(it.pour||'?')];
+  function dlgs(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});}
   var b=[].slice.call(document.querySelectorAll('button')).filter(function(x){return x.getClientRects().length&&/ajouter un travail/i.test(x.textContent||'');})[0];
-  out.push('BOUTON: '+(b?strip(b.outerHTML).slice(0,300):'introuvable'));
-  if(b){b.click();var d=await waitFor(function(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');}).pop();},5000);
-   out.push('FENETRE: '+(d?strip(d.outerHTML).slice(0,3000):'aucune'));
-   if(d){var ta=d.querySelector('textarea');if(ta){setVal(ta,it.devoirs);await sleep(400);out.push('APRES SAISIE: value="'+ta.value.slice(0,60)+'" compteur="'+String((d.innerText.match(/\d+\/10000/)||[''])[0])+'"');
-     var v=[].slice.call(d.querySelectorAll('button')).filter(function(x){return /valider/i.test(x.textContent||'');})[0];out.push('VALIDER: '+(v?strip(v.outerHTML).slice(0,200):'introuvable'));
-     if(v){v.click();await sleep(1500);var d2=[].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});out.push('FENETRES APRES: '+d2.map(function(x){return strip(x.innerText).slice(0,200);}).join(' | '));
-      var area2=tafArea();out.push('LISTE APRES: '+(area2?strip(area2.outerHTML).slice(0,3000):'(zone introuvable)'));}}}}
+  out.push('BOUTON: '+(b?'ok haspopup='+b.getAttribute('aria-haspopup'):'introuvable'));
+  if(b){var before=new Set([document.body].concat([].slice.call(document.querySelectorAll('body *'))));b.click();await sleep(1200);
+   var items=pnPopupItems();if(!items.length&&!dlgs().length){press(b);await sleep(1500);items=pnPopupItems();}
+   out.push('MENU ('+items.length+'): '+items.map(function(x){return '['+(x.textContent||'').trim().replace(/\s+/g,' ').slice(0,80)+']';}).join(' '));
+   var nouveaux=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !before.has(e)&&e.getClientRects().length&&!e.closest('#scfill')&&(!e.parentElement||before.has(e.parentElement));});
+   out.push('NOUVEAUX: '+nouveaux.map(function(e){return strip(e.outerHTML).slice(0,1500);}).join(' || ').slice(0,3000));
+   var d=dlgs().pop();
+   if(!d&&items.length){var mi=pnPickItem(items,it.pour);out.push('CHOIX: ['+(mi.textContent||'').trim().slice(0,80)+']');press(mi);d=await waitFor(function(){return dlgs().pop();},5000);}
+   out.push('FENETRE: '+(d?strip(d.outerHTML).replace(/style="[^"]*"/g,'').slice(0,5000):'aucune'));
+   if(d){var ta=[].slice.call(d.querySelectorAll('textarea')).filter(function(x){return x.getClientRects().length;})[0];
+    var dates=[].slice.call(d.querySelectorAll('input,[role=combobox],[aria-label*="ate"],[id*="ate"],[class*="ate"]')).filter(function(x){return x.getClientRects().length;});out.push('CHAMPS DATE: '+dates.map(function(x){return strip(x.outerHTML).slice(0,250)+' val="'+(x.value||x.textContent||'').trim().slice(0,30)+'"';}).join(' || ').slice(0,1500));
+    if(ta){setVal(ta,it.devoirs);await sleep(400);out.push('APRES SAISIE: value="'+ta.value.slice(0,60)+'"');
+     var v=[].slice.call(d.querySelectorAll('button')).filter(function(x){return /valider/i.test(x.textContent||'');})[0];
+     if(v){press(v);await sleep(1500);out.push('FENETRES APRES: '+dlgs().map(function(x){return strip(x.innerText).slice(0,200);}).join(' | '));
+      var area2=tafArea();out.push('LISTE APRES: '+(area2?strip(area2.innerText).slice(0,800):'(zone introuvable)'));}}
+    else out.push('pas de textarea');}}
   var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:140px;font:11px monospace';tx.value=out.join('\n');log.appendChild(tx);
   log.appendChild(btn('📋 Copier l’enquête','#4f46e5',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));
   msg('Enquête terminée : copie-la et envoie-la à Claude. Puis recharge la page Pronote SANS enregistrer.','#b45309');
@@ -316,7 +330,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v34</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v35</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
