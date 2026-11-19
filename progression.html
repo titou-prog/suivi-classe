@@ -175,7 +175,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P35';
+const APP_VERSION='P36';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -1493,7 +1493,8 @@ function cdtFill(){
   if(already&&!force)return {status:'skip',msg:'déjà renseigné dans Pronote'};
   setVal(t,(it.titre||'Séance').slice(0,250));setEd(ed,html(it.contenu||''));await sleep(400);
   var tafNote='';
-  if(it.devoirs){
+  if(it.devoirs&&!window.__scTafAuto){tafNote=' — 📋 travail à faire à ajouter toi-même (pour le '+(it.pour?frDate(it.pour):'prochain cours')+')';}
+  if(it.devoirs&&window.__scTafAuto){
    function dlgField(){var ds=[].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')).filter(function(d){return d.getClientRects().length&&!d.contains(document.getElementById('scfill'));});
     for(var k=ds.length-1;k>=0;k--){var d=ds[k];var ta=[].slice.call(d.querySelectorAll('textarea')).filter(function(x){return x.getClientRects().length;})[0];if(ta)return {d:d,ta:ta};
      var fr=d.querySelector('iframe');if(fr&&window.tinymce){var e2=[].slice.call(((tinymce.get&&tinymce.get())||[])).filter(function(e){return e.iframeElement===fr||(e.getContainer&&d.contains(e.getContainer()));})[0];if(e2)return {d:d,ed:e2};}
@@ -1519,9 +1520,27 @@ function cdtFill(){
   await sleep(300);var sb=await waitFor(pnSaveBtn,4000);
   if(!sb)return {status:'err',msg:'bouton « Enregistrer » introuvable : touche-le toi-même, en haut à droite',debug:pnSaveDebug()};
   press(sb);await sleep(900);await pnConfirmDialogs();await sleep(500);
-  var t2=pnTitre();return {status:'ok',msg:'reportée'+(t2&&t2.value?'':' (à vérifier)')+tafNote,warn:!!tafNote};
+  var t2=pnTitre();return {status:'ok',msg:'contenu reporté'+(t2&&t2.value?'':' (à vérifier)')+tafNote,warn:!!tafNote,taf:(it.devoirs&&!window.__scTafAuto)?it.devoirs:''};
  }
  function stripTags(h){var d=document.createElement('div');d.innerHTML=h||'';return d.textContent||'';}
+ function strip(h){return String(h||'').replace(/<svg[\s\S]*?<\/svg>/g,'<svg/>').replace(/\s+/g,' ');}
+ function tafArea(){var hs=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.children.length<4&&/travail à effectuer/i.test(e.textContent||'')&&e.getClientRects().length;});var h=hs[hs.length-1];if(!h)return null;var el=h;for(var i=0;i<4&&el.parentElement;i++){el=el.parentElement;if(String(el.textContent||'').length>300)break;}return el;}
+ async function pnTafEnquete(){
+  var p=load();var it=(p&&p.items.filter(function(x){return x.devoirs;})[0])||{devoirs:'TEST enquête – ne pas enregistrer'};
+  var log=document.getElementById('scfilllog');var out=['PN-TAF v34 '+new Date().toISOString()];
+  var area=tafArea();out.push('LISTE AVANT: '+(area?strip(area.outerHTML).slice(0,1800):'(zone introuvable)'));
+  var b=[].slice.call(document.querySelectorAll('button')).filter(function(x){return x.getClientRects().length&&/ajouter un travail/i.test(x.textContent||'');})[0];
+  out.push('BOUTON: '+(b?strip(b.outerHTML).slice(0,300):'introuvable'));
+  if(b){b.click();var d=await waitFor(function(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');}).pop();},5000);
+   out.push('FENETRE: '+(d?strip(d.outerHTML).slice(0,3000):'aucune'));
+   if(d){var ta=d.querySelector('textarea');if(ta){setVal(ta,it.devoirs);await sleep(400);out.push('APRES SAISIE: value="'+ta.value.slice(0,60)+'" compteur="'+String((d.innerText.match(/\d+\/10000/)||[''])[0])+'"');
+     var v=[].slice.call(d.querySelectorAll('button')).filter(function(x){return /valider/i.test(x.textContent||'');})[0];out.push('VALIDER: '+(v?strip(v.outerHTML).slice(0,200):'introuvable'));
+     if(v){v.click();await sleep(1500);var d2=[].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});out.push('FENETRES APRES: '+d2.map(function(x){return strip(x.innerText).slice(0,200);}).join(' | '));
+      var area2=tafArea();out.push('LISTE APRES: '+(area2?strip(area2.outerHTML).slice(0,3000):'(zone introuvable)'));}}}}
+  var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:140px;font:11px monospace';tx.value=out.join('\n');log.appendChild(tx);
+  log.appendChild(btn('📋 Copier l’enquête','#4f46e5',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));
+  msg('Enquête terminée : copie-la et envoie-la à Claude. Puis recharge la page Pronote SANS enregistrer.','#b45309');
+ }
  async function pnBatch(onlyOne){
   var p=load();if(!p)return;var todo=p.items.filter(function(it){return !done[it.id+'|auto'];});if(onlyOne)todo=todo.slice(0,1);
   if(!todo.length){msg('Toutes les séances de cet envoi sont déjà reportées ✅');return;}
@@ -1530,7 +1549,7 @@ function cdtFill(){
   var ok=0,ko=0,sk=0;
   for(var i=0;i<todo.length;i++){var it=todo[i];var lab=it.label+' · '+frDate(it.date).slice(0,5);msg('⏳ '+(i+1)+'/'+todo.length+' : '+lab+' — ne touche pas l’écran','#4f46e5');
    try{var r=await pnDoOne(it,false);
-    if(r.status==='ok'){ok++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line((r.warn?'🟠 ':'✅ ')+lab+' : '+r.msg,r.warn?'#b45309':'#15803d');if(it.files&&it.files.length)line('   📎 à joindre toi-même : '+it.files.join(', '),'#b45309');}
+    if(r.status==='ok'){ok++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line((r.warn?'🟠 ':'✅ ')+lab+' : '+r.msg,r.warn?'#b45309':'#15803d');if(r.taf){(function(txt){var b2=btn('📋 Copier le travail de '+it.label,'',function(){try{navigator.clipboard.writeText(txt);b2.textContent='✅ Copié';}catch(e){}});log.appendChild(b2);})(r.taf);}if(it.files&&it.files.length)line('   📎 à joindre toi-même : '+it.files.join(', '),'#b45309');}
     else if(r.status==='skip'){sk++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line('⏭️ '+lab+' : '+r.msg,'#555');}
     else{ko++;line('⚠️ '+lab+' : '+r.msg,'#dc2626');if(r.debug){var dt=document.createElement('details');dt.open=true;dt.innerHTML='<summary style="font-size:13px">Détail pour Claude (copie et envoie-le)</summary>';var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:120px;font:11px monospace';tx.value='PN-SAVE v32\n'+r.debug;dt.appendChild(tx);dt.appendChild(btn('📋 Copier le détail','',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));log.appendChild(dt);}if(/Enregistrer/.test(r.msg))break;}}catch(e){ko++;line('⚠️ '+lab+' : '+e.message,'#dc2626');}
   }
@@ -1538,13 +1557,13 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v33</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v34</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
   var today=new Date().toDateString();var stale=!p.ts||new Date(p.ts).toDateString()!==today;
   if(stale&&!window.__scUseOld){var sb=document.createElement('div');sb.style.cssText='background:#fff7ed;border:2px solid #b45309;border-radius:12px;padding:10px;margin:8px 0';sb.innerHTML='<b>Cet envoi n’est pas celui d’aujourd’hui.</b><div style="font-size:14px;margin:4px 0">Dans l’appli, touche « 📤 Préparer l’envoi », reviens ici, puis touche le bouton ci-dessous (et la bulle « Coller » d’iPadOS).</div>';sb.appendChild(btn('📋 Coller l’envoi du jour','#15803d',paste));sb.appendChild(btn('Utiliser quand même l’ancien','',function(){window.__scUseOld=1;render();}));box.appendChild(sb);box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
-  if(PRONOTE){var pa=document.createElement('div');pa.style.cssText='background:#eef2ff;border:2px solid #4f46e5;border-radius:12px;padding:8px 10px;margin:6px 0';pa.innerHTML='<b>⚡ Tout reporter dans Pronote</b><div style="font-size:13px;color:#333">Ouvre Cahier de textes › Saisie sur la semaine en cours. Le favori ouvre chaque cours, remplit titre, contenu et travail à faire, puis touche « Enregistrer ». Ne touche pas l’écran pendant ce temps. Les cours déjà remplis ne sont pas modifiés.</div>';var nn=p.items.filter(function(it){return !done[it.id+'|auto'];}).length;pa.appendChild(btn('▶︎ Tester sur 1 séance','#4f46e5',function(){pnBatch(true);}));pa.appendChild(btn('⚡ Tout reporter ('+nn+')','#15803d',function(){pnBatch(false);}));pa.appendChild(btn('🔎 Inspecter les boutons','',function(){var lg=document.getElementById('scfilllog');var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:120px;font:11px monospace';tx.value='PN-INSPECT\n'+pnSaveDebug();lg.appendChild(tx);lg.appendChild(btn('📋 Copier','',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));}));var lg2=document.createElement('div');lg2.id='scfilllog';pa.appendChild(lg2);box.appendChild(pa);var sep2=document.createElement('div');sep2.style.cssText='font-size:13px;color:#666;margin-top:8px';sep2.textContent='Ou séance par séance (cours sélectionné) :';box.appendChild(sep2);}
+  if(PRONOTE){var pa=document.createElement('div');pa.style.cssText='background:#eef2ff;border:2px solid #4f46e5;border-radius:12px;padding:8px 10px;margin:6px 0';pa.innerHTML='<b>⚡ Tout reporter dans Pronote</b><div style="font-size:13px;color:#333">Ouvre Cahier de textes › Saisie sur la semaine en cours. Le favori ouvre chaque cours, remplit titre, contenu et travail à faire, puis touche « Enregistrer ». Ne touche pas l’écran pendant ce temps. Les cours déjà remplis ne sont pas modifiés. Pour l’instant, le travail à faire est à ajouter toi-même (bouton « Copier le travail »).</div>';var nn=p.items.filter(function(it){return !done[it.id+'|auto'];}).length;pa.appendChild(btn('▶︎ Tester sur 1 séance','#4f46e5',function(){pnBatch(true);}));pa.appendChild(btn('⚡ Tout reporter ('+nn+')','#15803d',function(){pnBatch(false);}));pa.appendChild(btn('🔬 Enquête travail à faire','',function(){pnTafEnquete();}));pa.appendChild(btn('🔎 Inspecter les boutons','',function(){var lg=document.getElementById('scfilllog');var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:120px;font:11px monospace';tx.value='PN-INSPECT\n'+pnSaveDebug();lg.appendChild(tx);lg.appendChild(btn('📋 Copier','',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));}));var lg2=document.createElement('div');lg2.id='scfilllog';pa.appendChild(lg2);box.appendChild(pa);var sep2=document.createElement('div');sep2.style.cssText='font-size:13px;color:#666;margin-top:8px';sep2.textContent='Ou séance par séance (cours sélectionné) :';box.appendChild(sep2);}
   if(!PRONOTE){var auto=document.createElement('div');auto.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:8px 10px;margin:6px 0';auto.innerHTML='<b>⚡ Tout reporter automatiquement</b><div style="font-size:13px;color:#333">Retrouve chaque séance dans le cahier de textes et enregistre contenu + travail à faire. Les séances déjà renseignées dans l’ENT sont laissées telles quelles.</div>';auto.appendChild(btn('⚡ Tout reporter ('+p.items.filter(function(it){return !done[it.id+'|auto'];}).length+')','#15803d',function(){entBatch(false);}));var lg=document.createElement('div');lg.id='scfilllog';auto.appendChild(lg);box.appendChild(auto);var sep=document.createElement('div');sep.style.cssText='font-size:13px;color:#666;margin-top:8px';sep.textContent='Ou séance par séance (formulaire ouvert) :';box.appendChild(sep);}
   var items=p.items.map(function(it){return {it:it,s:score(it)};}).sort(function(a,b){return b.s-a.s||(a.it.date<b.it.date?-1:1);});
   items.forEach(function(o,i){var it=o.it;var c=document.createElement('div');c.style.cssText='border:'+(i===0&&o.s>=4?'3px solid #15803d':'1px solid #ddd')+';border-radius:12px;padding:8px 10px;margin:8px 0';
