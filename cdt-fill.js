@@ -302,7 +302,7 @@ function cdtFill(){
   var p=load();var it=(p&&p.items.filter(function(x){return x.devoirs&&x.pour;})[0])||{devoirs:'TEST enquete',pour:''};
   var log=document.getElementById('scfilllog');boxAside(true);try{await pnTafEnqCore(it);}finally{boxAside(false);}
  }
- async function pnTafEnqCore(it){var log=document.getElementById('scfilllog');var out=['PN-TAF v39 '+new Date().toISOString()+' pour='+(it.pour||'?')];
+ async function pnTafEnqCore(it){var log=document.getElementById('scfilllog');var out=['PN-TAF v40 '+new Date().toISOString()+' pour='+(it.pour||'?')];
   function dlgs(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});}
   function snap(){return new Set([document.body].concat([].slice.call(document.querySelectorAll('body *'))));}
   function added(bef){return [].slice.call(document.querySelectorAll('body *')).filter(function(e){return !bef.has(e)&&e.getClientRects().length&&!e.closest('#scfill')&&(!e.parentElement||bef.has(e.parentElement));});}
@@ -311,9 +311,15 @@ function cdtFill(){
   if(!b){out.push('bouton introuvable');}
   else{function taDlg(){var t=[].slice.call(document.querySelectorAll('textarea')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');}).pop();return t?(t.closest('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')||t.parentElement):null;}
    out.push('BOUTON: '+clean(b.outerHTML).slice(0,250)+' disabled='+b.disabled);
-   b.click();var d=await waitFor(taDlg,7000,200);out.push('apres click: '+(d?'fenetre ok':'rien'));
-   if(!d){var r=b.getBoundingClientRect();var top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);out.push('element au centre du bouton: '+(top?clean(top.outerHTML).slice(0,200):'?'));b.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true}));b.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',keyCode:13,bubbles:true}));d=await waitFor(taDlg,4000,200);out.push('apres Entree: '+(d?'fenetre ok':'rien'));}
-   if(!d){press(b);d=await waitFor(taDlg,5000,200);out.push('apres press: '+(d?'fenetre ok':'rien'));}
+   var t0=pnTitre(),e0=pnEditor(true);out.push('SEANCE: titre="'+(t0?t0.value.slice(0,40):'(introuvable)')+'" contenu='+(e0?stripTags(e0.getContent()).trim().length+' car.':'(introuvable)'));
+   var muts=[];var mo=new MutationObserver(function(ms){ms.forEach(function(m){[].forEach.call(m.addedNodes,function(n){if(n.nodeType===1&&!(n.closest&&n.closest('#scfill')))muts.push((n.tagName+'.'+String(n.className||'').slice(0,40)+' «'+String(n.textContent||'').trim().slice(0,60)+'»'));});if(m.type==='attributes'&&!(m.target.closest&&m.target.closest('#scfill'))&&/display|visib|hidden|open|expanded/.test(m.attributeName+String(m.target.getAttribute(m.attributeName)||'')))muts.push('ATTR '+m.target.tagName+'#'+String(m.target.id||'').slice(-30)+' '+m.attributeName+'='+String(m.target.getAttribute(m.attributeName)||'').slice(0,60));});});
+   mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class','aria-hidden','aria-expanded','hidden','open']});
+   async function tryOpen(lab,fn){muts.length=0;fn();var dd=await waitFor(taDlg,4000,200);out.push(lab+': '+(dd?'FENETRE OK':'rien')+' | changements: '+muts.slice(0,12).join(' ; ').slice(0,700));return dd;}
+   var d=await tryOpen('click',function(){b.click();});
+   if(!d)d=await tryOpen('press',function(){press(b);});
+   if(!d&&t0){setVal(t0,(t0.value||'')+' ');await sleep(500);d=await tryOpen('click apres modif titre',function(){b.click();});if(!d)d=await tryOpen('press apres modif titre',function(){press(b);});}
+   mo.disconnect();
+   var msgs=[].slice.call(document.querySelectorAll('[role=alert],[role=alertdialog],[role=status],.toast,[class*="Message"],[class*="message"]')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill')&&(x.textContent||'').trim();});out.push('MESSAGES: '+msgs.map(function(x){return (x.textContent||'').trim().slice(0,100);}).join(' | ').slice(0,400));
    out.push('FENETRE: '+(d?'ok':'aucune ('+dlgs().length+' dialogues visibles)'));
    var ta=d&&[].slice.call(d.querySelectorAll('textarea')).filter(function(x){return x.getClientRects().length;})[0];
    if(!ta){out.push('fenetre/textarea introuvable');}
@@ -348,7 +354,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v39</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v40</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
