@@ -296,9 +296,13 @@ function cdtFill(){
  function stripTags(h){var d=document.createElement('div');d.innerHTML=h||'';return d.textContent||'';}
  function strip(h){return String(h||'').replace(/<svg[\s\S]*?<\/svg>/g,'<svg/>').replace(/\s+/g,' ');}
  function tafArea(){var hs=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.children.length<4&&/travail à effectuer/i.test(e.textContent||'')&&e.getClientRects().length;});var h=hs[hs.length-1];if(!h)return null;var el=h;for(var i=0;i<4&&el.parentElement;i++){el=el.parentElement;if(String(el.textContent||'').length>300)break;}return el;}
+ var __boxCss=null;
+ function boxAside(on){if(on){if(__boxCss===null)__boxCss=box.style.cssText;box.style.top='auto';box.style.bottom='6px';box.style.maxHeight='70px';box.style.overflow='hidden';box.style.pointerEvents='none';box.style.opacity='.9';}else if(__boxCss!==null){box.style.cssText=__boxCss;__boxCss=null;}}
  async function pnTafEnquete(){
   var p=load();var it=(p&&p.items.filter(function(x){return x.devoirs&&x.pour;})[0])||{devoirs:'TEST enquete',pour:''};
-  var log=document.getElementById('scfilllog');var out=['PN-TAF v38 '+new Date().toISOString()+' pour='+(it.pour||'?')];
+  var log=document.getElementById('scfilllog');boxAside(true);try{await pnTafEnqCore(it);}finally{boxAside(false);}
+ }
+ async function pnTafEnqCore(it){var log=document.getElementById('scfilllog');var out=['PN-TAF v39 '+new Date().toISOString()+' pour='+(it.pour||'?')];
   function dlgs(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});}
   function snap(){return new Set([document.body].concat([].slice.call(document.querySelectorAll('body *'))));}
   function added(bef){return [].slice.call(document.querySelectorAll('body *')).filter(function(e){return !bef.has(e)&&e.getClientRects().length&&!e.closest('#scfill')&&(!e.parentElement||bef.has(e.parentElement));});}
@@ -332,18 +336,19 @@ function cdtFill(){
   if(!todo.length){msg('Toutes les séances de cet envoi sont déjà reportées ✅');return;}
   box.style.maxHeight='45vh';var log=document.getElementById('scfilllog');log.innerHTML='';
   function line(t,c){var d=document.createElement('div');d.style.cssText='font-size:14px;margin:3px 0;color:'+(c||'#111');d.textContent=t;log.appendChild(d);}
-  var ok=0,ko=0,sk=0;
+  var ok=0,ko=0,sk=0;boxAside(true);try{
   for(var i=0;i<todo.length;i++){var it=todo[i];var lab=it.label+' · '+frDate(it.date).slice(0,5);msg('⏳ '+(i+1)+'/'+todo.length+' : '+lab+' — ne touche pas l’écran','#4f46e5');
    try{var r=await pnDoOne(it,false);
     if(r.status==='ok'){ok++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line((r.warn?'🟠 ':'✅ ')+lab+' : '+r.msg,r.warn?'#b45309':'#15803d');if(r.taf){(function(txt){var b2=btn('📋 Copier le travail de '+it.label,'',function(){try{navigator.clipboard.writeText(txt);b2.textContent='✅ Copié';}catch(e){}});log.appendChild(b2);})(r.taf);}if(it.files&&it.files.length)line('   📎 à joindre toi-même : '+it.files.join(', '),'#b45309');}
     else if(r.status==='skip'){sk++;done[it.id+'|auto']=Date.now();ls(D,JSON.stringify(done));line('⏭️ '+lab+' : '+r.msg,'#555');}
     else{ko++;line('⚠️ '+lab+' : '+r.msg,'#dc2626');if(r.debug){var dt=document.createElement('details');dt.open=true;dt.innerHTML='<summary style="font-size:13px">Détail pour Claude (copie et envoie-le)</summary>';var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:120px;font:11px monospace';tx.value='PN-SAVE v32\n'+r.debug;dt.appendChild(tx);dt.appendChild(btn('📋 Copier le détail','',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){tx.select();document.execCommand('copy');}}));log.appendChild(dt);}if(/Enregistrer/.test(r.msg))break;}}catch(e){ko++;line('⚠️ '+lab+' : '+e.message,'#dc2626');}
   }
+  }finally{boxAside(false);}
   msg((ko?'⚠️ ':'✅ ')+ok+' reportée(s), '+sk+' déjà faite(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Martel : tout est reporté ».'),ko?'#b45309':'#15803d');
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v38</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v39</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis touche « Recoller un nouvel envoi ».</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p){var t=document.createElement('p');t.textContent='Dans Suivi de classe : « 📤 Préparer l’envoi », puis reviens ici et touche « Coller les séances ».';box.appendChild(t);box.appendChild(btn('📋 Coller les séances','#15803d',paste));box.appendChild(btn('Fermer','',function(){box.remove();}));return;}
