@@ -1,3 +1,14 @@
+Suivi de classe — PWA iPad V31
+
+V31 : « QCM en direct » (qcm.html) — les QCM se font maintenant directement sur l’iPad, sans QCMCam.
+- Menu ☰ › « QCM en direct » : la caméra de l’iPad lit les cartes des élèves (numéro + lettre A/B/C/D selon le sens de la carte).
+- Les classes de Suivi de classe sont reprises automatiquement, avec les numéros de carte de Progression (inchangés).
+- Progression › QCM et Trace écrite : bouton « ▶ Lancer en direct (scan) » : le QCM généré s’ouvre prêt à démarrer, classe présélectionnée.
+- Onglet Cartes : impression des cartes de vote nominatives ou numérotées (1 à 20 par page A4). Les cartes QCMCam ne sont pas reconnues : imprimer les nouvelles.
+- Séance : question projetée, scan, vignettes des élèves, correction avec répartition, saisie manuelle d’un vote, résultats et note sur 20, export CSV.
+- Import : sauvegarde intégrale QCMCam (.json), Markdown, Aiken. Même mot de passe que le reste de l’appli.
+- Nouveau fichier à déposer : qcm.html (avec index.html, app.js, sw.js, progression.html, trace.html, version.json, README.txt).
+
 Suivi de classe — PWA iPad V29
 
 V29 : QCM pour QCMCam (menu ☰ › QCM, ou onglet 🎯 QCM de Progression) : fichiers de classes avec numéros de cartes stables, QCM express depuis la dictée d’une séance, évaluation de fin de séquence (séances + fiches Trace écrite). Bouton « 🎯 QCM express » dans la fiche de fin de cours.

@@ -1188,6 +1188,7 @@
         <div id="flashTestOutput" style="display:none;">
           <div id="flashTestText" class="quiz-preview" style="max-height:300px;"></div>
           <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="launchFlashLive()">▶ Lancer en direct (scan)</button>
             <button class="btn btn-gold btn-sm" onclick="exportFlashTest()">⬇️ Exporter QCMCam (.txt)</button>
             <button class="btn btn-outline btn-sm" onclick="copyFlashTest()">📋 Copier</button>
           </div>
@@ -1284,6 +1285,7 @@
       <div id="quizOutput" style="display:none;">
         <div id="quizText" class="quiz-preview"></div>
         <div class="flex gap-2 mt-3" style="flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="launchQuizLive()">▶ Lancer en direct (scan)</button>
           <button class="btn btn-gold btn-sm" onclick="exportQuizQCMCam()">⬇️ Exporter QCMCam (.txt)</button>
           <button class="btn btn-outline btn-sm" onclick="copyQuiz()">📋 Copier</button>
         </div>
@@ -2112,6 +2114,25 @@ RÈGLES ABSOLUES :
     document.getElementById('quizLoading').style.display = 'none';
     showToast('Erreur : ' + err.message, 'error');
   }
+}
+
+// V31 : envoi direct vers « QCM en direct » (qcm.html)
+function launchLive(text, title, classe) {
+  if (!text || !String(text).trim()) { showToast('Générez d\'abord le QCM.', 'error'); return; }
+  try {
+    const box = JSON.parse(localStorage.getItem('qcm_inbox') || '[]');
+    box.push({ id: Date.now().toString(36), title, text, suiviId: '', className: classe || '', source: 'Trace écrite', at: Date.now() });
+    localStorage.setItem('qcm_inbox', JSON.stringify(box));
+  } catch (e) { showToast('Impossible de transmettre le QCM.', 'error'); return; }
+  location.href = 'qcm.html?inbox=1';
+}
+function launchQuizLive() {
+  const classe = (sessions[0] && sessions[0].classe) || (document.getElementById('classe') || {}).value || '';
+  launchLive(currentQuiz, 'QCM' + (classe ? ' - ' + classe : ''), classe);
+}
+function launchFlashLive() {
+  const classe = (document.getElementById('classe') || {}).value || '';
+  launchLive(currentFlashTest, 'Flash test' + (classe ? ' - ' + classe : ''), classe);
 }
 
 function exportQuizQCMCam() {

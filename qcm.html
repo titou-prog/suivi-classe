@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Suivi de classe">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#4f46e5">
+<title>QCM en direct — Suivi de classe</title>
+<style>/* Tailwind CSS v3 compilé (fonctionne hors ligne) */
+*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.btn{display:inline-flex;-webkit-user-select:none;-moz-user-select:none;user-select:none;align-items:center;justify-content:center;gap:.5rem;white-space:nowrap;border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.625rem 1rem;font-weight:600;--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1));--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow);transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.btn:active{transform:scale(.96)}.btn:disabled{pointer-events:none;opacity:.4}.btn-blue{border-color:rgb(79 70 229/var(--tw-border-opacity,1));background-color:rgb(79 70 229/var(--tw-bg-opacity,1))}.btn-blue,.btn-red{--tw-border-opacity:1;--tw-bg-opacity:1;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-red{border-color:rgb(225 29 72/var(--tw-border-opacity,1));background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.btn-green{border-color:rgb(5 150 105/var(--tw-border-opacity,1));background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.btn-amber,.btn-green{--tw-border-opacity:1;--tw-bg-opacity:1;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-amber{border-color:rgb(245 158 11/var(--tw-border-opacity,1));background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.btn-ghost{border-color:transparent;background-color:transparent;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.btn-sm{border-radius:.5rem;padding:.375rem .75rem;font-size:.875rem;line-height:1.25rem}.inp{width:100%;border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.625rem .75rem;font-size:1rem;line-height:1.5rem}.inp:focus{outline:2px solid transparent;outline-offset:2px;--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000);--tw-ring-opacity:1;--tw-ring-color:rgb(129 140 248/var(--tw-ring-opacity,1))}.lbl{margin-bottom:.25rem;display:block;font-size:.875rem;line-height:1.25rem;font-weight:600;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.panel{border-radius:1rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1rem;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.tab{display:flex;flex-direction:column;align-items:center;gap:.125rem;border-radius:.75rem;padding:.5rem .75rem;font-size:.75rem;line-height:1rem;font-weight:600;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.tab-on{--tw-bg-opacity:1;background-color:rgb(238 242 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(67 56 202/var(--tw-text-opacity,1))}.chip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:.5rem;border-width:1px;padding:.25rem .375rem;text-align:center;font-size:.75rem;line-height:1rem;line-height:1.25}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.inset-x-0{left:0;right:0}.inset-y-0{top:0;bottom:0}.bottom-0{bottom:0}.bottom-6{bottom:1.5rem}.left-0{left:0}.left-1\/2{left:50%}.right-2{right:.5rem}.top-0{top:0}.top-1{top:.25rem}.z-20{z-index:20}.z-30{z-index:30}.z-50{z-index:50}.z-\[60\]{z-index:60}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.mr-auto{margin-right:auto}.mt-0\.5{margin-top:.125rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-auto{margin-top:auto}.line-clamp-2{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.hidden{display:none}.aspect-square{aspect-ratio:1/1}.h-11{height:2.75rem}.h-16{height:4rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.h-9{height:2.25rem}.max-h-40{max-height:10rem}.max-h-\[42vh\]{max-height:42vh}.max-h-\[92vh\]{max-height:92vh}.min-h-screen{min-height:100vh}.w-11{width:2.75rem}.w-20{width:5rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-\[10rem\]{min-width:10rem}.min-w-\[12rem\]{min-width:12rem}.max-w-3xl{max-width:48rem}.max-w-6xl{max-width:72rem}.max-w-lg{max-width:32rem}.max-w-xl{max-width:36rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.list-decimal{list-style-type:decimal}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.place-items-center{place-items:center}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.overflow-auto{overflow:auto}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-xl{border-radius:.75rem}.\!border{border-width:1px!important}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-t-2{border-top-width:2px}.border-amber-500{--tw-border-opacity:1;border-color:rgb(245 158 11/var(--tw-border-opacity,1))}.border-emerald-500{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.border-emerald-600{--tw-border-opacity:1;border-color:rgb(5 150 105/var(--tw-border-opacity,1))}.border-indigo-600{--tw-border-opacity:1;border-color:rgb(79 70 229/var(--tw-border-opacity,1))}.border-rose-500{--tw-border-opacity:1;border-color:rgb(244 63 94/var(--tw-border-opacity,1))}.border-rose-600{--tw-border-opacity:1;border-color:rgb(225 29 72/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1))}.bg-emerald-500{--tw-bg-opacity:1;background-color:rgb(16 185 129/var(--tw-bg-opacity,1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-indigo-50{--tw-bg-opacity:1;background-color:rgb(238 242 255/var(--tw-bg-opacity,1))}.bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229/var(--tw-bg-opacity,1))}.bg-rose-100{--tw-bg-opacity:1;background-color:rgb(255 228 230/var(--tw-bg-opacity,1))}.bg-rose-500{--tw-bg-opacity:1;background-color:rgb(244 63 94/var(--tw-bg-opacity,1))}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.bg-slate-900\/50{background-color:rgba(15,23,42,.5)}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/95{background-color:hsla(0,0%,100%,.95)}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.pb-28{padding-bottom:7rem}.pl-6{padding-left:1.5rem}.pt-2{padding-top:.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-5xl{font-size:3rem;line-height:1}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.leading-none{line-height:1}.leading-snug{line-height:1.375}.leading-tight{line-height:1.25}.tracking-wide{letter-spacing:.025em}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72/var(--tw-text-opacity,1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.text-white\/70{color:hsla(0,0%,100%,.7)}.accent-emerald-600{accent-color:#059669}.accent-indigo-600{accent-color:#4f46e5}.opacity-40{opacity:.4}.opacity-50{opacity:.5}.opacity-70{opacity:.7}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color)}.shadow-2xl,.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.ring-4{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(4px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-emerald-200{--tw-ring-opacity:1;--tw-ring-color:rgb(167 243 208/var(--tw-ring-opacity,1))}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}@media (min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.sm\:grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}}@media (min-width:768px){.md\:inline{display:inline}.md\:grid-cols-\[14rem_1fr\]{grid-template-columns:14rem 1fr}}@media (min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.lg\:grid-cols-8{grid-template-columns:repeat(8,minmax(0,1fr))}.lg\:grid-cols-\[1fr_22rem\]{grid-template-columns:1fr 22rem}}
+</style>
+<style>
+  html,body{-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  textarea{font-size:16px}
+  .qtext{white-space:normal;word-wrap:break-word}
+  #camBox video{width:100%;height:auto;display:block;background:#0f172a;border-radius:.75rem}
+  #camBox canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .card-svg{display:block;width:100%;height:100%}
+  #print-root{display:none}
+  @media print {
+    @page { size: A4 portrait; margin: 8mm; }
+    body > *:not(#print-root) { display: none !important; }
+    #print-root { display: block !important; }
+    .sheet { page-break-after: always; break-after: page; display: grid; justify-content: center; align-content: start; }
+    .sheet:last-child { page-break-after: auto; break-after: auto; }
+    .pcard { box-sizing: border-box; }
+  }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+<script src="verrou.js"></script>
+<script>typeof Verrou!=='undefined'&&Verrou.coverIfNotAdmin()</script>
+
+<header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200" style="padding-top:env(safe-area-inset-top)">
+  <div class="max-w-6xl mx-auto px-3 flex items-center gap-2 h-16">
+    <button class="btn btn-sm mr-1" data-act="home" title="Retour à Suivi de classe">← Suivi</button>
+    <span class="font-black text-lg hidden md:inline mr-2 whitespace-nowrap">🎯 QCM en direct</span>
+    <nav id="nav" class="flex gap-1 overflow-x-auto"></nav>
+  </div>
+</header>
+
+<main id="app" class="max-w-6xl mx-auto px-3 py-4 pb-28"></main>
+
+<div id="modal-root"></div>
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 z-[60] hidden px-4 py-3 rounded-xl shadow-lg text-white font-semibold"></div>
+<div id="print-root"></div>
+
+<script>
+'use strict';
+// ===== Détecteur de cartes QCM (marqueurs 7x7, 5x5 bits de données) =====
+const DICT = [0xe309a8,0x12b7a88,0x109cc39,0xc5ee8d,0x6d049b,0x16c3cd7,0x4733a5,0xd5c259,0x1eb633e,0x44919a,0x9e1e98,0x503f4d,0x99079e,0x1b662f,0x75f3e6,0xddb23e,0xbc0b93,0x168e05,0x139c954,0x10a37d8,0x8ba518,0x1c50f,0x10869b3,0x17b96b,0x163d3e9,0x1f6d1d6,0x11643d5,0x13cd432,0x1c2b6e5,0x158b38f,0xd8a843,0x7d9c4a,0x5f5143,0x21427b,0x1238bf6,0x1647e28,0x5b2bdc,0x1e05ccc,0x73680a,0xfd4cd5,0x42a8a7,0xcf6ae7,0xebb82b,0xa7d6f5,0x7bcad3,0x1664665,0x1c91695,0x1e370d1,0x1deb5a,0x19932db,0xc6e4bb,0x73e27c,0x3adbaf,0xd85aca,0x1e1b5ca,0x1581d92,0xc653c0,0x17b39cb,0x9c21dd,0x1f0f03b,0xaf3d7,0xf8932,0x16f3b66,0x3e07aa,0x16ea779,0xb30f19,0x4261cd,0x97ca62,0xd09ebd,0x1c7f517,0x1274e13,0xe69253,0x7ba745,0x79b431,0x59aea2,0x186cf5a,0x12efd27,0xe2ae2c,0x1fd1561,0x252d26,0x73e77,0x1de31b1,0x5e34c9,0x9cfc0,0x1995184,0x1b5540e,0x9ee1e3,0x9a04d3,0x8c8f3f,0x18842ef,0xad57c,0x9585b3,0x16d99a3,0x1a3181a,0x1c33cb6,0xeb9e86,0xf1da28,0x13f40c0,0x5122c7,0x81b394];
+const GN = 5;
+function rotCW(b){let o=0;for(let r=0;r<GN;r++)for(let c=0;c<GN;c++){const bit=(b>>((GN-1-c)*GN+r))&1;o|=bit<<(r*GN+c);}return o>>>0;}
+const DICT_ROTS = DICT.map(b=>{const a=[b];for(let i=0;i<3;i++)a.push(rotCW(a[i]));return a;});
+const ROT_LETTER = ['A','D','C','B'];
+function popcnt(x){x=x-((x>>>1)&0x55555555);x=(x&0x33333333)+((x>>>2)&0x33333333);return(((x+(x>>>4))&0x0F0F0F0F)*0x01010101)>>>24;}
+const DIRX=[-1,-1,0,1,1,1,0,-1], DIRY=[0,-1,-1,-1,0,1,1,1];
+const OFF2DIR=new Int8Array(9);[0,1,2,3,4,5,6,7].forEach(i=>{OFF2DIR[(DIRY[i]+1)*3+(DIRX[i]+1)]=i;});
+
+function detectMarkers(gray,w,h,opts={}){
+  const maxErr = opts.maxErr ?? 2;
+  const C = opts.C ?? 7;
+  const win = opts.win || Math.max(15, (Math.round(Math.min(w,h)/25))|1);
+  // image intégrale
+  const W1=w+1, integ=new Float64Array(W1*(h+1));
+  for(let y=0;y<h;y++){let s=0;const ro=(y+1)*W1, rp=y*W1, gy=y*w;for(let x=0;x<w;x++){s+=gray[gy+x];integ[ro+x+1]=integ[rp+x+1]+s;}}
+  const bin=new Uint8Array(w*h), r=win>>1;
+  for(let y=1;y<h-1;y++){const y0=Math.max(0,y-r),y1=Math.min(h,y+r+1);for(let x=1;x<w-1;x++){const x0=Math.max(0,x-r),x1=Math.min(w,x+r+1);const sum=integ[y1*W1+x1]-integ[y0*W1+x1]-integ[y1*W1+x0]+integ[y0*W1+x0];const mean=sum/((y1-y0)*(x1-x0));if(gray[y*w+x]<mean-C)bin[y*w+x]=1;}}
+  // contours (suivi de Moore)
+  const lab=new Uint8Array(w*h);
+  const minSide = opts.minSide || 10;
+  const minPerim=4*minSide, maxPerim=2*(w+h), maxLen=4*(w+h);
+  const quads=[];
+  const cx=[],cy=[];
+  for(let y=1;y<h-1;y++){for(let x=1;x<w-1;x++){const i=y*w+x;if(bin[i]!==1||bin[i-1]!==0||lab[i])continue;
+    cx.length=0;cy.length=0;
+    let px=x,py=y,bx=x-1,by=y;const sbx=bx,sby=by;let ok=true;
+    for(let n=0;n<maxLen;n++){cx.push(px);cy.push(py);lab[py*w+px]=1;
+      const d=OFF2DIR[(by-py+1)*3+(bx-px+1)];let found=-1;
+      for(let k=1;k<=8;k++){const dd=(d+k)&7;const nx=px+DIRX[dd],ny=py+DIRY[dd];if(bin[ny*w+nx]===1){found=dd;break;}}
+      if(found<0){break;}
+      const pd=(found+7)&7;const nbx=px+DIRX[pd],nby=py+DIRY[pd];
+      px+=DIRX[found];py+=DIRY[found];bx=nbx;by=nby;
+      if(px===x&&py===y&&bx===sbx&&by===sby)break;
+      if(n===maxLen-1)ok=false;}
+    if(!ok)continue;
+    const L=cx.length; if(L<minPerim||L>maxPerim)continue;
+    const q=approxQuad(cx,cy,L,minSide); if(q)quads.push(q);
+  }}
+  // décodage
+  const found=new Map();
+  for(const q of quads){const m=decodeQuad(gray,w,h,q,maxErr);if(!m)continue;
+    const prev=found.get(m.id);if(!prev||m.size>prev.size)found.set(m.id,m);}
+  return [...found.values()];
+}
+function dpSimplify(xs,ys,i0,i1,eps,out){ // points i0..i1 (indices modulo, i1>i0)
+  const L=xs.length;const ax=xs[i0%L],ay=ys[i0%L],bx=xs[i1%L],by=ys[i1%L];
+  const dx=bx-ax,dy=by-ay,nrm=Math.hypot(dx,dy)||1;let best=-1,bi=-1;
+  for(let i=i0+1;i<i1;i++){const px=xs[i%L],py=ys[i%L];const dist=Math.abs(dy*(px-ax)-dx*(py-ay))/nrm;if(dist>best){best=dist;bi=i;}}
+  if(best>eps){dpSimplify(xs,ys,i0,bi,eps,out);out.push(bi%L);dpSimplify(xs,ys,bi,i1,eps,out);}
+}
+function approxQuad(xs,ys,L,minSide){
+  // point le plus éloigné du premier, puis le plus éloigné de celui-ci
+  let a=0,best=-1;for(let i=0;i<L;i+=1){const d=(xs[i]-xs[0])**2+(ys[i]-ys[0])**2;if(d>best){best=d;a=i;}}
+  let b=a;best=-1;for(let i=0;i<L;i++){const d=(xs[i]-xs[a])**2+(ys[i]-ys[a])**2;if(d>best){best=d;b=i;}}
+  if(a>b){const t=a;a=b;b=t;}
+  const eps=Math.max(2,L*0.035);const idx=[a];
+  dpSimplify(xs,ys,a,b,eps,idx);idx.push(b);dpSimplify(xs,ys,b,a+L,eps,idx);
+  if(idx.length!==4)return null;
+  let pts=idx.map(i=>[xs[i],ys[i]]);
+  // sens horaire (y vers le bas)
+  const mx=(pts[0][0]+pts[1][0]+pts[2][0]+pts[3][0])/4,my=(pts[0][1]+pts[1][1]+pts[2][1]+pts[3][1])/4;
+  pts.sort((p,q)=>Math.atan2(p[1]-my,p[0]-mx)-Math.atan2(q[1]-my,q[0]-mx));
+  // convexité + côtés minimaux
+  let sign=0;for(let i=0;i<4;i++){const p=pts[i],q=pts[(i+1)%4],s=pts[(i+2)%4];const cr=(q[0]-p[0])*(s[1]-q[1])-(q[1]-p[1])*(s[0]-q[0]);if(cr===0)return null;const sg=Math.sign(cr);if(sign===0)sign=sg;else if(sg!==sign)return null;
+    if(Math.hypot(q[0]-p[0],q[1]-p[1])<minSide)return null;}
+  // côtés comparables
+  const sides=[0,1,2,3].map(i=>Math.hypot(pts[(i+1)%4][0]-pts[i][0],pts[(i+1)%4][1]-pts[i][1]));
+  if(Math.max(...sides)>4*Math.min(...sides))return null;
+  // départ : coin le plus en haut à gauche
+  let s0=0,sb=1e9;for(let i=0;i<4;i++){const v=pts[i][0]+pts[i][1];if(v<sb){sb=v;s0=i;}}
+  pts=[0,1,2,3].map(i=>pts[(s0+i)%4]);
+  // ajuster vers l'extérieur du demi-pixel du contour
+  return pts.map(p=>[p[0]+0.5+(p[0]-mx)*0.0,p[1]+0.5+(p[1]-my)*0.0]);
+}
+function squareToQuad(p){ // homographie unité -> quad (Heckbert)
+  const [x0,y0]=p[0],[x1,y1]=p[1],[x2,y2]=p[2],[x3,y3]=p[3];
+  const dx1=x1-x2,dx2=x3-x2,dx3=x0-x1+x2-x3,dy1=y1-y2,dy2=y3-y2,dy3=y0-y1+y2-y3;
+  let g=0,hh=0;
+  if(dx3!==0||dy3!==0){const den=dx1*dy2-dx2*dy1;g=(dx3*dy2-dx2*dy3)/den;hh=(dx1*dy3-dx3*dy1)/den;}
+  const a=x1-x0+g*x1,b=x3-x0+hh*x3,c=x0,d=y1-y0+g*y1,e=y3-y0+hh*y3,f=y0;
+  return (u,v)=>{const z=g*u+hh*v+1;return[(a*u+b*v+c)/z,(d*u+e*v+f)/z];};
+}
+function decodeQuad(gray,w,h,q,maxErr){
+  const H=squareToQuad(q);const n=7;const cells=new Float32Array(49);
+  const offs=[-0.22,0,0.22];
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){let s=0,k=0;
+    for(const ov of offs)for(const ou of offs){const [x,y]=H((c+0.5+ou)/n,(r+0.5+ov)/n);const xi=Math.round(x),yi=Math.round(y);if(xi<0||yi<0||xi>=w||yi>=h)return null;s+=gray[yi*w+xi];k++;}
+    cells[r*n+c]=s/k;}
+  let mn=255,mx=0;for(let i=0;i<49;i++){if(cells[i]<mn)mn=cells[i];if(cells[i]>mx)mx=cells[i];}
+  if(mx-mn<35)return null;
+  // seuil d'Otsu sur 49 valeurs
+  let thr=(mn+mx)/2, bestV=-1;
+  for(let t=mn+1;t<mx;t+=2){let n0=0,s0=0,n1=0,s1=0;for(let i=0;i<49;i++){if(cells[i]<t){n0++;s0+=cells[i];}else{n1++;s1+=cells[i];}}if(!n0||!n1)continue;const m0=s0/n0,m1=s1/n1,v=n0*n1*(m0-m1)**2;if(v>bestV){bestV=v;thr=t;}}
+  let bad=0;for(let i=0;i<n;i++)for(const [r,c] of [[0,i],[n-1,i],[i,0],[i,n-1]])if(cells[r*n+c]>=thr)bad++;
+  if(bad>3)return null;
+  let bits=0;for(let r=0;r<GN;r++)for(let c=0;c<GN;c++)if(cells[(r+1)*n+(c+1)]>=thr)bits|=1<<(r*GN+c);
+  bits>>>=0;
+  let best=99,bid=-1,bk=0;
+  for(let id=0;id<DICT_ROTS.length;id++){const R=DICT_ROTS[id];for(let k=0;k<4;k++){const e=popcnt((bits^R[k])>>>0);if(e<best){best=e;bid=id;bk=k;}}}
+  if(best>maxErr)return null;
+  const size=Math.hypot(q[2][0]-q[0][0],q[2][1]-q[0][1]);
+  return {id:bid+1,answer:ROT_LETTER[bk],rot:bk,err:best,corners:q,size};
+}
+
+
+
+// ======================================================================
+//  Utilitaires
+// ======================================================================
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const LETTERS = ['A', 'B', 'C', 'D'];
+const LCOL = ['#2563eb', '#ea580c', '#7c3aed', '#db2777'];
+const MAX_CARD = DICT.length;
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmtDate = t => new Date(t).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+function rich(s) {
+  return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
+}
+function toast(msg, kind = 'ok', ms = 2600) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.style.background = kind === 'err' ? '#e11d48' : kind === 'warn' ? '#d97706' : '#059669';
+  t.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add('hidden'), ms);
+}
+function download(name, text, mime = 'text/plain') {
+  const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+function slug(s) { return String(s || 'fichier').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 50) || 'fichier'; }
+function htmlToText(html) {
+  const d = document.createElement('div');
+  d.innerHTML = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|h\d|div|li)>/gi, '\n');
+  return d.textContent.replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+}
+function htmlFirstImg(html) { const m = String(html || '').match(/<img[^>]*src="([^"]+)"/i); return m ? m[1] : ''; }
+
+// ======================================================================
+//  Données & stockage (IndexedDB, secours localStorage)
+// ======================================================================
+const DEFAULT_SETTINGS = {
+  facing: 'environment', procWidth: 960, confirmFrames: 2, allowChange: true,
+  autoStop: true, sound: true, showLetters: false, showLive: false, threshold: 7
+};
+let DB = { app: 'QCMScan', version: 1, qcms: [], groups: [], sessions: [], active: null, settings: { ...DEFAULT_SETTINGS } };
+const UI = {
+  tab: 'qcm', editQcm: null, groupSel: null, resultSel: null,
+  setupQcm: '', setupGroup: '', setupAnon: 30,
+  cards: { source: 'range', groupId: '', from: 1, to: 30, perPage: 4, names: true }
+};
+
+const Store = {
+  db: null,
+  open() {
+    return new Promise(res => {
+      try {
+        if (!('indexedDB' in window)) return res(null);
+        const r = indexedDB.open('qcmscan', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => { this.db = r.result; res(this.db); };
+        r.onerror = () => res(null);
+      } catch (e) { res(null); }
+    });
+  },
+  get() {
+    if (!this.db) { try { return Promise.resolve(JSON.parse(localStorage.getItem('qcmscan') || 'null')); } catch (e) { return Promise.resolve(null); } }
+    return new Promise(res => {
+      try {
+        const rq = this.db.transaction('kv', 'readonly').objectStore('kv').get('data');
+        rq.onsuccess = () => res(rq.result || null);
+        rq.onerror = () => res(null);
+      } catch (e) { res(null); }
+    });
+  },
+  put(d) {
+    if (!this.db) {
+      try { localStorage.setItem('qcmscan', JSON.stringify(d)); } catch (e) { toast('Stockage plein : exportez vos données', 'err'); }
+      return Promise.resolve();
+    }
+    return new Promise(res => {
+      try {
+        const tx = this.db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(d, 'data');
+        tx.oncomplete = () => res(true);
+        tx.onerror = () => { toast("Erreur d'enregistrement", 'err'); res(false); };
+      } catch (e) { toast("Erreur d'enregistrement", 'err'); res(false); }
+    });
+  }
+};
+let saveTimer = null;
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => Store.put(clone(DB)), 250); }
+function saveNow() { clearTimeout(saveTimer); return Store.put(clone(DB)); }
+
+const getQcm = id => DB.qcms.find(q => q.id === id);
+// Classes de Suivi de classe (lecture seule) + numéros de carte de Progression (cfg.qcmCards)
+let LINKED = [], SUIVI_LOCK = null;
+const allGroups = () => [...LINKED, ...DB.groups];
+const getGroup = id => allGroups().find(g => g.id === id);
+function readKV(name) {
+  return new Promise(res => {
+    let r;
+    try { r = indexedDB.open(name); } catch (e) { return res(null); }
+    r.onupgradeneeded = () => { try { r.transaction.abort(); } catch (_) {} res(null); };
+    r.onsuccess = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains('kv')) { db.close(); return res(null); }
+      try {
+        const q = db.transaction('kv', 'readonly').objectStore('kv').get('data');
+        q.onsuccess = () => { db.close(); res(q.result || null); };
+        q.onerror = () => { db.close(); res(null); };
+      } catch (e) { db.close(); res(null); }
+    };
+    r.onerror = () => res(null);
+  });
+}
+function writeProgCards(maps) {
+  // n'écrit que la clé config.qcmCards des données de Progression (même algorithme de numérotation)
+  return new Promise(res => {
+    let r;
+    try { r = indexedDB.open('progression-classe-db'); } catch (e) { return res(false); }
+    r.onupgradeneeded = () => { try { r.transaction.abort(); } catch (_) {} res(false); };
+    r.onsuccess = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains('kv')) { db.close(); return res(false); }
+      let ok = false;
+      try {
+        const tx = db.transaction('kv', 'readwrite'), st = tx.objectStore('kv'), q = st.get('data');
+        q.onsuccess = () => {
+          const d = q.result;
+          if (!d || !d.config) return;
+          d.config.qcmCards = d.config.qcmCards || {};
+          for (const [k, m] of Object.entries(maps)) d.config.qcmCards[k] = Object.assign(d.config.qcmCards[k] || {}, m);
+          st.put(d, 'data'); ok = true;
+        };
+        tx.oncomplete = () => { db.close(); res(ok); };
+        tx.onerror = () => { db.close(); res(false); };
+      } catch (e) { db.close(); res(false); }
+    };
+    r.onerror = () => res(false);
+  });
+}
+async function loadLinked() {
+  const [suivi, prog] = await Promise.all([readKV('suivi-classe-db'), readKV('progression-classe-db')]);
+  SUIVI_LOCK = suivi && suivi.lock && suivi.lock.hash ? suivi.lock : null;
+  const classes = suivi && Array.isArray(suivi.classes) ? suivi.classes : [];
+  const hasProg = !!(prog && prog.config);
+  if (!DB.cardMaps) DB.cardMaps = {};
+  const store = hasProg ? (prog.config.qcmCards || {}) : DB.cardMaps;
+  const changed = {};
+  LINKED = classes.map(c => {
+    const studs = (c.students || []).filter(s => s && s.id);
+    const m = Object.assign({}, store[c.id] || {});
+    let max = Object.values(m).reduce((a, b) => Math.max(a, +b || 0), 0), ch = false;
+    studs.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'fr')).forEach(st => { if (!m[st.id]) { m[st.id] = ++max; ch = true; } });
+    if (ch) changed[c.id] = m;
+    return {
+      id: 's:' + c.id, suiviId: c.id, linked: true, name: c.name || 'Classe',
+      students: studs.map(st => ({ id: st.id, nom: st.name || '', prenom: '', card: m[st.id] })).sort((a, b) => a.card - b.card)
+    };
+  });
+  if (Object.keys(changed).length) {
+    if (hasProg) await writeProgCards(changed);
+    else { Object.assign(DB.cardMaps, changed); save(); }
+  }
+}
+const newQuestion = () => ({ id: uid(), text: '', image: '', answers: [{ text: '', correct: true }, { text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }] });
+
+// ======================================================================
+//  Import / export de QCM
+// ======================================================================
+function cleanTitle(s) { return String(s || '').replace(/\s*\{[^}]*\}\s*$/, '').trim(); }
+
+function parseMarkdown(text) {
+  const lines = String(text).replace(/\r/g, '').split('\n');
+  let name = '';
+  const qs = [];
+  let cur = null, warn = 0;
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    let m;
+    if ((m = line.match(/^#\s+(.*)/))) { if (!name && !cur) name = cleanTitle(m[1]); continue; }
+    if ((m = line.match(/^#{2,3}\s+(.*)/))) { cur = { id: uid(), text: cleanTitle(m[1]), image: '', answers: [] }; qs.push(cur); continue; }
+    if (!cur) continue;
+    if ((m = line.match(/^\s*[-*+]\s+(?:\[( |x|X)\]\s?)?(.*)$/))) {
+      if (cur.answers.length < 4) cur.answers.push({ text: m[2].trim(), correct: (m[1] || '').toLowerCase() === 'x' });
+      else warn++;
+      continue;
+    }
+    if ((m = line.match(/!\[[^\]]*\]\(\s*([^)\s]+)[^)]*\)/))) {
+      if (!cur.image) cur.image = m[1];
+      const rest = line.replace(m[0], '').trim();
+      if (rest) cur.text += '\n' + rest;
+      continue;
+    }
+    if (line.trim()) cur.text += '\n' + line.trim();
+  }
+  return { qcm: { id: uid(), name: name || 'QCM importé', updatedAt: Date.now(), questions: qs }, warn };
+}
+
+function parseAiken(text) {
+  const blocks = String(text).replace(/\r/g, '').split(/\n\s*\n/);
+  const qs = [];
+  for (const b of blocks) {
+    const lines = b.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    const q = { id: uid(), text: '', image: '', answers: [] };
+    let ansLetter = '';
+    const tl = [];
+    for (const l of lines) {
+      let m;
+      if ((m = l.match(/^([A-Z])[.)]\s*(.*)$/)) && (q.answers.length || tl.length)) { if (q.answers.length < 4) q.answers.push({ text: m[2], correct: false, _l: m[1] }); }
+      else if ((m = l.match(/^ANSWER\s*:\s*([A-Z])/i))) ansLetter = m[1].toUpperCase();
+      else if (!q.answers.length) tl.push(l);
+    }
+    q.text = tl.join('\n');
+    q.answers.forEach(a => { a.correct = a._l === ansLetter; delete a._l; });
+    if (q.text) qs.push(q);
+  }
+  return { qcm: { id: uid(), name: 'QCM importé (Aiken)', updatedAt: Date.now(), questions: qs }, warn: 0 };
+}
+
+function qcmFromQcmcamJSON(q) {
+  // Format "QCMCamSyncBundle" (sauvegarde intégrale QCMCam 2)
+  if (q.type === 'markdown' && q.markdownSource && q.markdownSource.trim()) {
+    const r = parseMarkdown(q.markdownSource);
+    r.qcm.name = q.name || r.qcm.name;
+    return r.qcm;
+  }
+  const questions = (q.questions || []).map(qu => ({
+    id: uid(),
+    text: htmlToText(qu.content),
+    image: htmlFirstImg(qu.content),
+    answers: (qu.answers || []).slice(0, 4).map(a => ({ text: htmlToText(a.content), correct: !!a.correct }))
+  }));
+  return { id: uid(), name: q.name || 'QCM importé', updatedAt: Date.now(), questions };
+}
+const qcmIsEmpty = q => !q.questions.some(qu => qu.answers.some(a => a.text.trim()));
+
+function importAny(text) {
+  const t = String(text || '').trim();
+  if (!t) return { error: 'Rien à importer.' };
+  if (t[0] === '{' || t[0] === '[') {
+    let data;
+    try { data = JSON.parse(t); } catch (e) { return { error: 'Fichier JSON illisible.' }; }
+    // Sauvegarde QCMScan
+    if (data && data.app === 'QCMScan') return { backup: data };
+    // Sauvegarde intégrale QCMCam
+    if (data && data.format === 'QCMCamSyncBundle') {
+      const qcms = (data.qcms || []).map(qcmFromQcmcamJSON).filter(q => !qcmIsEmpty(q));
+      const stud = new Map((data.students || []).map(s => [s.id, s]));
+      const groups = (data.groups || []).filter(g => (g.studentIds || []).length).map(g => ({
+        id: uid(), name: g.name || 'Classe',
+        students: g.studentIds.map(id => stud.get(id)).filter(Boolean).map(s => ({
+          id: uid(), nom: String(s.name || '').replace(/^"+|"+$/g, ''), prenom: s.firstname || '', card: s.markerId || null
+        }))
+      }));
+      groups.forEach(fixCards);
+      return { qcms, groups };
+    }
+    // Export individuel QCMCam 2 ({qcm:{_name}, questions:[{_content,_answers}]})
+    if (data && Array.isArray(data.questions)) {
+      const questions = data.questions.map(qu => ({
+        id: uid(), text: htmlToText(qu._content ?? qu.content), image: htmlFirstImg(qu._content ?? qu.content),
+        answers: (qu._answers || qu.answers || []).slice(0, 4).map(a => ({ text: htmlToText(a._content ?? a.content), correct: !!(a._isCorrect ?? a.isCorrect ?? a.correct) }))
+      }));
+      const name = (data.qcm && (data.qcm._name || data.qcm.name)) || data.name || 'QCM importé';
+      return { qcms: [{ id: uid(), name, updatedAt: Date.now(), questions }], groups: [] };
+    }
+    return { error: "Format JSON non reconnu." };
+  }
+  if (/^ANSWER\s*:/mi.test(t) && !/^#{1,3}\s/m.test(t)) { const r = parseAiken(t); return { qcms: [r.qcm], groups: [], warn: r.warn }; }
+  const r = parseMarkdown(t);
+  if (!r.qcm.questions.length) return { error: "Aucune question trouvée (une question commence par « ## »)." };
+  return { qcms: [r.qcm], groups: [], warn: r.warn };
+}
+
+function qcmToMarkdown(q) {
+  let s = `# ${q.name}\n\n`;
+  for (const qu of q.questions) {
+    const [first, ...rest] = (qu.text || 'Question').split('\n');
+    s += `## ${first}\n\n`;
+    if (rest.length) s += rest.join('\n') + '\n\n';
+    if (qu.image && !qu.image.startsWith('data:')) s += `![image](${qu.image})\n\n`;
+    for (const a of qu.answers) s += `- [${a.correct ? 'x' : ' '}] ${a.text}\n`;
+    s += '\n';
+  }
+  return s;
+}
+
+// ======================================================================
+//  Classes : numéros de cartes, collage de listes
+// ======================================================================
+function fixCards(g) {
+  const used = new Set();
+  for (const s of g.students) {
+    const c = parseInt(s.card, 10);
+    if (c >= 1 && c <= MAX_CARD && !used.has(c)) { s.card = c; used.add(c); } else s.card = null;
+  }
+  let n = 1;
+  for (const s of g.students) if (!s.card) { while (used.has(n)) n++; s.card = n; used.add(n); }
+}
+function parseStudents(text) {
+  let lines = String(text).replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const splitL = l => l.split(/\t|;/).map(s => s.trim());
+  let map = null;
+  const head = splitL(lines[0]).map(h => h.toLowerCase());
+  if (head.length > 1 && head.some(h => h.startsWith('nom')) ) {
+    map = { nom: head.findIndex(h => h === 'nom' || h.startsWith('nom')), prenom: head.findIndex(h => h.startsWith('pr')), card: head.findIndex(h => /carte|marqueur|num/.test(h)) };
+    lines = lines.slice(1);
+  } else if (/^(nom|élève|eleve)\b/i.test(lines[0])) lines = lines.slice(1);
+  return lines.map(l => {
+    const parts = splitL(l);
+    if (map) return { nom: parts[map.nom] || '', prenom: map.prenom >= 0 ? parts[map.prenom] || '' : '', card: map.card >= 0 ? parseInt(parts[map.card], 10) || null : null };
+    if (parts.length >= 2) {
+      let card = null;
+      if (/^\d+$/.test(parts[parts.length - 1])) card = parseInt(parts.pop(), 10);
+      return { nom: parts[0], prenom: parts.slice(1).join(' '), card };
+    }
+    const words = l.split(/\s+/);
+    const up = [];
+    let i = 0;
+    while (i < words.length - 1 && words[i] === words[i].toUpperCase() && /[A-ZÀ-Þ]/.test(words[i])) up.push(words[i++]);
+    if (!up.length) { up.push(words[0]); i = 1; }
+    return { nom: up.join(' '), prenom: words.slice(i).join(' '), card: null };
+  }).filter(s => s.nom || s.prenom);
+}
+
+// ======================================================================
+//  Cartes imprimables
+// ======================================================================
+function cardSVG(n, name = '', showNum = true) {
+  const bits = DICT[n - 1];
+  let rects = '';
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+    const border = r === 0 || c === 0 || r === 6 || c === 6;
+    const white = !border && ((bits >> ((r - 1) * 5 + (c - 1))) & 1);
+    if (!white) rects += `<rect x="${25 + c * 10}" y="${25 + r * 10}" width="10.06" height="10.06"/>`;
+  }
+  const L = (x, y, rot, t) => `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y})" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" font-family="Arial, Helvetica, sans-serif">${t}</text>`;
+  // nom dans le coin haut droit, comprimé pour ne jamais toucher la lettre A (x ≤ 68)
+  const nmTxt = name.length > 26 ? name.slice(0, 25) + '…' : name;
+  const nmFit = nmTxt.length * 3.6 > 42 ? ' textLength="42" lengthAdjust="spacingAndGlyphs"' : '';
+  const nm = name ? `<text x="116" y="11" text-anchor="end" font-size="6.2" font-family="Arial, Helvetica, sans-serif" fill="#222"${nmFit}>${esc(nmTxt)}</text>` : '';
+  const num = showNum ? `<text x="4" y="11" font-size="8" font-weight="700" font-family="Arial, Helvetica, sans-serif">${n}</text>` : '';
+  return `<svg class="card-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect x="0.4" y="0.4" width="119.2" height="119.2" fill="#fff" stroke="#bbb" stroke-width="0.4" stroke-dasharray="2 2"/><g fill="#000">${rects}</g>${L(60, 11, 0, 'A')}${L(109, 60, 90, 'B')}${L(60, 109, 180, 'C')}${L(11, 60, 270, 'D')}${num}${nm}</svg>`;
+}
+const LAYOUTS = { 1: { cols: 1, size: 185 }, 2: { cols: 1, size: 136 }, 4: { cols: 2, size: 96 }, 9: { cols: 3, size: 63 }, 20: { cols: 4, size: 47 } };
+function cardsToPrint() {
+  const o = UI.cards;
+  if (o.source === 'group') {
+    const g = getGroup(o.groupId);
+    if (!g) return [];
+    return g.students.slice().sort((a, b) => a.card - b.card).map(s => ({ n: s.card, name: o.names ? `${s.prenom} ${s.nom}`.trim() : '' }));
+  }
+  const a = Math.max(1, Math.min(MAX_CARD, +o.from || 1)), b = Math.max(a, Math.min(MAX_CARD, +o.to || a));
+  const out = [];
+  for (let n = a; n <= b; n++) out.push({ n, name: '' });
+  return out;
+}
+function printCards() {
+  const list = cardsToPrint();
+  if (!list.length) return toast('Aucune carte à imprimer', 'warn');
+  const lay = LAYOUTS[UI.cards.perPage] || LAYOUTS[4];
+  const per = +UI.cards.perPage;
+  let html = '';
+  for (let i = 0; i < list.length; i += per) {
+    html += `<div class="sheet" style="grid-template-columns:repeat(${lay.cols},${lay.size}mm);gap:4mm">` +
+      list.slice(i, i + per).map(c => `<div class="pcard" style="width:${lay.size}mm;height:${lay.size}mm">${cardSVG(c.n, c.name)}</div>`).join('') + `</div>`;
+  }
+  $('#print-root').innerHTML = html;
+  setTimeout(() => window.print(), 150);
+}
+
+// ======================================================================
+//  Navigation & rendu
+// ======================================================================
+const TABS = [
+  ['qcm', '📝', 'QCM'], ['groups', '👥', 'Classes'], ['session', '🎥', 'Séance'],
+  ['results', '📊', 'Résultats'], ['cards', '🃏', 'Cartes'], ['settings', '⚙️', 'Réglages']
+];
+function renderNav() {
+  const cur = UI.tab === 'edit' ? 'qcm' : UI.tab;
+  $('#nav').innerHTML = TABS.map(([id, ic, lab]) =>
+    `<button class="tab ${cur === id ? 'tab-on' : ''}" data-act="tab" data-tab="${id}"><span class="text-xl leading-none">${ic}</span>${lab}${id === 'session' && DB.active ? ' •' : ''}</button>`).join('');
+}
+function render() {
+  renderNav();
+  const views = { qcm: viewQcmList, edit: viewEdit, groups: viewGroups, session: viewSession, results: viewResults, cards: viewCards, settings: viewSettings };
+  $('#app').innerHTML = (views[UI.tab] || viewQcmList)();
+  if (UI.tab === 'session' && DB.active) mountCamera();
+}
+function goTab(t) {
+  if (t !== 'session' && Cam.running) stopScan();
+  UI.tab = t;
+  render();
+  window.scrollTo(0, 0);
+}
+
+// ---------- Modales ----------
+function modal(html, wide = false) {
+  $('#modal-root').innerHTML = `<div id="modal-bg" class="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[92vh] overflow-auto p-5">${html}</div></div>`;
+  $('#modal-bg').addEventListener('click', e => { if (e.target.id === 'modal-bg') closeModal(); });
+}
+function closeModal() { $('#modal-root').innerHTML = ''; }
+function confirmBox(msg, okLabel = 'Confirmer', danger = true) {
+  return new Promise(res => {
+    modal(`<p class="text-lg mb-6">${msg}</p><div class="flex justify-end gap-3"><button class="btn" id="cb-no">Annuler</button><button class="btn ${danger ? 'btn-red' : 'btn-blue'}" id="cb-ok">${okLabel}</button></div>`);
+    $('#cb-no').onclick = () => { closeModal(); res(false); };
+    $('#cb-ok').onclick = () => { closeModal(); res(true); };
+  });
+}
+function promptBox(msg, value = '') {
+  return new Promise(res => {
+    modal(`<p class="font-semibold mb-3">${msg}</p><input id="pb-in" class="inp mb-5" value="${esc(value)}"><div class="flex justify-end gap-3"><button class="btn" id="pb-no">Annuler</button><button class="btn btn-blue" id="pb-ok">OK</button></div>`);
+    const i = $('#pb-in'); i.focus(); i.select();
+    $('#pb-no').onclick = () => { closeModal(); res(null); };
+    $('#pb-ok').onclick = () => { closeModal(); res(i.value); };
+    i.onkeydown = e => { if (e.key === 'Enter') { closeModal(); res(i.value); } };
+  });
+}
+
+// ======================================================================
+//  Vue : liste des QCM
+// ======================================================================
+function viewQcmList() {
+  const list = DB.qcms.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const card = q => {
+    const nq = q.questions.length, first = q.questions[0];
+    return `<div class="panel flex flex-col">
+      <div class="flex items-start gap-2 mb-1"><h3 class="font-bold text-lg leading-tight flex-1">${esc(q.name)}</h3>
+        <span class="text-xs font-semibold bg-slate-100 rounded-full px-2 py-1 whitespace-nowrap">${nq} question${nq > 1 ? 's' : ''}</span></div>
+      <p class="text-sm text-slate-500 mb-3 line-clamp-2">${first ? esc(first.text.split('\n')[0]) : '<em>Vide</em>'}</p>
+      <div class="mt-auto flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-green" data-act="qcm-run" data-id="${q.id}">▶ Lancer</button>
+        <button class="btn btn-sm" data-act="qcm-edit" data-id="${q.id}">✏️ Modifier</button>
+        <button class="btn btn-sm" data-act="qcm-dup" data-id="${q.id}">⧉</button>
+        <button class="btn btn-sm" data-act="qcm-export" data-id="${q.id}">⤴︎ .md</button>
+        <button class="btn btn-sm text-rose-600" data-act="qcm-del" data-id="${q.id}">🗑</button>
+      </div></div>`;
+  };
+  return `<div class="flex flex-wrap items-center gap-2 mb-4">
+      <h1 class="text-2xl font-black mr-auto">Mes QCM</h1>
+      <button class="btn btn-blue" data-act="qcm-new">＋ Nouveau QCM</button>
+      <button class="btn" data-act="import-open">⤓ Importer</button>
+    </div>
+    ${list.length ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${list.map(card).join('')}</div>` :
+      `<div class="panel text-center py-12"><div class="text-5xl mb-3">📝</div><p class="text-lg font-semibold mb-1">Aucun QCM pour l'instant</p>
+       <p class="text-slate-500 mb-5">Créez un QCM, ou importez un fichier Markdown, Aiken, ou votre sauvegarde QCMCam (.json).</p>
+       <div class="flex justify-center gap-2"><button class="btn btn-blue" data-act="qcm-new">＋ Nouveau QCM</button><button class="btn" data-act="import-open">⤓ Importer</button></div></div>`}`;
+}
+
+function openImport() {
+  modal(`<h2 class="text-xl font-black mb-1">Importer</h2>
+    <p class="text-sm text-slate-500 mb-4">Formats reconnus : sauvegarde intégrale QCMCam (.json), export QCMCam, Markdown (# titre, ## question, - [x] bonne réponse), Aiken, sauvegarde QCMScan.</p>
+    <label class="lbl">Fichier</label>
+    <input type="file" id="imp-file" accept=".json,.md,.txt,.markdown,text/*,application/json" class="inp mb-4">
+    <label class="lbl">…ou contenu collé</label>
+    <textarea id="imp-text" rows="8" class="inp font-mono text-sm mb-4" placeholder="# Mon QCM&#10;&#10;## Ma question ?&#10;- [x] Bonne réponse&#10;- [ ] Mauvaise réponse"></textarea>
+    <div class="flex justify-end gap-3"><button class="btn" data-act="modal-close">Annuler</button><button class="btn btn-blue" data-act="import-do">Importer</button></div>`, true);
+}
+async function doImport() {
+  let text = $('#imp-text').value;
+  const f = $('#imp-file').files[0];
+  if (f) text = await f.text();
+  const r = importAny(text);
+  if (r.error) return toast(r.error, 'err');
+  if (r.backup) { closeModal(); return restoreBackup(r.backup); }
+  closeModal();
+  DB.qcms.push(...r.qcms);
+  if (r.groups && r.groups.length) DB.groups.push(...r.groups);
+  save();
+  const parts = [];
+  if (r.qcms.length) parts.push(`${r.qcms.length} QCM`);
+  if (r.groups && r.groups.length) parts.push(`${r.groups.length} classe(s) (${r.groups.reduce((n, g) => n + g.students.length, 0)} élèves)`);
+  toast(parts.length ? `Importé : ${parts.join(' et ')}` : 'Rien de nouveau à importer', parts.length ? 'ok' : 'warn', 3500);
+  if (r.warn) setTimeout(() => toast(`${r.warn} réponse(s) au-delà de 4 ignorée(s)`, 'warn', 3500), 3600);
+  if (r.qcms.length === 1 && !(r.groups || []).length) { UI.editQcm = r.qcms[0].id; UI.tab = 'edit'; }
+  render();
+}
+
+// ======================================================================
+//  Vue : éditeur de QCM
+// ======================================================================
+function viewEdit() {
+  const q = getQcm(UI.editQcm);
+  if (!q) { UI.tab = 'qcm'; return viewQcmList(); }
+  const qBlock = (qu, i) => `
+    <div class="panel" id="qb-${i}">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-8 h-8 rounded-full bg-indigo-600 text-white grid place-items-center font-bold text-sm">${i + 1}</span>
+        <span class="font-semibold text-slate-500 mr-auto">Question ${i + 1}</span>
+        <button class="btn btn-sm btn-ghost" data-act="q-up" data-qi="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn btn-sm btn-ghost" data-act="q-down" data-qi="${i}" ${i === q.questions.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="btn btn-sm btn-ghost" data-act="q-dup" data-qi="${i}">⧉</button>
+        <button class="btn btn-sm btn-ghost text-rose-600" data-act="q-del" data-qi="${i}">🗑</button>
+      </div>
+      <textarea class="inp mb-2" rows="2" data-f="qtext" data-qi="${i}" placeholder="Énoncé de la question (**gras**, *italique*)">${esc(qu.text)}</textarea>
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        ${qu.image ? `<img src="${esc(qu.image)}" class="max-h-40 rounded-lg border" alt="">` : ''}
+        <label class="btn btn-sm">🖼 ${qu.image ? 'Changer' : 'Ajouter une image'}<input type="file" accept="image/*" class="hidden" data-f="qimg" data-qi="${i}"></label>
+        <button class="btn btn-sm" data-act="q-imgurl" data-qi="${i}">🔗 Lien</button>
+        ${qu.image ? `<button class="btn btn-sm text-rose-600" data-act="q-imgdel" data-qi="${i}">Retirer l'image</button>` : ''}
+      </div>
+      <div class="space-y-2">
+        ${qu.answers.map((a, j) => `
+          <div class="flex items-center gap-2">
+            <span class="w-9 h-9 shrink-0 rounded-lg text-white grid place-items-center font-black" style="background:${LCOL[j]}">${LETTERS[j]}</span>
+            <input class="inp" data-f="atext" data-qi="${i}" data-ai="${j}" value="${esc(a.text)}" placeholder="Réponse ${LETTERS[j]}">
+            <label class="flex items-center gap-1 text-sm font-semibold whitespace-nowrap px-2 py-2 rounded-lg ${a.correct ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+              <input type="checkbox" class="w-5 h-5 accent-emerald-600" data-f="acorrect" data-qi="${i}" data-ai="${j}" ${a.correct ? 'checked' : ''}> Juste</label>
+            <button class="btn btn-sm btn-ghost text-slate-400" data-act="a-del" data-qi="${i}" data-ai="${j}">✕</button>
+          </div>`).join('')}
+        ${qu.answers.length < 4 ? `<button class="btn btn-sm" data-act="a-add" data-qi="${i}">＋ Réponse</button>` : ''}
+        ${!qu.answers.length ? `<p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-2">Sans réponse : cette question sera une diapositive d'information (pas de vote).</p>` : ''}
+      </div>
+    </div>`;
+  return `<div class="flex flex-wrap items-center gap-2 mb-4">
+      <button class="btn" data-act="tab" data-tab="qcm">← Mes QCM</button>
+      <input class="inp text-xl font-bold flex-1 min-w-[12rem]" data-f="qname" value="${esc(q.name)}" placeholder="Titre du QCM">
+      <button class="btn btn-green" data-act="qcm-run" data-id="${q.id}">▶ Lancer</button>
+    </div>
+    <p class="text-xs text-slate-400 mb-3">Enregistrement automatique. Cochez « Juste » pour la ou les bonnes réponses.</p>
+    <div class="space-y-3">${q.questions.map(qBlock).join('')}</div>
+    <button class="btn btn-blue w-full mt-4 py-4" data-act="q-add">＋ Ajouter une question</button>`;
+}
+function touchQcm(q) { q.updatedAt = Date.now(); save(); }
+function resizeImage(file, max = 1000) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('image')); };
+    img.src = url;
+  });
+}
+
+// ======================================================================
+//  Vue : classes
+// ======================================================================
+function viewGroups() {
+  if (!getGroup(UI.groupSel)) UI.groupSel = allGroups()[0]?.id || null;
+  const g = getGroup(UI.groupSel);
+  const item = x => `<button class="w-full text-left px-3 py-2.5 rounded-xl font-semibold flex justify-between ${x.id === UI.groupSel ? 'bg-indigo-600 text-white' : 'bg-white hover:bg-slate-50 border border-slate-200'}" data-act="g-sel" data-id="${x.id}">
+      <span class="truncate">${x.linked ? '🔗 ' : ''}${esc(x.name)}</span><span class="opacity-70 text-sm">${x.students.length}</span></button>`;
+  const list = (LINKED.length ? `<p class="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">Suivi de classe</p>${LINKED.map(item).join('')}` : '') +
+    (DB.groups.length ? `<p class="text-xs font-bold text-slate-500 uppercase tracking-wide px-1 pt-2">Autres classes</p>${DB.groups.map(item).join('')}` : '');
+  let right = `<div class="panel text-center py-12 text-slate-500">Créez une classe pour commencer.</div>`;
+  if (g && g.linked) {
+    right = `<div class="panel">
+      <div class="flex flex-wrap gap-2 mb-2 items-center"><h2 class="text-lg font-black mr-auto">🔗 ${esc(g.name)}</h2>
+        <button class="btn btn-sm" data-act="g-cards">🃏 Cartes nominatives</button></div>
+      <p class="text-sm text-slate-500 mb-3">Classe reprise de Suivi de classe : les élèves s'ajoutent et se modifient dans Suivi de classe. Les numéros de carte sont ceux de Progression (ils ne changent jamais, un nouvel élève reçoit le numéro suivant).</p>
+      ${g.students.length ? `<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500"><th class="p-1 w-20">Carte</th><th class="p-1">Élève</th></tr></thead>
+        <tbody>${g.students.map(s => `<tr class="border-t"><td class="p-1 font-black text-center">${s.card}${s.card > MAX_CARD ? ' ⚠️' : ''}</td><td class="p-1">${esc(s.nom)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="text-slate-500 py-6 text-center">Aucun élève dans cette classe.</p>'}
+    </div>`;
+  } else if (g) {
+    const studs = g.students.map((s, i) => ({ s, i })).sort((a, b) => a.s.card - b.s.card);
+    right = `<div class="panel">
+      <div class="flex flex-wrap gap-2 mb-3 items-center">
+        <input class="inp text-lg font-bold flex-1 min-w-[10rem]" data-f="gname" value="${esc(g.name)}">
+        <button class="btn btn-sm" data-act="s-add">＋ Élève</button>
+        <button class="btn btn-sm" data-act="s-paste">📋 Coller une liste</button>
+        <button class="btn btn-sm" data-act="g-cards">🃏 Cartes nominatives</button>
+        <button class="btn btn-sm" data-act="g-renum">1…n Renuméroter</button>
+        <button class="btn btn-sm text-rose-600" data-act="g-del">🗑</button>
+      </div>
+      ${studs.length ? `<div class="overflow-x-auto"><table class="w-full text-sm">
+        <thead><tr class="text-left text-slate-500"><th class="p-1 w-20">Carte</th><th class="p-1">NOM</th><th class="p-1">Prénom</th><th></th></tr></thead>
+        <tbody>${studs.map(({ s, i }) => `<tr class="border-t">
+          <td class="p-1"><input type="number" min="1" max="${MAX_CARD}" inputmode="numeric" class="inp py-1.5 text-center font-bold" data-f="scard" data-si="${i}" value="${s.card}"></td>
+          <td class="p-1"><input class="inp py-1.5" data-f="snom" data-si="${i}" value="${esc(s.nom)}"></td>
+          <td class="p-1"><input class="inp py-1.5" data-f="sprenom" data-si="${i}" value="${esc(s.prenom)}"></td>
+          <td class="p-1"><button class="btn btn-sm btn-ghost text-slate-400" data-act="s-del" data-si="${i}">✕</button></td></tr>`).join('')}</tbody></table></div>`
+        : `<p class="text-slate-500 py-6 text-center">Aucun élève. Ajoutez-les un par un ou collez une liste (Pronote, tableur…).</p>`}
+      <p class="text-xs text-slate-400 mt-3">Chaque élève d'une classe a un numéro de carte unique (1 à ${MAX_CARD}). Les mêmes cartes peuvent servir pour plusieurs classes.</p>
+    </div>`;
+  }
+  return `<div class="flex items-center gap-2 mb-4"><h1 class="text-2xl font-black mr-auto">Classes</h1><button class="btn btn-blue" data-act="g-new">＋ Nouvelle classe</button></div>
+    <div class="grid md:grid-cols-[14rem_1fr] gap-3"><div class="space-y-2">${list || '<p class="text-slate-500 text-sm">Aucune classe. Les classes de Suivi de classe apparaissent ici automatiquement.</p>'}</div><div>${right}</div></div>`;
+}
+function openPaste() {
+  modal(`<h2 class="text-xl font-black mb-1">Coller une liste d'élèves</h2>
+    <p class="text-sm text-slate-500 mb-3">Une ligne par élève : « NOM Prénom », ou colonnes séparées par tabulation/point-virgule (NOM ; Prénom ; n° de carte facultatif). Une ligne d'en-tête « Nom ; Prénom » est reconnue.</p>
+    <textarea id="paste-text" rows="10" class="inp font-mono text-sm mb-3" placeholder="DUPONT Léa&#10;MARTIN Hugo"></textarea>
+    <label class="flex items-center gap-2 mb-4 text-sm"><input type="checkbox" id="paste-replace" class="w-5 h-5"> Remplacer la liste actuelle</label>
+    <div class="flex justify-end gap-3"><button class="btn" data-act="modal-close">Annuler</button><button class="btn btn-blue" data-act="paste-do">Ajouter</button></div>`, true);
+}
+
+// ======================================================================
+//  Vue : cartes
+// ======================================================================
+function viewCards() {
+  const o = UI.cards;
+  const list = cardsToPrint();
+  return `<div class="flex flex-wrap items-center gap-2 mb-4"><h1 class="text-2xl font-black mr-auto">Cartes de vote</h1>
+      <button class="btn btn-blue" data-act="print">🖨 Imprimer / PDF</button></div>
+    <div class="panel mb-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div><label class="lbl">Cartes</label><select class="inp" data-c="source">
+        <option value="range" ${o.source === 'range' ? 'selected' : ''}>Numéros (anonymes)</option>
+        <option value="group" ${o.source === 'group' ? 'selected' : ''}>Une classe (nominatives)</option></select></div>
+      ${o.source === 'group' ? `<div><label class="lbl">Classe</label><select class="inp" data-c="groupId"><option value="">—</option>${allGroups().map(g => `<option value="${g.id}" ${g.id === o.groupId ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></div>
+        <label class="flex items-center gap-2 mt-6"><input type="checkbox" class="w-5 h-5" data-c="names" ${o.names ? 'checked' : ''}> Prénom et nom sur la carte</label>`
+      : `<div class="flex gap-2"><div class="flex-1"><label class="lbl">Du n°</label><input type="number" class="inp" min="1" max="${MAX_CARD}" data-c="from" value="${o.from}"></div>
+         <div class="flex-1"><label class="lbl">au n°</label><input type="number" class="inp" min="1" max="${MAX_CARD}" data-c="to" value="${o.to}"></div></div>`}
+      <div><label class="lbl">Par page A4</label><select class="inp" data-c="perPage">${[[1, '1 (salle très grande)'], [2, '2 (grande salle)'], [4, '4 (salle normale)'], [9, '9 (petite salle)'], [20, '20 (test de près)']].map(([v, l]) => `<option value="${v}" ${+o.perPage === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    </div>
+    <div class="panel mb-4 text-sm text-slate-600 space-y-1">
+      <p>👉 L'élève tient la carte face à vous, <strong>la lettre de sa réponse en haut</strong>. La tablette lit le numéro et l'orientation.</p>
+      <p>Imprimez en noir sur papier blanc mat, à 100 % (sans « ajuster »). Plastifier en mat évite les reflets. Gardez la marge blanche autour du carré noir.</p>
+    </div>
+    <p class="text-sm text-slate-500 mb-2">${list.length} carte(s) — aperçu :</p>
+    <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2">${list.slice(0, 40).map(c => `<div class="bg-white rounded-lg p-1 shadow-sm aspect-square">${cardSVG(c.n, c.name)}</div>`).join('')}</div>
+    ${list.length > 40 ? `<p class="text-sm text-slate-400 mt-2">… et ${list.length - 40} autres.</p>` : ''}`;
+}
+
+// ======================================================================
+//  Vue : réglages & sauvegarde
+// ======================================================================
+function viewSettings() {
+  const s = DB.settings;
+  const tog = (k, label, help = '') => `<label class="flex items-start gap-3 py-2"><input type="checkbox" class="w-6 h-6 mt-0.5 accent-indigo-600" data-set="${k}" ${s[k] ? 'checked' : ''}><span><span class="font-semibold">${label}</span>${help ? `<br><span class="text-sm text-slate-500">${help}</span>` : ''}</span></label>`;
+  const nbQ = DB.qcms.length, nbG = DB.groups.length, nbS = DB.sessions.length;
+  return `<h1 class="text-2xl font-black mb-4">Réglages</h1>
+    <div class="grid lg:grid-cols-2 gap-3">
+      <div class="panel">
+        <h2 class="font-black text-lg mb-2">📷 Scan</h2>
+        <div class="grid grid-cols-2 gap-3 mb-2">
+          <div><label class="lbl">Caméra</label><select class="inp" data-set="facing"><option value="environment" ${s.facing === 'environment' ? 'selected' : ''}>Arrière</option><option value="user" ${s.facing === 'user' ? 'selected' : ''}>Avant</option></select></div>
+          <div><label class="lbl">Précision d'analyse</label><select class="inp" data-set="procWidth">${[[640, 'Rapide (640)'], [960, 'Normale (960)'], [1280, 'Fine (1280)']].map(([v, l]) => `<option value="${v}" ${+s.procWidth === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div><label class="lbl">Confirmation</label><select class="inp" data-set="confirmFrames">${[1, 2, 3, 4].map(v => `<option value="${v}" ${+s.confirmFrames === v ? 'selected' : ''}>${v} image${v > 1 ? 's' : ''}</option>`).join('')}</select></div>
+          <div><label class="lbl">Sensibilité au contraste</label><select class="inp" data-set="threshold">${[[4, 'Forte'], [7, 'Normale'], [11, 'Faible']].map(([v, l]) => `<option value="${v}" ${+s.threshold === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        </div>
+        <p class="text-xs text-slate-500 mb-2">« Fine » lit les cartes de plus loin mais plus lentement. « Confirmation » : nombre d'images successives identiques avant d'enregistrer un vote.</p>
+        ${tog('allowChange', 'Un élève peut changer son vote', 'Sinon, le premier vote lu est définitif.')}
+        ${tog('autoStop', 'Arrêter le scan quand tout le monde a voté')}
+        ${tog('sound', 'Petit son à chaque nouveau vote')}
+        ${tog('showLetters', 'Afficher la lettre lue sur l\'image caméra', 'Désactivé : seul le numéro apparaît (utile si l\'écran est projeté).')}
+        ${tog('showLive', 'Afficher la répartition des réponses pendant le vote')}
+      </div>
+      <div class="panel">
+        <h2 class="font-black text-lg mb-2">💾 Sauvegarde</h2>
+        <p class="text-sm text-slate-600 mb-3">Les QCM et les résultats restent <strong>sur cette tablette</strong>, dans l'appli Suivi de classe (${nbQ} QCM, ${nbG} classe(s), ${nbS} séance(s)). Exportez régulièrement : iPadOS peut effacer les données d'un site peu utilisé, surtout s'il n'est pas ajouté à l'écran d'accueil.</p>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button class="btn btn-blue" data-act="backup">⤴︎ Exporter toutes mes données</button>
+          <button class="btn" data-act="import-open">⤓ Restaurer / importer</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4" id="persist-info"></p>
+        <h3 class="font-bold mb-1">Lien avec Suivi de classe</h3>
+        <p class="text-sm text-slate-600 mb-4">Les classes de Suivi de classe et les numéros de carte de Progression sont repris automatiquement (${LINKED.length} classe(s)). Les QCM créés dans Progression ou Trace écrite arrivent ici avec le bouton « ▶ Lancer en direct ». La sauvegarde ci-dessus concerne uniquement les QCM, les classes ajoutées ici et les résultats.</p>
+        <button class="btn text-rose-600" data-act="wipe">Tout effacer…</button>
+      </div>
+    </div>`;
+}
+async function restoreBackup(data) {
+  const n = `${(data.qcms || []).length} QCM, ${(data.groups || []).length} classe(s), ${(data.sessions || []).length} séance(s)`;
+  modal(`<h2 class="text-xl font-black mb-2">Restaurer une sauvegarde QCMScan</h2><p class="mb-5">Le fichier contient ${n}.</p>
+    <div class="flex flex-wrap justify-end gap-2"><button class="btn" id="rb-no">Annuler</button><button class="btn btn-blue" id="rb-merge">Ajouter à mes données</button><button class="btn btn-red" id="rb-rep">Remplacer tout</button></div>`);
+  $('#rb-no').onclick = closeModal;
+  const apply = replace => {
+    closeModal();
+    if (replace) { DB.qcms = []; DB.groups = []; DB.sessions = []; DB.active = null; }
+    const ids = new Set([...DB.qcms, ...DB.groups, ...DB.sessions].map(x => x.id));
+    for (const k of ['qcms', 'groups', 'sessions']) for (const x of (data[k] || [])) if (!ids.has(x.id)) DB[k].push(x);
+    if (replace && data.settings) DB.settings = { ...DEFAULT_SETTINGS, ...data.settings };
+    save(); toast('Sauvegarde restaurée'); render();
+  };
+  $('#rb-merge').onclick = () => apply(false);
+  $('#rb-rep').onclick = () => apply(true);
+}
+
+// ======================================================================
+//  Vue : résultats
+// ======================================================================
+function sessionStats(s) {
+  const scorable = s.questions.map((q, i) => ({ i, good: q.answers.map((a, j) => a.correct ? LETTERS[j] : null).filter(Boolean) })).filter(x => x.good.length);
+  const rows = s.students.map(st => {
+    let pts = 0, answered = 0;
+    for (const { i, good } of scorable) { const v = (s.votes[i] || {})[st.card]; if (v) answered++; if (v && good.includes(v)) pts++; }
+    return { st, pts, answered, note: scorable.length ? Math.round(pts / scorable.length * 40) / 2 : 0 };
+  });
+  const perQ = s.questions.map((q, i) => {
+    const good = q.answers.map((a, j) => a.correct ? LETTERS[j] : null).filter(Boolean);
+    const votes = Object.values(s.votes[i] || {});
+    const ok = votes.filter(v => good.includes(v)).length;
+    return { n: votes.length, ok, pct: votes.length && good.length ? Math.round(ok / votes.length * 100) : null };
+  });
+  return { scorable, rows, perQ };
+}
+function viewResults() {
+  if (UI.resultSel && !DB.sessions.find(s => s.id === UI.resultSel)) UI.resultSel = null;
+  if (!UI.resultSel) {
+    return `<h1 class="text-2xl font-black mb-4">Résultats</h1>
+      ${DB.sessions.length ? `<div class="space-y-2">${DB.sessions.map(s => {
+        const st = sessionStats(s);
+        const part = s.students.filter(x => s.votes.some(v => v && v[x.card])).length;
+        const avg = st.rows.length && st.scorable.length ? (st.rows.reduce((a, r) => a + r.note, 0) / st.rows.length).toFixed(1) : '–';
+        return `<button class="panel w-full text-left flex flex-wrap items-center gap-3 hover:bg-slate-50" data-act="r-open" data-id="${s.id}">
+          <div class="flex-1 min-w-[12rem]"><div class="font-bold">${esc(s.qcmName)}</div><div class="text-sm text-slate-500">${fmtDate(s.date)} · ${esc(s.groupName)}</div></div>
+          <div class="text-sm"><span class="font-bold">${part}</span>/${s.students.length} participants</div>
+          <div class="text-sm">Moyenne <span class="font-bold">${avg}</span>/20</div></button>`;
+      }).join('')}</div>` : `<div class="panel text-center py-12 text-slate-500"><div class="text-5xl mb-3">📊</div>Les séances terminées apparaîtront ici.</div>`}`;
+  }
+  const s = DB.sessions.find(x => x.id === UI.resultSel);
+  const st = sessionStats(s);
+  const cell = (q, i, card) => {
+    const v = (s.votes[i] || {})[card];
+    if (!q.answers.length) return '<td class="p-1 text-center text-slate-300">·</td>';
+    if (!v) return '<td class="p-1 text-center text-slate-300">–</td>';
+    const good = q.answers[LETTERS.indexOf(v)]?.correct;
+    return `<td class="p-1 text-center"><span class="inline-block w-7 rounded font-bold ${good ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${v}</span></td>`;
+  };
+  return `<div class="flex flex-wrap items-center gap-2 mb-4">
+      <button class="btn" data-act="r-back">← Séances</button>
+      <div class="mr-auto"><h1 class="text-xl font-black">${esc(s.qcmName)}</h1><p class="text-sm text-slate-500">${fmtDate(s.date)} · ${esc(s.groupName)}</p></div>
+      <button class="btn" data-act="r-csv">⤴︎ CSV (tableur)</button>
+      <button class="btn text-rose-600" data-act="r-del">🗑</button>
+    </div>
+    <div class="panel overflow-x-auto">
+      <table class="text-sm w-full">
+        <thead><tr class="text-slate-500"><th class="p-1 text-left">Carte</th><th class="p-1 text-left">Élève</th>${s.questions.map((q, i) => `<th class="p-1" title="${esc(q.text)}">Q${i + 1}</th>`).join('')}<th class="p-1">Points</th><th class="p-1">/20</th></tr></thead>
+        <tbody>${st.rows.map(r => `<tr class="border-t"><td class="p-1 font-bold">${r.st.card}</td><td class="p-1 whitespace-nowrap">${esc(r.st.nom)} ${esc(r.st.prenom)}</td>
+          ${s.questions.map((q, i) => cell(q, i, r.st.card)).join('')}
+          <td class="p-1 text-center font-semibold">${r.pts}/${st.scorable.length}</td><td class="p-1 text-center font-black">${r.answered ? r.note : '<span class="text-slate-300">abs.</span>'}</td></tr>`).join('')}</tbody>
+        <tfoot><tr class="border-t-2 text-slate-600"><td class="p-1" colspan="2">Réussite</td>${st.perQ.map(p => `<td class="p-1 text-center text-xs font-semibold">${p.pct === null ? '' : p.pct + '%'}</td>`).join('')}<td></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="panel mt-3"><h2 class="font-bold mb-2">Questions</h2><ol class="list-decimal pl-6 space-y-1 text-sm">${s.questions.map((q, i) => `<li><span class="font-semibold">${esc(q.text.split('\n')[0])}</span>
+      <span class="text-slate-500"> — ${q.answers.map((a, j) => `${LETTERS[j]} ${a.correct ? '✓' : ''} ${esc(a.text)}`).join(' · ')}</span></li>`).join('')}</ol></div>`;
+}
+function exportCSV(s) {
+  const st = sessionStats(s);
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [['Carte', 'Nom', 'Prénom', ...s.questions.map((_, i) => 'Q' + (i + 1)), 'Points', 'Total', 'Note /20'].map(q).join(';')];
+  for (const r of st.rows) lines.push([r.st.card, r.st.nom, r.st.prenom, ...s.questions.map((_, i) => (s.votes[i] || {})[r.st.card] || ''), r.pts, st.scorable.length, r.answered ? String(r.note).replace('.', ',') : 'abs'].map(q).join(';'));
+  lines.push(['', 'Bonne réponse', '', ...s.questions.map(qq => qq.answers.map((a, j) => a.correct ? LETTERS[j] : '').join('')), '', '', ''].map(q).join(';'));
+  lines.push(['', 'Réussite', '', ...st.perQ.map(p => p.pct === null ? '' : p.pct + '%'), '', '', ''].map(q).join(';'));
+  download(`resultats_${slug(s.qcmName)}_${new Date(s.date).toISOString().slice(0, 10)}.csv`, '﻿' + lines.join('\r\n'), 'text/csv');
+}
+
+// ======================================================================
+//  Séance : préparation, déroulé, scan
+// ======================================================================
+function activeQcm() { return DB.active ? DB.active.qcm : null; }
+function activeStudents() { return DB.active ? DB.active.students : []; }
+function viewSession() {
+  if (!DB.active) {
+    const qOpts = DB.qcms.map(q => `<option value="${q.id}" ${q.id === UI.setupQcm ? 'selected' : ''}>${esc(q.name)} (${q.questions.length})</option>`).join('');
+    const gOpts = allGroups().map(g => `<option value="${g.id}" ${g.id === UI.setupGroup ? 'selected' : ''}>${esc(g.name)} (${g.students.length} élèves)</option>`).join('');
+    return `<h1 class="text-2xl font-black mb-4">Nouvelle séance</h1>
+      <div class="panel max-w-xl space-y-4">
+        <div><label class="lbl">QCM</label><select class="inp" id="su-qcm"><option value="">— Choisir —</option>${qOpts}</select></div>
+        <div><label class="lbl">Classe</label><select class="inp" id="su-group"><option value="">Sans classe (cartes numérotées)</option>${gOpts}</select></div>
+        <div id="su-anon" class="${UI.setupGroup ? 'hidden' : ''}"><label class="lbl">Nombre de cartes (1 à …)</label><input type="number" class="inp" id="su-n" min="1" max="${MAX_CARD}" value="${UI.setupAnon}"></div>
+        ${UI.setupQcm && getQcm(UI.setupQcm) ? `<button class="btn w-full" data-act="qcm-edit" data-id="${UI.setupQcm}">✏️ Relire / corriger ce QCM avant de démarrer</button>` : ''}
+        <button class="btn btn-green w-full py-4 text-lg" data-act="session-start">▶ Démarrer</button>
+      </div>
+      <div class="panel max-w-xl mt-3 text-sm text-slate-600 space-y-1">
+        <p><strong>Déroulé :</strong> affichez la question, touchez <em>Scanner</em> et balayez la classe avec la caméra arrière. Les vignettes des élèves passent en bleu quand leur vote est lu.</p>
+        <p>Touchez <em>Corriger</em> pour révéler la bonne réponse et la répartition, puis passez à la question suivante. Les résultats sont enregistrés à la fin.</p>
+        <p>Astuce : touchez la vignette d'un élève pour saisir ou effacer son vote à la main.</p>
+      </div>`;
+  }
+  const A = DB.active, q = A.qcm.questions[A.qIndex], n = A.qcm.questions.length;
+  return `<div class="flex flex-wrap items-center gap-2 mb-3">
+      <div class="mr-auto"><div class="font-black text-lg leading-tight">${esc(A.qcm.name)}</div><div class="text-sm text-slate-500">${esc(A.groupName)} · question <span class="font-bold">${A.qIndex + 1}</span>/${n}</div></div>
+      <button class="btn btn-sm" data-act="session-quit">Abandonner</button>
+      <button class="btn btn-sm btn-blue" data-act="session-end">Terminer et enregistrer</button>
+    </div>
+    <div class="grid lg:grid-cols-[1fr_22rem] gap-3">
+      <section class="panel" id="q-panel">${qPanelHTML()}</section>
+      <aside class="space-y-3">
+        <div class="panel p-2"><div id="cam-slot"></div>
+          <div class="flex items-center gap-2 mt-2">
+            <button class="btn flex-1 ${Cam.running ? 'btn-red' : 'btn-blue'}" data-act="scan" id="scan-btn" ${q.answers.length ? '' : 'disabled'}>${Cam.running ? '■ Arrêter' : '📷 Scanner'}</button>
+            <div id="vote-count" class="text-center px-2 font-black text-xl"></div>
+          </div>
+        </div>
+        <div class="panel p-2"><div id="chips" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 gap-1"></div></div>
+      </aside>
+    </div>
+    <div class="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-slate-200" style="padding-bottom:env(safe-area-inset-bottom)">
+      <div class="max-w-6xl mx-auto px-3 py-2 flex gap-2">
+        <button class="btn flex-1" data-act="q-prev" ${A.qIndex === 0 ? 'disabled' : ''}>◀ Précédente</button>
+        <button class="btn flex-1 ${A.revealed[A.qIndex] ? 'btn-amber' : 'btn-green'}" data-act="reveal" ${q.answers.length ? '' : 'disabled'}>${A.revealed[A.qIndex] ? 'Masquer la correction' : '✓ Corriger'}</button>
+        <button class="btn flex-1" data-act="q-next" ${A.qIndex >= n - 1 ? 'disabled' : ''}>Suivante ▶</button>
+      </div>
+    </div>`;
+}
+function qPanelHTML() {
+  const A = DB.active, q = A.qcm.questions[A.qIndex];
+  const votes = A.votes[A.qIndex] || {};
+  const counts = [0, 0, 0, 0];
+  Object.values(votes).forEach(v => { const k = LETTERS.indexOf(v); if (k >= 0) counts[k]++; });
+  const total = counts.reduce((a, b) => a + b, 0);
+  const rev = A.revealed[A.qIndex], showDist = rev || DB.settings.showLive;
+  const [title, ...rest] = (q.text || '').split('\n');
+  return `<h2 class="text-2xl sm:text-3xl font-black leading-snug qtext mb-2">${rich(title)}</h2>
+    ${rest.length ? `<p class="text-lg text-slate-700 mb-3 qtext">${rich(rest.join('\n'))}</p>` : ''}
+    ${q.image ? `<div class="mb-3 flex justify-center"><img src="${esc(q.image)}" class="max-h-[42vh] rounded-xl" alt=""></div>` : ''}
+    ${q.answers.length ? `<div class="grid ${q.answers.some(a => a.text.length > 40) ? '' : 'sm:grid-cols-2'} gap-2">${q.answers.map((a, j) => {
+      const pct = total ? Math.round(counts[j] / total * 100) : 0;
+      const dim = rev && !a.correct;
+      return `<div class="relative overflow-hidden rounded-xl border-2 ${rev && a.correct ? 'border-emerald-500 ring-4 ring-emerald-200' : 'border-slate-200'} ${dim ? 'opacity-50' : ''}">
+        ${showDist ? `<div class="absolute inset-y-0 left-0" style="width:${pct}%;background:${LCOL[j]}22"></div>` : ''}
+        <div class="relative flex items-center gap-3 p-3">
+          <span class="w-11 h-11 shrink-0 rounded-lg text-white grid place-items-center text-xl font-black" style="background:${LCOL[j]}">${LETTERS[j]}</span>
+          <span class="text-lg font-semibold flex-1">${rich(a.text)}</span>
+          ${rev && a.correct ? '<span class="text-2xl">✅</span>' : ''}
+          ${showDist ? `<span class="text-right font-black text-lg whitespace-nowrap">${counts[j]}<span class="text-sm text-slate-500 font-semibold"> · ${pct}%</span></span>` : ''}
+        </div></div>`;
+    }).join('')}</div>` : `<p class="text-slate-500 italic">Diapositive d'information — pas de vote.</p>`}`;
+}
+// « NOM Prénom » (format Suivi de classe) -> prénom seul sur les vignettes
+function shortName(s) {
+  if (s.prenom) return s.prenom;
+  const w = String(s.nom || '').trim().split(/\s+/).filter(Boolean);
+  const low = w.filter(x => x !== x.toUpperCase() || !/[A-ZÀ-Þ]/.test(x));
+  return (low.length && low.length < w.length ? low.join(' ') : s.nom) || ('n°' + s.card);
+}
+function chipsHTML() {
+  const A = DB.active, q = A.qcm.questions[A.qIndex], votes = A.votes[A.qIndex] || {}, rev = A.revealed[A.qIndex];
+  return activeStudents().map(s => {
+    const v = votes[s.card];
+    let cls = 'bg-slate-50 border-slate-200 text-slate-500';
+    if (v && !rev) cls = 'bg-indigo-600 border-indigo-600 text-white';
+    if (v && rev) cls = q.answers[LETTERS.indexOf(v)]?.correct ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-rose-500 border-rose-500 text-white';
+    const label = shortName(s);
+    return `<button class="chip ${cls}" data-act="chip" data-card="${s.card}"><span class="font-black">${s.card}</span>${rev && v ? ' ' + v : ''}<br><span class="text-[11px]">${esc(label)}</span></button>`;
+  }).join('');
+}
+function updateLive() {
+  if (UI.tab !== 'session' || !DB.active) return;
+  const A = DB.active, votes = A.votes[A.qIndex] || {};
+  const n = Object.keys(votes).length, tot = activeStudents().length;
+  const vc = $('#vote-count'); if (vc) vc.innerHTML = `${n}<span class="text-sm text-slate-500">/${tot}</span>`;
+  const ch = $('#chips'); if (ch) ch.innerHTML = chipsHTML();
+  if (A.revealed[A.qIndex] || DB.settings.showLive) { const qp = $('#q-panel'); if (qp) qp.innerHTML = qPanelHTML(); }
+}
+function startSession() {
+  const qid = $('#su-qcm').value, gid = $('#su-group').value;
+  const qcm = getQcm(qid);
+  if (!qcm) return toast('Choisissez un QCM', 'warn');
+  if (!qcm.questions.length) return toast('Ce QCM est vide', 'warn');
+  let students, groupName;
+  if (gid) {
+    const g = getGroup(gid);
+    if (!g || !g.students.length) return toast('Cette classe n\'a pas d\'élèves', 'warn');
+    fixCards(g);
+    students = g.students.map(s => ({ card: s.card, nom: s.nom, prenom: s.prenom })).sort((a, b) => a.card - b.card);
+    groupName = g.name;
+  } else {
+    const n = Math.max(1, Math.min(MAX_CARD, parseInt($('#su-n').value, 10) || 30));
+    UI.setupAnon = n;
+    students = Array.from({ length: n }, (_, i) => ({ card: i + 1, nom: '', prenom: '' }));
+    groupName = `Cartes 1 à ${n}`;
+  }
+  DB.active = {
+    id: uid(), startedAt: Date.now(), qcmId: qcm.id, groupId: gid || null, groupName,
+    qcm: clone({ name: qcm.name, questions: qcm.questions }), students,
+    qIndex: 0, votes: qcm.questions.map(() => ({})), revealed: qcm.questions.map(() => false)
+  };
+  save(); render();
+}
+async function endSession() {
+  const A = DB.active;
+  if (!A) return;
+  const nv = A.votes.reduce((a, v) => a + Object.keys(v || {}).length, 0);
+  if (!(await confirmBox(`Terminer la séance et enregistrer les résultats ? (${nv} vote(s) au total)`, 'Terminer', false))) return;
+  if (Cam.running) stopScan();
+  const rec = {
+    id: A.id, date: A.startedAt, qcmId: A.qcmId, qcmName: A.qcm.name, groupId: A.groupId, groupName: A.groupName,
+    questions: A.qcm.questions.map(q => ({ text: q.text, answers: q.answers.map(a => ({ text: a.text, correct: !!a.correct })) })),
+    students: A.students, votes: A.votes
+  };
+  DB.sessions.unshift(rec);
+  DB.active = null;
+  await saveNow();
+  releaseWakeLock();
+  UI.resultSel = rec.id; goTab('results');
+  toast('Résultats enregistrés');
+}
+function chipVote(card) {
+  const A = DB.active, q = A.qcm.questions[A.qIndex];
+  if (!q.answers.length) return;
+  const s = A.students.find(x => x.card === card);
+  const cur = (A.votes[A.qIndex] || {})[card];
+  modal(`<h2 class="text-lg font-black mb-1">Carte ${card}${s && (s.prenom || s.nom) ? ' — ' + esc(s.prenom + ' ' + s.nom) : ''}</h2>
+    <p class="text-sm text-slate-500 mb-4">Vote actuel : <strong>${cur || 'aucun'}</strong></p>
+    <div class="grid grid-cols-4 gap-2 mb-4">${q.answers.map((a, j) => `<button class="btn text-2xl font-black py-4 text-white" style="background:${LCOL[j]};border-color:${LCOL[j]}" data-act="chip-set" data-card="${card}" data-v="${LETTERS[j]}">${LETTERS[j]}</button>`).join('')}</div>
+    <div class="flex justify-between"><button class="btn text-rose-600" data-act="chip-set" data-card="${card}" data-v="">Effacer le vote</button><button class="btn" data-act="modal-close">Fermer</button></div>`);
+}
+
+// ---------- Caméra & détection ----------
+const Cam = {
+  stream: null, running: false, raf: 0, frame: 0, hist: new Map(), gray: null, busy: false,
+  box: null, video: null, overlay: null, work: null, wctx: null, fpsT: 0, fps: 0, lastDets: []
+};
+(function buildCamBox() {
+  const box = document.createElement('div');
+  box.id = 'camBox';
+  box.className = 'relative';
+  box.innerHTML = `<video playsinline muted autoplay></video><canvas></canvas>
+    <div id="cam-idle" class="absolute inset-0 grid place-items-center text-slate-300 text-sm text-center p-4 rounded-xl" style="background:#0f172a">Caméra arrêtée<br>Touchez « Scanner »</div>
+    <div id="cam-fps" class="absolute top-1 right-2 text-[10px] text-white/70"></div>`;
+  Cam.box = box;
+  Cam.video = box.querySelector('video');
+  Cam.overlay = box.querySelector('canvas');
+  Cam.work = document.createElement('canvas');
+  Cam.video.style.aspectRatio = '16 / 9';
+})();
+function mountCamera() {
+  const slot = $('#cam-slot');
+  if (!slot) return;
+  slot.appendChild(Cam.box);
+  $('#cam-idle', Cam.box).style.display = Cam.running ? 'none' : 'grid';
+  if (Cam.running && Cam.video.paused) Cam.video.play().catch(() => {});
+  updateLive();
+}
+let wakeLock = null;
+async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function releaseWakeLock() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+let audioCtx = null;
+function beep() {
+  if (!DB.settings.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = 880; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+    o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.13);
+  } catch (e) {}
+}
+async function startScan() {
+  if (Cam.running) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return toast('Caméra indisponible : ouvrez la page en https (GitHub Pages) dans Safari.', 'err', 5000);
+  }
+  try {
+    if (DB.settings.sound) { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume && audioCtx.resume(); }
+  } catch (e) {}
+  try {
+    Cam.stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: DB.settings.facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+  } catch (e) {
+    return toast(e && e.name === 'NotAllowedError' ? "Accès à la caméra refusé (Réglages > Safari > Caméra)." : "Impossible d'ouvrir la caméra.", 'err', 5000);
+  }
+  Cam.video.srcObject = Cam.stream;
+  try { await Cam.video.play(); } catch (e) {}
+  Cam.running = true; Cam.hist.clear(); Cam.frame = 0;
+  requestWakeLock();
+  const idle = $('#cam-idle', Cam.box); if (idle) idle.style.display = 'none';
+  const b = $('#scan-btn'); if (b) { b.textContent = '■ Arrêter'; b.classList.remove('btn-blue'); b.classList.add('btn-red'); }
+  Cam.raf = requestAnimationFrame(camLoop);
+}
+function stopScan() {
+  Cam.running = false;
+  cancelAnimationFrame(Cam.raf);
+  if (Cam.stream) Cam.stream.getTracks().forEach(t => t.stop());
+  Cam.stream = null;
+  Cam.video.srcObject = null;
+  const ctx = Cam.overlay.getContext('2d'); ctx.clearRect(0, 0, Cam.overlay.width, Cam.overlay.height);
+  const idle = $('#cam-idle', Cam.box); if (idle) idle.style.display = 'grid';
+  const b = $('#scan-btn'); if (b) { b.textContent = '📷 Scanner'; b.classList.remove('btn-red'); b.classList.add('btn-blue'); }
+  $('#cam-fps', Cam.box).textContent = '';
+}
+function camLoop(t) {
+  if (!Cam.running) return;
+  const v = Cam.video;
+  if (v.readyState >= 2 && v.videoWidth) {
+    if (v.style.aspectRatio !== `${v.videoWidth} / ${v.videoHeight}`) v.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+    const W = Math.min(+DB.settings.procWidth || 960, v.videoWidth);
+    const H = Math.round(W * v.videoHeight / v.videoWidth);
+    if (Cam.work.width !== W || Cam.work.height !== H) {
+      Cam.work.width = W; Cam.work.height = H;
+      Cam.wctx = Cam.work.getContext('2d', { willReadFrequently: true });
+      Cam.gray = new Uint8Array(W * H);
+    }
+    Cam.wctx.drawImage(v, 0, 0, W, H);
+    const d = Cam.wctx.getImageData(0, 0, W, H).data, g = Cam.gray;
+    for (let i = 0, j = 0; j < g.length; i += 4, j++) g[j] = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+    let dets = [];
+    try { dets = detectMarkers(g, W, H, { C: +DB.settings.threshold || 7, minSide: 8 }); } catch (e) { console.error(e); }
+    handleDetections(dets, W, H);
+    // fréquence d'analyse
+    Cam.frame++;
+    if (t - Cam.fpsT > 1000) { $('#cam-fps', Cam.box).textContent = `${Cam.fps} img/s`; Cam.fps = 0; Cam.fpsT = t; }
+    Cam.fps++;
+  }
+  Cam.raf = requestAnimationFrame(camLoop);
+}
+function handleDetections(dets, W, H) {
+  const A = DB.active;
+  if (!A) return;
+  const qi = A.qIndex, q = A.qcm.questions[qi];
+  const valid = new Set(A.students.map(s => s.card));
+  const need = +DB.settings.confirmFrames || 2;
+  const ov = Cam.overlay, rect = ov.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  if (ov.width !== Math.round(rect.width * dpr)) { ov.width = Math.round(rect.width * dpr); ov.height = Math.round(rect.height * dpr); }
+  const ctx = ov.getContext('2d');
+  ctx.clearRect(0, 0, ov.width, ov.height);
+  const sx = ov.width / W, sy = ov.height / H;
+  let changed = false;
+  for (const m of dets) {
+    const ok = valid.has(m.id) && LETTERS.indexOf(m.answer) < q.answers.length;
+    if (ok) {
+      const h = Cam.hist.get(m.id);
+      if (h && h.ans === m.answer && Cam.frame - h.last <= 2) { h.count++; h.last = Cam.frame; }
+      else Cam.hist.set(m.id, { ans: m.answer, count: 1, last: Cam.frame });
+      const hh = Cam.hist.get(m.id);
+      if (hh.count >= need) {
+        const votes = A.votes[qi] || (A.votes[qi] = {});
+        const cur = votes[m.id];
+        if (cur !== m.answer && (!cur || DB.settings.allowChange)) { votes[m.id] = m.answer; changed = true; }
+      }
+    }
+    // dessin
+    const c = m.corners;
+    const registered = (A.votes[qi] || {})[m.id] === m.answer;
+    ctx.lineWidth = 3 * dpr;
+    ctx.strokeStyle = !ok ? '#94a3b8' : registered ? '#22c55e' : '#facc15';
+    ctx.beginPath();
+    c.forEach((p, i) => i ? ctx.lineTo(p[0] * sx, p[1] * sy) : ctx.moveTo(p[0] * sx, p[1] * sy));
+    ctx.closePath(); ctx.stroke();
+    const cx = (c[0][0] + c[1][0] + c[2][0] + c[3][0]) / 4 * sx, cy = (c[0][1] + c[1][1] + c[2][1] + c[3][1]) / 4 * sy;
+    const label = DB.settings.showLetters ? `${m.id} ${m.answer}` : `${m.id}`;
+    ctx.font = `bold ${14 * dpr}px -apple-system, sans-serif`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15,23,42,.8)';
+    ctx.fillRect(cx - tw / 2 - 4 * dpr, cy - 10 * dpr, tw + 8 * dpr, 20 * dpr);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, cy);
+  }
+  if (changed) {
+    beep(); save(); updateLive();
+    if (DB.settings.autoStop && Object.keys(A.votes[qi]).length >= A.students.length) { stopScan(); toast('Tout le monde a voté ✔'); }
+  }
+}
+function changeQuestion(delta) {
+  const A = DB.active;
+  const ni = A.qIndex + delta;
+  if (ni < 0 || ni >= A.qcm.questions.length) return;
+  if (Cam.running) stopScan();
+  A.qIndex = ni; save(); render();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && Cam.running) stopScan(); });
+
+// ======================================================================
+//  Actions (délégation d'événements)
+// ======================================================================
+const ACT = {
+  'tab': el => { if (el.dataset.tab === 'qcm') UI.editQcm = null; goTab(el.dataset.tab); },
+  'modal-close': () => closeModal(),
+  'home': async () => { if (Cam.running) stopScan(); await saveNow(); location.href = 'index.html'; },
+  // QCM
+  'qcm-new': () => { const q = { id: uid(), name: 'Nouveau QCM', updatedAt: Date.now(), questions: [newQuestion()] }; DB.qcms.push(q); save(); UI.editQcm = q.id; goTab('edit'); },
+  'qcm-edit': el => { UI.editQcm = el.dataset.id; goTab('edit'); },
+  'qcm-run': el => {
+    if (DB.active) { toast('Une séance est déjà en cours : terminez-la d\'abord.', 'warn', 3500); return goTab('session'); }
+    UI.setupQcm = el.dataset.id; goTab('session');
+  },
+  'qcm-dup': el => { const q = clone(getQcm(el.dataset.id)); q.id = uid(); q.name += ' (copie)'; q.updatedAt = Date.now(); q.questions.forEach(x => x.id = uid()); DB.qcms.push(q); save(); render(); },
+  'qcm-export': el => { const q = getQcm(el.dataset.id); download(slug(q.name) + '.md', qcmToMarkdown(q), 'text/markdown'); },
+  'qcm-del': async el => { const q = getQcm(el.dataset.id); if (await confirmBox(`Supprimer le QCM « ${esc(q.name)} » ?`, 'Supprimer')) { DB.qcms = DB.qcms.filter(x => x.id !== q.id); save(); render(); } },
+  'import-open': () => openImport(),
+  'import-do': () => doImport(),
+  // éditeur
+  'q-add': () => { const q = getQcm(UI.editQcm); q.questions.push(newQuestion()); touchQcm(q); render(); setTimeout(() => { const el = $(`#qb-${q.questions.length - 1}`); el && el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el && el.querySelector('textarea').focus(); }, 50); },
+  'q-del': async el => { const q = getQcm(UI.editQcm); if (await confirmBox('Supprimer cette question ?', 'Supprimer')) { q.questions.splice(+el.dataset.qi, 1); touchQcm(q); render(); } },
+  'q-dup': el => { const q = getQcm(UI.editQcm); const i = +el.dataset.qi; const c = clone(q.questions[i]); c.id = uid(); q.questions.splice(i + 1, 0, c); touchQcm(q); render(); },
+  'q-up': el => { const q = getQcm(UI.editQcm); const i = +el.dataset.qi; if (i > 0) { [q.questions[i - 1], q.questions[i]] = [q.questions[i], q.questions[i - 1]]; touchQcm(q); render(); } },
+  'q-down': el => { const q = getQcm(UI.editQcm); const i = +el.dataset.qi; if (i < q.questions.length - 1) { [q.questions[i + 1], q.questions[i]] = [q.questions[i], q.questions[i + 1]]; touchQcm(q); render(); } },
+  'q-imgurl': async el => { const q = getQcm(UI.editQcm); const qu = q.questions[+el.dataset.qi]; const u = await promptBox("Adresse (URL) de l'image :", qu.image && !qu.image.startsWith('data:') ? qu.image : 'https://'); if (u !== null) { qu.image = u.trim() === 'https://' ? '' : u.trim(); touchQcm(q); render(); } },
+  'q-imgdel': el => { const q = getQcm(UI.editQcm); q.questions[+el.dataset.qi].image = ''; touchQcm(q); render(); },
+  'a-add': el => { const q = getQcm(UI.editQcm); const qu = q.questions[+el.dataset.qi]; if (qu.answers.length < 4) { qu.answers.push({ text: '', correct: false }); touchQcm(q); render(); } },
+  'a-del': el => { const q = getQcm(UI.editQcm); q.questions[+el.dataset.qi].answers.splice(+el.dataset.ai, 1); touchQcm(q); render(); },
+  // classes
+  'g-new': async () => { const name = await promptBox('Nom de la classe :', ''); if (name && name.trim()) { const g = { id: uid(), name: name.trim(), students: [] }; DB.groups.push(g); UI.groupSel = g.id; save(); render(); } },
+  'g-sel': el => { UI.groupSel = el.dataset.id; render(); },
+  'g-del': async () => { const g = getGroup(UI.groupSel); if (await confirmBox(`Supprimer la classe « ${esc(g.name)} » et ses ${g.students.length} élèves ?`, 'Supprimer')) { DB.groups = DB.groups.filter(x => x.id !== g.id); UI.groupSel = null; save(); render(); } },
+  'g-renum': async () => { const g = getGroup(UI.groupSel); if (await confirmBox('Renuméroter les cartes de 1 à n dans l\'ordre alphabétique ? Les élèves devront prendre leur nouvelle carte.', 'Renuméroter', false)) { g.students.sort((a, b) => (a.nom + a.prenom).localeCompare(b.nom + b.prenom, 'fr')).forEach((s, i) => s.card = i + 1); save(); render(); } },
+  'g-cards': () => { UI.cards.source = 'group'; UI.cards.groupId = UI.groupSel; goTab('cards'); },
+  's-add': () => { const g = getGroup(UI.groupSel); g.students.push({ id: uid(), nom: '', prenom: '', card: null }); fixCards(g); save(); render(); const ins = $$('[data-f="snom"]'); const last = g.students.length - 1; const el = ins.find(i => +i.dataset.si === last); el && el.focus(); },
+  's-del': el => { const g = getGroup(UI.groupSel); g.students.splice(+el.dataset.si, 1); save(); render(); },
+  's-paste': () => openPaste(),
+  'paste-do': () => {
+    const g = getGroup(UI.groupSel);
+    const list = parseStudents($('#paste-text').value);
+    if (!list.length) return toast('Aucun élève reconnu', 'warn');
+    if ($('#paste-replace').checked) g.students = [];
+    g.students.push(...list.map(s => ({ id: uid(), nom: s.nom, prenom: s.prenom, card: s.card })));
+    fixCards(g); save(); closeModal(); render(); toast(`${list.length} élève(s) ajouté(s)`);
+  },
+  // cartes
+  'print': () => printCards(),
+  // réglages
+  'backup': () => { const d = clone(DB); d.active = null; d.exportedAt = new Date().toISOString(); download(`qcmscan_sauvegarde_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(d, null, 1), 'application/json'); },
+  'wipe': async () => {
+    if (!(await confirmBox('Effacer <strong>toutes</strong> les données (QCM, classes, résultats) de cette tablette ?', 'Continuer'))) return;
+    if (!(await confirmBox('Vraiment ? Cette action est définitive. Avez-vous exporté une sauvegarde ?', 'Tout effacer'))) return;
+    if (Cam.running) stopScan();
+    DB = { app: 'QCMScan', version: 1, qcms: [], groups: [], sessions: [], active: null, settings: { ...DEFAULT_SETTINGS } };
+    await saveNow(); render(); toast('Données effacées');
+  },
+  // résultats
+  'r-open': el => { UI.resultSel = el.dataset.id; render(); window.scrollTo(0, 0); },
+  'r-back': () => { UI.resultSel = null; render(); },
+  'r-csv': () => exportCSV(DB.sessions.find(s => s.id === UI.resultSel)),
+  'r-del': async () => { if (await confirmBox('Supprimer cette séance et ses résultats ?', 'Supprimer')) { DB.sessions = DB.sessions.filter(s => s.id !== UI.resultSel); UI.resultSel = null; save(); render(); } },
+  // séance
+  'session-start': () => startSession(),
+  'session-end': () => endSession(),
+  'session-quit': async () => { if (await confirmBox('Abandonner la séance sans enregistrer les résultats ?', 'Abandonner')) { if (Cam.running) stopScan(); DB.active = null; releaseWakeLock(); save(); render(); } },
+  'scan': () => Cam.running ? stopScan() : startScan(),
+  'reveal': () => { const A = DB.active; A.revealed[A.qIndex] = !A.revealed[A.qIndex]; if (A.revealed[A.qIndex] && Cam.running) stopScan(); save(); render(); },
+  'q-prev': () => changeQuestion(-1),
+  'q-next': () => changeQuestion(1),
+  'chip': el => chipVote(+el.dataset.card),
+  'chip-set': el => { const A = DB.active; const votes = A.votes[A.qIndex] || (A.votes[A.qIndex] = {}); const c = +el.dataset.card; if (el.dataset.v) votes[c] = el.dataset.v; else delete votes[c]; save(); closeModal(); updateLive(); }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const f = ACT[el.dataset.act];
+  if (f) { e.preventDefault(); f(el, e); }
+});
+
+// Saisie au clavier (sans re-rendu pour garder le focus)
+document.addEventListener('input', e => {
+  const el = e.target, f = el.dataset.f;
+  if (f) {
+    if (['qname', 'qtext', 'atext'].includes(f)) {
+      const q = getQcm(UI.editQcm); if (!q) return;
+      if (f === 'qname') q.name = el.value;
+      if (f === 'qtext') q.questions[+el.dataset.qi].text = el.value;
+      if (f === 'atext') q.questions[+el.dataset.qi].answers[+el.dataset.ai].text = el.value;
+      touchQcm(q);
+    } else if (['gname', 'snom', 'sprenom'].includes(f)) {
+      const g = getGroup(UI.groupSel); if (!g) return;
+      if (f === 'gname') g.name = el.value;
+      if (f === 'snom') g.students[+el.dataset.si].nom = el.value;
+      if (f === 'sprenom') g.students[+el.dataset.si].prenom = el.value;
+      save();
+    }
+  }
+});
+document.addEventListener('change', async e => {
+  const el = e.target;
+  const f = el.dataset.f;
+  if (f === 'acorrect') { const q = getQcm(UI.editQcm); q.questions[+el.dataset.qi].answers[+el.dataset.ai].correct = el.checked; touchQcm(q); render(); return; }
+  if (f === 'qname' || f === 'gname') { renderNav(); if (f === 'gname') render(); return; }
+  if (f === 'qimg') {
+    const file = el.files[0]; if (!file) return;
+    try { const q = getQcm(UI.editQcm); q.questions[+el.dataset.qi].image = await resizeImage(file); touchQcm(q); render(); }
+    catch (err) { toast("Image illisible", 'err'); }
+    return;
+  }
+  if (f === 'scard') {
+    const g = getGroup(UI.groupSel); const s = g.students[+el.dataset.si];
+    const v = parseInt(el.value, 10);
+    if (!(v >= 1 && v <= MAX_CARD)) { toast(`Numéro entre 1 et ${MAX_CARD}`, 'warn'); render(); return; }
+    const other = g.students.find(x => x !== s && x.card === v);
+    if (other) { other.card = s.card; toast(`Échange avec ${other.prenom || other.nom} (n°${s.card})`, 'warn'); }
+    s.card = v; save(); render(); return;
+  }
+  if (el.dataset.set) {
+    const k = el.dataset.set;
+    DB.settings[k] = el.type === 'checkbox' ? el.checked : (isNaN(+el.value) ? el.value : +el.value);
+    save(); return;
+  }
+  if (el.dataset.c) {
+    const k = el.dataset.c;
+    UI.cards[k] = el.type === 'checkbox' ? el.checked : el.value;
+    render(); return;
+  }
+  if (el.id === 'su-group') { UI.setupGroup = el.value; $('#su-anon').classList.toggle('hidden', !!el.value); }
+  if (el.id === 'su-n') UI.setupAnon = +el.value || 30;
+  if (el.id === 'su-qcm') { UI.setupQcm = el.value; render(); }
+});
+
+// ======================================================================
+//  Démarrage
+// ======================================================================
+function consumeInbox() {
+  let box = [];
+  try { box = JSON.parse(localStorage.getItem('qcm_inbox') || '[]'); } catch (e) {}
+  if (!Array.isArray(box) || !box.length) return null;
+  try { localStorage.removeItem('qcm_inbox'); } catch (e) {}
+  let last = null;
+  for (const it of box) {
+    const r = importAny(it && it.text || '');
+    if (r.error || !r.qcms || !r.qcms.length) continue;
+    const q = r.qcms[0];
+    if (it.title) q.name = it.title;
+    q.source = it.source || '';
+    DB.qcms.push(q);
+    last = { q, it };
+  }
+  if (last) save();
+  return last;
+}
+(async function init() {
+  await Store.open();
+  const saved = await Store.get();
+  if (saved && saved.app === 'QCMScan') {
+    DB = { ...DB, ...saved, settings: { ...DEFAULT_SETTINGS, ...(saved.settings || {}) } };
+  }
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const p = await navigator.storage.persist();
+      UI.persisted = p;
+    }
+  } catch (e) {}
+  await loadLinked();
+  if (typeof Verrou !== 'undefined') {
+    const needAdmin = () => { if (Verrou.protectOn() && !Verrou.isAdmin()) Verrou.requireAdmin(() => {}, 'QCM en direct', () => { location.href = 'index.html'; }); };
+    try { Verrou.boot(SUIVI_LOCK, { afterUnlock: needAdmin }); } catch (e) { console.error(e); }
+  }
+  const P = new URLSearchParams(location.search);
+  const findGroup = (id, name) => (id && LINKED.find(g => g.suiviId === id)) || (name && allGroups().find(g => norm(g.name) === norm(name))) || null;
+  const got = consumeInbox();
+  if (got) {
+    UI.setupQcm = got.q.id;
+    const g = findGroup(got.it.suiviId, got.it.className);
+    if (g) UI.setupGroup = g.id;
+  }
+  const pc = P.get('classe'), pt = P.get('tab');
+  if (pc) { const g = findGroup(pc, pc); if (g) { UI.setupGroup = UI.groupSel = UI.cards.groupId = g.id; UI.cards.source = 'group'; } }
+  if (pt && TABS.some(x => x[0] === pt)) UI.tab = pt;
+  else if (DB.active || got) UI.tab = 'session';
+  if (location.search) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+  render();
+  if (got) {
+    if (DB.active) toast(`QCM « ${got.q.name} » reçu. Terminez d'abord la séance en cours.`, 'warn', 5000);
+    else toast(`QCM reçu de ${got.it.source || 'Suivi de classe'} : vérifiez la classe puis « Démarrer »`, 'ok', 4500);
+  }
+  const pi = () => { const el = $('#persist-info'); if (el) el.textContent = UI.persisted ? 'Stockage persistant accordé par le navigateur.' : 'Stockage non garanti par le navigateur : pensez à exporter.'; };
+  new MutationObserver(pi).observe($('#app'), { childList: true });
+  pi();
+})();
+</script>
+</body>
+</html>

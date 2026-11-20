@@ -560,6 +560,7 @@ classView=function(){
  </div>${alertBanner()}<div id="studentGrid" class="grid students sz-${sizeKey()}">${studentsGrid(c)}</div>`;
 };
 function goEndOfLesson(){if(edt&&edtFocus){const pc=edtClass(edtFocus.slot.classId);if(pc)return goProgression('progression.html?classe='+encodeURIComponent(pc.id)+'&date='+edtFocus.date+'&saisir=1')}goProgression('progression.html')}
+function goQcmLive(){const c=currentClass();Verrou.requireAdmin(()=>{flushSave();location.href='qcm.html'+(c?'?tab=session&classe='+encodeURIComponent(c.id):'')},'QCM en direct')}
 function goTrace(){const c=currentClass();Verrou.requireAdmin(()=>{flushSave();location.href='trace.html'+(c?'?classe='+encodeURIComponent(c.name):'')},'Trace écrite')}
 function openLockSettings(){Verrou.requireAdmin(()=>lockSettings(),'Mot de passe')}
 function locked(){return Verrou.protectOn()&&!Verrou.isAdmin()}
@@ -575,7 +576,8 @@ function menuHTML(){
  ${mi('🎤','Fin de cours : dicter la séance','goEndOfLesson()',L)}
  ${mi('📅','Progression & cahier de textes',"goProgression('progression.html')",L)}
  ${mi('✍️','Trace écrite (fiches, synthèses, QCM)','goTrace()',L)}
- ${mi('🎯','QCM pour QCMCam (express, évaluation, classes)',"goProgression('progression.html?tab=qcm')",L)}
+ ${mi('📷','QCM en direct (scan des cartes avec l’iPad)','goQcmLive()',L)}
+ ${mi('🎯','Créer un QCM (express, évaluation, cartes)',"goProgression('progression.html?tab=qcm')",L)}
  ${mi('📤','Reporter les séances (Pronote / ENT)',"goProgression('progression.html#reportPanel')",L)}
  <div class="msec">Suivi des élèves</div>
  ${mi('📊','Tableau récapitulatif',"setTab('recap')",L)}
@@ -663,7 +665,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V30';
+const APP_VERSION='V31';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
