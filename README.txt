@@ -1,3 +1,12 @@
+Suivi de classe — PWA iPad V34
+
+V34 : « Uta Quest » (uta-quest.html) — mini-jeux pour apprendre à chanter juste, pilotés par la justesse de la voix (micro de l'iPad).
+- Menu ☰ › « Uta Quest » (sans mot de passe : c'est pour les élèves), ou adresse directe …/uta-quest.html.
+- 4 jeux (L'Envol de Sora, La Plongée de Kai, Le Sceau de Kitsune, L'Écho des Étoiles) + le Dojo de la Voix (entraînement libre).
+- Réglages : tessiture (préréglages ou mesure au micro), difficulté, octave libre, note guide, notation Do Ré Mi / C D E, sensibilité du micro.
+- Bouton « ← Suivi de classe » sur l'accueil d'Uta Quest quand il est ouvert depuis l'appli.
+- Nouveau fichier à déposer : uta-quest.html.
+
 Suivi de classe — PWA iPad V33
 
 V33 : Progression › QCM › onglet « 📄 Fiche (PDF / Word) » — créer un QCM à partir d'une fiche de cours.
