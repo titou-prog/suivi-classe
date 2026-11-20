@@ -360,7 +360,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v43</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v44</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
@@ -378,8 +378,9 @@ function cdtFill(){
     c.innerHTML='<div><b>'+esc(it.label)+'</b> · '+d[2]+'/'+d[1]+(it.start?' · '+esc(it.start.replace(':','h')):'')+(dn?' <span style="color:#15803d;font-size:13px">✓ déjà reportée</span>':'')+'</div>'
      +'<div style="font-weight:700;font-size:15px;margin-top:3px">'+esc(it.titre||'(sans titre)')+'</div>'
      +'<div style="font-size:14px;white-space:pre-wrap;margin-top:2px">'+esc(it.contenu||'')+'</div>'
-     +(it.devoirs?'<div style="font-size:14px;margin-top:5px;padding:5px 7px;background:#fff7ed;border-radius:8px">📒 <b>Travail à faire'+(it.pour?' pour le '+frDate(it.pour).slice(0,5):'')+'</b> : '+esc(it.devoirs)+'</div>':'<div style="font-size:13px;color:#777;margin-top:4px">Pas de travail à faire.</div>')
+     +(it.devoirs?'<div style="font-size:14px;margin-top:5px;padding:5px 7px;background:#fff7ed;border-radius:8px">📒 <b>Travail à faire'+(it.pour?' pour le '+frDate(it.pour).slice(0,5):'')+'</b>'+(PRONOTE&&!window.__scTafAuto?' <span style="color:#b45309">(à ajouter toi-même dans Pronote)</span>':'')+' : '+esc(it.devoirs)+'</div>':'<div style="font-size:13px;color:#777;margin-top:4px">Pas de travail à faire.</div>')
      +(it.files&&it.files.length?'<div style="font-size:13px;color:#b45309;margin-top:3px">📎 à joindre toi-même : '+esc(it.files.join(', '))+'</div>':'');
+    if(PRONOTE&&!window.__scTafAuto&&it.devoirs&&!dn){(function(txt){var cb=btn('📋 Copier le travail','',function(){try{navigator.clipboard.writeText(txt);cb.textContent='✅ Copié';}catch(e){}});c.appendChild(cb);})(it.devoirs);}
     pv.appendChild(c);});
    box.appendChild(pv);
    if(bad){var e=document.createElement('div');e.style.cssText='color:#dc2626;font-weight:700;margin:6px 0';e.textContent='⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli.';box.appendChild(e);}
