@@ -1,3 +1,11 @@
+Suivi de classe — PWA iPad V32
+
+V32 : QCM en direct — les cartes QCMCam déjà imprimées (n° 1 à 30) sont reconnues.
+- Réglages › Jeu de cartes : « Cartes QCMCam » (par défaut) ou « Cartes QCMScan » (1 à 100).
+- Les mêmes cartes servent pour toutes les classes (l'élève n° 5 de chaque classe prend la carte 5, numéros de Progression).
+- Onglet Cartes : réimpression à l'identique d'une carte QCMCam perdue.
+- Avertissement si un élève a un numéro de carte supérieur à 30.
+
 Suivi de classe — PWA iPad V31
 
 V31 : « QCM en direct » (qcm.html) — les QCM se font maintenant directement sur l’iPad, sans QCMCam.
