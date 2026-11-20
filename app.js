@@ -665,7 +665,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V32';
+const APP_VERSION='V33';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;

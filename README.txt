@@ -1,3 +1,12 @@
+Suivi de classe — PWA iPad V33
+
+V33 : Progression › QCM › onglet « 📄 Fiche (PDF / Word) » — créer un QCM à partir d'une fiche de cours.
+- Choisir une fiche PDF ou Word (.docx) enregistrée dans Fichiers (par ex. téléchargée depuis une capsule Digipad).
+- Ou l'export complet d'un pad Digipad (.zip) : l'appli liste toutes les fiches PDF/Word du pad (avec le titre de la capsule).
+- Le PDF est envoyé tel quel à l'IA (Gemini ou Claude) qui le lit entièrement ; le texte des fiches Word est extrait sur l'iPad.
+- Type (vérification rapide / évaluation), nombre de questions, consigne facultative, puis « ▶ Lancer en direct (scan) ».
+- Digipad n'autorise pas la lecture directe des pads par une autre appli : on passe par le fichier téléchargé ou l'export du pad.
+
 Suivi de classe — PWA iPad V32
 
 V32 : QCM en direct — les cartes QCMCam déjà imprimées (n° 1 à 30) sont reconnues.
