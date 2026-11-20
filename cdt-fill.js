@@ -294,8 +294,9 @@ function cdtFill(){
  }
  var MOIS=['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
  function deacc(t){return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ');}
- var DRX=/\b(lun|mar|mer|jeu|ven|sam|dim)[a-z]*\.?\s+\d{1,2}(er)?\s+(janv|fevr|mars|avr|mai|juin|juil|aout|sept|oct|nov|dec)/;
- function pnTafRow(txt){var probe=norm(txt).slice(0,25);var cands=[].slice.call(document.querySelectorAll('tr,[role=row]')).filter(function(r){return !r.closest('#scfill')&&r.getClientRects().length&&norm(r.textContent).indexOf(probe)>=0;});cands.sort(function(a,b){return a.textContent.length-b.textContent.length;});return cands[0]||null;}
+ var DRX=/(lun|mar|mer|jeu|ven|sam|dim)[a-z]*\.?\s*\d{1,2}(er)?\s*(janv|fevr|mars|avr|mai|juin|juil|aout|sept|oct|nov|dec)/;
+ function pnTafRow(txt){var probe=norm(txt).slice(0,25);if(!probe)return null;var leaves=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&!e.closest('[role=dialog]')&&e.getClientRects().length&&norm(e.textContent).indexOf(probe)>=0;});leaves=leaves.filter(function(e){return !leaves.some(function(o){return o!==e&&e.contains(o);});});
+  for(var k=0;k<leaves.length;k++){var el=leaves[k];for(var n=0;n<10&&el&&el!==document.body;n++){if(DRX.test(deacc(el.textContent))&&deacc(el.textContent).length<2000)return el;el=el.parentElement;}}return null;}
  function pnDateCell(row){if(!row)return null;var cs=[].slice.call(row.querySelectorAll('td,[role=gridcell],[role=cell],div,span')).filter(function(c){return c.getClientRects().length&&DRX.test(deacc(c.textContent))&&deacc(c.textContent).length<40;});cs.sort(function(a,b){return a.textContent.length-b.textContent.length;});var c=cs[0]||null;if(c){var td=c.closest('td,[role=gridcell],[role=cell]');if(td&&td.textContent.length<40)c=td;}return c;}
  function dateMatch(el,iso){var d=iso.split('-');var t=deacc((el.getAttribute&&((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('title')||'')))+' '+(el.textContent||''));var m=MOIS[+d[1]-1];return t.indexOf(d[2]+'/'+d[1]+'/'+d[0])>=0||new RegExp('\\b0?'+(+d[2])+'(er)? '+m.slice(0,3)).test(t);}
  function pnSaisirItem(){var c=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.getClientRects().length&&/^\s*saisir un travail\s*$/i.test(e.textContent||'')&&!e.closest('[role=dialog] h1,.Fenetre_Titre');});c.sort(function(a,b){return a.textContent.length-b.textContent.length||(b.contains(a)?-1:1);});var e=c[0];if(!e)return null;return e.closest('[role=menuitem],[role=option],li,[role=button],button,a')||e;}
@@ -311,7 +312,7 @@ function cdtFill(){
   var p=load();var it=(p&&p.items.filter(function(x){return x.devoirs&&x.pour;})[0])||{devoirs:'TEST enquete',pour:''};
   var log=document.getElementById('scfilllog');boxAside(true);try{await pnTafEnqCore(it);}finally{boxAside(false);}
  }
- async function pnTafEnqCore(it){var log=document.getElementById('scfilllog');var out=['PN-TAF v45 '+new Date().toISOString()+' pour='+(it.pour||'?')];
+ async function pnTafEnqCore(it){var log=document.getElementById('scfilllog');var out=['PN-TAF v46 '+new Date().toISOString()+' pour='+(it.pour||'?')];
   function dlgs(){return [].slice.call(document.querySelectorAll('[role=dialog],.ObjetFenetre_Espace,[id$="_Fenetre"]')).filter(function(x){return x.getClientRects().length&&!x.closest('#scfill');});}
   function snap(){return new Set([document.body].concat([].slice.call(document.querySelectorAll('body *'))));}
   function added(bef){return [].slice.call(document.querySelectorAll('body *')).filter(function(e){return !bef.has(e)&&e.getClientRects().length&&!e.closest('#scfill')&&(!e.parentElement||bef.has(e.parentElement));});}
@@ -332,7 +333,8 @@ function cdtFill(){
    out.push('FENETRE: '+(d?'ok':'aucune ('+dlgs().length+' dialogues visibles)'));
    var ta=d&&[].slice.call(d.querySelectorAll('textarea')).filter(function(x){return x.getClientRects().length;})[0];
    if(!ta){out.push('fenetre/textarea introuvable');}
-   else{setVal(ta,it.devoirs);await sleep(300);var v=[].slice.call(d.querySelectorAll('button')).filter(function(x){return /valider/i.test(x.textContent||'');})[0];press(v);await sleep(1500);
+   else{setVal(ta,it.devoirs);await sleep(300);out.push('TEXTE SAISI: '+ta.value.length+' car. ; compteur '+String((d.innerText.match(/\d+\/10000/)||[''])[0]));var v=[].slice.call(d.querySelectorAll('button')).filter(function(x){return /valider/i.test(x.textContent||'');})[0];press(v);await sleep(1500);
+    out.push('FENETRE FERMEE APRES VALIDER: '+(!d.isConnected||!d.getClientRects().length));var lf=[].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.children.length===0&&norm(e.textContent).indexOf(norm(it.devoirs).slice(0,20))>=0;});out.push('TEXTE TROUVE DANS '+lf.length+' element(s): '+lf.slice(0,3).map(function(e){var p=e;for(var q=0;q<5&&p.parentElement;q++)p=p.parentElement;return clean(p.outerHTML).slice(0,2500);}).join(' || '));
     var row=pnTafRow(it.devoirs);out.push('LIGNE: '+(row?clean(row.outerHTML).slice(0,2500):'introuvable'));
     var cell=pnDateCell(row);out.push('CELLULE DATE: '+(cell?clean(cell.outerHTML).slice(0,800):'introuvable'));
     if(cell){var bef=snap();press(cell);await sleep(1500);var nw=added(bef);
@@ -363,7 +365,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v45</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v46</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac')||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
