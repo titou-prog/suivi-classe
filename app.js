@@ -216,7 +216,7 @@ function studentCard(s){
  return `<article class="student compact"><div class="top" title="Appui long pour gérer l’élève" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false"><div class="avatar" style="background:${avatarColor(s.name)}">${s.photo?`<img src="${s.photo}" alt="" loading="lazy" decoding="async">`:initials(s.name)}</div><div class="info"><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">−${k.malus}</span></div></div></div><div class="actions"><button class="bplus" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button class="bminus" onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function studentCardLarge(s){const k=counts(s.id);return `<article class="student"><div class="avatar" title="Appui long pour gérer l’élève" style="background:${avatarColor(s.name)}" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false">${s.photo?`<img src="${s.photo}" alt="">`:initials(s.name)}</div><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">-${k.malus}</span></div><div class="balance">Solde ${k.bonus-k.malus}</div><div class="actions"><button class="primary" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function behaviorView(){return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">Comportements</div><div class="small">Crée autant de catégories de bonus et de malus que nécessaire.</div></div><button class="primary" onclick="behaviorForm()">➕ Ajouter</button></div><div class="row" style="margin-top:10px"><button onclick="behaviorForm();document.getElementById('bType').value='bonus'">➕ Nouveau bonus</button><button onclick="behaviorForm();document.getElementById('bType').value='malus'">➖ Nouveau malus</button></div></div>${['bonus','malus'].map(type=>`<div class="panel"><div class="section-title">${type==='bonus'?'🟢 Bonus':'🔴 Malus'}</div>${data.behaviors.filter(b=>b.type===type).map(b=>`<div class="behavior ${type}"><span class="emoji">${b.emoji}</span><span class="grow">${esc(b.label)}</span><button onclick="behaviorForm('${b.id}')">✏️</button><button class="danger" onclick="deleteBehavior('${b.id}')">🗑️</button></div>`).join('')}</div>`).join('')}`}
-function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">🔐 Mot de passe & mode classe</div><p class="small">${data.lock&&data.lock.hash?"Mot de passe activé.":"Aucun mot de passe : l’appli s’ouvre sans protection."}</p><div class="row"><button class="primary" onclick="lockSettings()">🔐 ${data.lock&&data.lock.hash?"Gérer le mot de passe":"Créer un mot de passe"}</button><button onclick="openSettings()">⚙️ Autres réglages</button></div></div><div class="panel"><div class="section-title">💾 Base de données</div><p class="small">Sauvegarde toute la base de l’application dans un fichier JSON pour la transférer sur un autre appareil.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
+function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">🔐 Mot de passe & mode classe</div><p class="small">${data.lock&&data.lock.hash?"Mot de passe activé.":"Aucun mot de passe : l’appli s’ouvre sans protection."}</p><div class="row"><button class="primary" onclick="lockSettings()">🔐 ${data.lock&&data.lock.hash?"Gérer le mot de passe":"Créer un mot de passe"}</button><button onclick="openSettings()">⚙️ Autres réglages</button></div></div><div class="panel"><div class="section-title">💾 Base de données</div><p class="small">🔒 La sauvegarde est <b>chiffrée</b> avec un mot de passe que tu choisis : tu peux la ranger sur ton cloud, elle reste illisible sans ce mot de passe. Elle contient les élèves, les bonus/malus et les séances du module Progression.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
 function reportsView(){
  const reports=data.alerts.slice().reverse();
  return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${esc(dateFR(a.date))} · 5 malus consécutifs</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après chaque palier de 5 malus.</p></div>`}`;
@@ -360,16 +360,28 @@ function saveBehavior(id){const type=document.getElementById('bType').value,emoj
 function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’historique déjà enregistré sera conservé.'))return;data.behaviors=data.behaviors.filter(b=>b.id!==id);save();render()}
 function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><button style="width:100%;margin:6px 0" onclick="checkUpdate(true)">🔄 Rechercher une mise à jour (version ${APP_VERSION})</button><button style="width:100%;margin:6px 0 10px" onclick="lockSettings()">🔐 Mot de passe & mode classe${data.lock&&data.lock.hash?' (activé)':''}</button><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
-function backup(){
- const exportData=JSON.parse(JSON.stringify(data));
- exportData._format='suivi-classe';
- exportData._version=30;
- const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json;charset=utf-8'});
- const a=document.createElement('a');
- const stamp=new Date().toISOString().slice(0,10);
- a.href=URL.createObjectURL(blob);a.download=`suivi-classe-${stamp}.json`;a.click();
- setTimeout(()=>URL.revokeObjectURL(a.href),1000);
- toast('Base sauvegardée');
+function progIdb(mode,val){return new Promise(res=>{let r;try{r=indexedDB.open('progression-classe-db')}catch(e){return res(null)}
+ r.onupgradeneeded=()=>{try{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')}catch(_){}};
+ r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('kv')){db.close();return res(null)}
+  if(mode==='get'){const q=db.transaction('kv','readonly').objectStore('kv').get('data');q.onsuccess=()=>{db.close();res(q.result||null)};q.onerror=()=>{db.close();res(null)}}
+  else{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(val,'data');tx.oncomplete=()=>{db.close();res(true)};tx.onerror=()=>{db.close();res(false)}}};
+ r.onerror=()=>res(null);});}
+async function backup(){
+ if(!window.SCCrypto||!SCCrypto.available())return toast('Chiffrement indisponible sur ce navigateur : sauvegarde annulée.',5000);
+ const pwd=await SCCrypto.askPassword({confirm:true,title:'Sauvegarde chiffrée',okLabel:'Chiffrer et enregistrer',text:'Choisis un mot de passe pour protéger ce fichier : sans lui, personne ne pourra le lire, même sur ton cloud.<br><b>Note-le bien : s’il est perdu, la sauvegarde ne pourra plus jamais être ouverte.</b>'});
+ if(!pwd)return;
+ toast('Chiffrement en cours…',30000);
+ try{
+  const exportData=JSON.parse(JSON.stringify(data));
+  exportData._format='suivi-classe';exportData._version=31;exportData._exportedAt=new Date().toISOString();
+  const prog=await progIdb('get');if(prog&&typeof prog==='object')exportData._progression=prog;
+  const txt=await SCCrypto.encrypt(exportData,pwd,'suivi-classe');
+  const blob=new Blob([txt],{type:'application/json;charset=utf-8'});
+  const a=document.createElement('a');const stamp=new Date().toISOString().slice(0,10);
+  a.href=URL.createObjectURL(blob);a.download=`suivi-classe-${stamp}-chiffre.json`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+  toast('🔒 Sauvegarde chiffrée enregistrée'+(prog?' (élèves, bonus/malus et séances)':''),4500);
+ }catch(e){console.error(e);toast('Sauvegarde impossible : '+e.message,6000)}
 }
 function importDatabase(){
  const input=document.createElement('input');
@@ -390,7 +402,7 @@ function normalizeImportedData(x){
  // Accepte les sauvegardes produites par les anciennes versions de l'application.
  if(x.data && typeof x.data==='object') x=x.data;
  if(!Array.isArray(x.classes)) throw new Error('format');
- const out={...x};delete out._format;delete out._version;
+ const out={...x};delete out._format;delete out._version;delete out._progression;delete out._exportedAt;
  out.classes=Array.isArray(out.classes)?out.classes:[];
  out.events=Array.isArray(out.events)?out.events:[];
  out.behaviors=Array.isArray(out.behaviors)?out.behaviors:DEFAULT_BEHAVIORS.map(b=>({...b}));
@@ -410,6 +422,11 @@ function restoreFile(file){
   let parsed;
   try{parsed=JSON.parse(raw)}
   catch(e){console.error('Import JSON :',e);return fail('Ce fichier n’est pas un JSON valide (fichier tronqué, modifié ou autre format).')}
+  if(window.SCCrypto&&SCCrypto.isEncrypted(parsed)){
+   try{parsed=await SCCrypto.decryptInteractive(parsed,'Suivi de classe');}catch(e){return fail(e.message)}
+   if(!parsed)return;
+  }
+  const progBackup=parsed&&parsed._progression&&typeof parsed._progression==='object'?parsed._progression:null;
   let x;
   try{x=normalizeImportedData(parsed)}
   catch(e){console.error('Import format :',e);return fail('JSON valide, mais ce n’est pas une sauvegarde de Suivi de classe.')}
@@ -424,6 +441,9 @@ function restoreFile(file){
    await persistNow();
    render();
    toast('Base importée avec succès ✅',3500);
+   if(progBackup&&Array.isArray(progBackup.sessions)&&confirm('Cette sauvegarde contient aussi '+progBackup.sessions.length+' séance(s) du module Progression (cahier de textes, emploi du temps).\n\nLes restaurer aussi ? (cela remplace les séances présentes sur cet appareil)')){
+    const okp=await progIdb('put',progBackup);toast(okp?'Séances (Progression) restaurées ✅':'⚠️ Séances non restaurées',4000);
+   }
   }catch(e){
    console.error('Import — écriture locale :',e);
    data=prev.data;currentClassId=prev.currentClassId;lastEvents=prev.lastEvents;blockSave=prev.blockSave;
@@ -665,7 +685,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V33';
+const APP_VERSION='V34';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;

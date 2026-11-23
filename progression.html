@@ -131,6 +131,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
 </head>
 <body>
 <script src="verrou.js"></script>
+<script src="chiffre.js"></script>
 <script>Verrou.coverIfNotAdmin()</script>
 <div class="app">
  <aside class="sidebar">
@@ -175,7 +176,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P55';
+const APP_VERSION='P56';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -2024,12 +2025,13 @@ async function downloadFile(content,name,type){
  try{const f=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
 }
-function exportBackup(){S.exportedAt=new Date().toISOString();downloadFile(JSON.stringify(S,null,1),'progression-classes-'+todayYmd()+'.json','application/json')}
+async function exportBackup(){if(!window.SCCrypto||!SCCrypto.available())return toast('Chiffrement indisponible sur ce navigateur',5000);const pwd=await SCCrypto.askPassword({confirm:true,title:'Sauvegarde chiffrée',okLabel:'Chiffrer et enregistrer',text:'Choisis un mot de passe : sans lui, le fichier est illisible, même sur ton cloud.<br><b>S’il est perdu, la sauvegarde ne pourra plus être ouverte.</b>'});if(!pwd)return;toast('Chiffrement en cours…',30000);try{S.exportedAt=new Date().toISOString();const txt=await SCCrypto.encrypt(S,pwd,'progression');downloadFile(txt,'progression-classes-'+todayYmd()+'-chiffre.json','application/json');toast('🔒 Sauvegarde chiffrée enregistrée',4000)}catch(e){toast('Sauvegarde impossible : '+e.message,6000)}}
 function exportYear(){const a={format:'progression-classe-annee',year:cfg.schoolYear,classes:cfg.classes,sequences:cfg.sequences,sessions:S.sessions,exportedAt:new Date().toISOString()};downloadFile(JSON.stringify(a,null,1),'progression-'+cfg.schoolYear+'.json','application/json')}
 function pickFile(cb,accept){const i=document.createElement('input');i.type='file';i.accept=accept||'.json,application/json,*/*';i.style.display='none';document.body.appendChild(i);i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(f){const r=new FileReader();r.onload=()=>cb(String(r.result));r.onerror=()=>toast('Lecture impossible');r.readAsText(f,'UTF-8')}};i.click()}
 function importBackup(){
  pickFile(async txt=>{
   let x;try{x=JSON.parse(txt.replace(/^﻿/,''))}catch(e){return toast('Fichier illisible (JSON invalide)',5000)}
+  if(window.SCCrypto&&SCCrypto.isEncrypted(x)){try{x=await SCCrypto.decryptInteractive(x,'Progression');}catch(e){return toast(e.message,6000)}if(!x)return;if(x._format==='suivi-classe'&&x._progression)x=x._progression;}
   if(x&&x.format==='progression-classe-annee'){
    if(!confirm(`Ajouter l’année ${x.year} (${(x.sessions||[]).length} séances) aux archives ? (fil conducteur)`))return;
    S.archives=S.archives.filter(a=>a.year!==x.year);S.archives.push({year:x.year,classes:x.classes||[],sequences:x.sequences||[],sessions:x.sessions||[]});S.archives.sort((a,b)=>a.year<b.year?-1:1);
