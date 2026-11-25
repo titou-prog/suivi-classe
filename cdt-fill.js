@@ -418,7 +418,10 @@ function cdtFill(){
   if(!els.length)return 'cours de '+g.label+' introuvable ce jour-là';
   for(var i=0;i<els.length;i++){if(apCourseTime()===g.start&&i===0){/* déjà affiché ? on vérifie quand même la classe */}
    press(els[i]);await sleep(600);await pnConfirmDialogs();var t=await waitFor(function(){return apCourseTime()===g.start?1:null;},3000);if(t){await sleep(600);return '';}}
+  var best=null,bd=1e9;for(var q=0;q<els.length;q++){press(els[q]);await sleep(700);await pnConfirmDialogs();await waitFor(function(){return apCourseTime()?1:null;},2500);var tm=apCourseTime();if(!tm)continue;var dd=Math.abs(toMinF(tm)-toMinF(g.start));if(dd<bd){bd=dd;best=q;}}
+  if(best!==null){press(els[best]);await sleep(700);await pnConfirmDialogs();await waitFor(function(){return apCourseTime()?1:null;},2500);window.__apMoved=apCourseTime();await sleep(500);return '';}
   return 'cours de '+g.label+' à '+g.start.replace(':','h')+' introuvable (affiché : '+(apCourseTime()||'?')+')';}
+ function toMinF(t){var p=String(t).split(':');return (+p[0])*60+(+p[1]||0);}
  function apObsHeader(){return [].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.getClientRects().length&&e.children.length<3&&/^\s*observations\s*$/i.test(e.textContent||'');}).pop()||null;}
  function apToks(n){return deacc(n).replace(/[^a-z.\s'-]/g,' ').split(/[\s'-]+/).map(function(w){return w.replace(/\./g,'');}).filter(Boolean);}
  function apNameMatch(appName,cellText){var raw=deacc(appName).replace(/[^a-z.\s'-]/g,' ').split(/[\s'-]+/).filter(Boolean),c=apToks(cellText);if(!raw.length||!c.length)return false;var used={};
@@ -466,7 +469,8 @@ function cdtFill(){
     var todo=g.rows.filter(function(r){return !done['ap|'+g.date+'|'+g.cls+'|'+g.start+'|'+r.eleve+'|'+r.obs];});if(!todo.length)continue;
     msg('⏳ '+lab+' — ne touche pas l’écran','#4f46e5');
     var e1=await apGoDate(g.date);if(e1){ko+=todo.length;line('⚠️ '+lab+' : '+e1,'#dc2626');if(window.__apDbg){var dt=document.createElement('details');dt.innerHTML='<summary style="font-size:13px">Détail pour Claude</summary>';var tx=document.createElement('textarea');tx.readOnly=true;tx.style.cssText='width:100%;height:100px;font:11px monospace';tx.value='AP-DATE v51\n'+window.__apDbg;dt.appendChild(tx);dt.appendChild(btn('📋 Copier le détail','',function(){try{navigator.clipboard.writeText(tx.value);}catch(e){}}));log.appendChild(dt);window.__apDbg=null;stop=true;}continue;}
-    var e2=await apGoCourse(g);if(e2){ko+=todo.length;line('⚠️ '+lab+' : '+e2,'#dc2626');continue;}
+    window.__apMoved=null;var e2=await apGoCourse(g);if(e2){ko+=todo.length;line('⚠️ '+lab+' : '+e2,'#dc2626');continue;}
+    if(window.__apMoved&&window.__apMoved!==g.start)line('ℹ️ '+lab+' : cours déplacé — trouvé à '+window.__apMoved.replace(':','h'),'#b45309');
     if(!apObsHeader()){ko+=todo.length;line('⚠️ '+lab+' : pas de colonne « Observations » dans cette feuille d’appel (es-tu bien dans le Pronote de Vayrac ?)','#dc2626');stop=true;continue;}
     var changed=false;
     for(var j=0;j<todo.length;j++){var r=todo[j];var res;try{res=await apOne(r);}catch(e){res={st:'err',msg:r.eleve+' : '+e.message};}
@@ -478,7 +482,7 @@ function cdtFill(){
     ls(D,JSON.stringify(done));}
   }finally{boxAside(false);}
   msg((ko?'⚠️ ':'✅ ')+ok+' malus reporté(s), '+sk+' déjà noté(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Vayrac : tout est reporté ».'),ko?'#b45309':'#15803d');}
- async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v54 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
+ async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v55 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
   function clean(h){return strip(h).replace(/ style="[^"]*"/g,'');}
   try{out.push('PAGE APPEL: '+apIsAppel());var cb=apDateCombo();out.push('COMBO DATE: '+(cb?clean(cb.outerHTML).slice(0,400):'introuvable'));
    if(g){var e1=await apGoDate(g.date);out.push('ALLER AU '+g.date+': '+(e1||'ok')+(e1?' | options vues: '+[].slice.call(document.querySelectorAll('[role=option]')).filter(function(o){return o.getClientRects().length;}).slice(0,12).map(function(o){return (o.textContent||'').trim().slice(0,20);}).join(' / '):''));
@@ -510,7 +514,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v54</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v55</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
