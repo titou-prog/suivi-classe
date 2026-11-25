@@ -471,9 +471,11 @@ function cdtFill(){
     ls(D,JSON.stringify(done));}
   }finally{boxAside(false);}
   msg((ko?'⚠️ ':'✅ ')+ok+' malus reporté(s), '+sk+' déjà noté(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Vayrac : tout est reporté ».'),ko?'#b45309':'#15803d');}
- async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v52 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
+ async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v53 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
   function clean(h){return strip(h).replace(/ style="[^"]*"/g,'');}
   try{out.push('PAGE APPEL: '+apIsAppel());var cb=apDateCombo();out.push('COMBO DATE: '+(cb?clean(cb.outerHTML).slice(0,400):'introuvable'));
+   if(g){var e1=await apGoDate(g.date);out.push('ALLER AU '+g.date+': '+(e1||'ok')+(e1?' | options vues: '+[].slice.call(document.querySelectorAll('[role=option]')).filter(function(o){return o.getClientRects().length;}).slice(0,12).map(function(o){return (o.textContent||'').trim().slice(0,20);}).join(' / '):''));
+    if(!e1){var e2=await apGoCourse(g);out.push('COURS '+g.label+' '+g.start+': '+(e2||'ok'));}}
    var els=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element,[id*="_cours_"]')).filter(function(e){return e.getClientRects().length;});out.push('COURS ('+els.length+'): '+els.slice(0,6).map(function(e){return norm((e.getAttribute('aria-label')||'')+' '+e.textContent).slice(0,70);}).join(' | '));
    out.push('COURS AFFICHE: '+apCourseTime());var h=apObsHeader();out.push('ENTETE OBS: '+(h?clean(h.outerHTML).slice(0,300):'introuvable'));
    var first=g&&g.rows[0];var ne=first?apStudentCell(first.eleve):null;if(ne==='AMB')ne=null;if(!ne){var nm=[].slice.call(document.querySelectorAll('[role=gridcell],.liste_celluleGrid')).filter(function(e){return e.getClientRects().length&&/^[A-ZÉÈ' -]{2,}\s+\S/.test((e.textContent||'').trim());})[0];ne=nm;}
@@ -501,7 +503,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v52</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v53</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
