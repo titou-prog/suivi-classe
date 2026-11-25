@@ -176,7 +176,7 @@ pre.code{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);
    - Copie pour Pronote, historique, progressions, archives annuelles
    Stockage : IndexedDB « progression-classe-db » (même origine que Suivi de classe)
    ===================================================================== */
-const APP_VERSION='P61';
+const APP_VERSION='P62';
 const DB_NAME='progression-classe-db',DB_STORE='kv',DB_KEY='data',LS_KEY='progression-classe-v1',DRAFT_KEY='progression-brouillon';
 const SUIVI_DB='suivi-classe-db';
 const NIVEAUX=[['6e','6e'],['5e','5e'],['4e','4e'],['3e','3e'],['chorale','Chorale']];
@@ -1785,14 +1785,25 @@ function cdtFill(){
    try{o.scrollIntoView({block:'nearest'});}catch(e){}press(o);await sleep(400);if(!dateMatch(apDateCombo()||cb,iso)){o.click();}}
   var ok=await waitFor(function(){var c=apDateCombo();return c&&dateMatch(c,iso);},5000);await sleep(900);return ok?'':'date non changée (toujours '+((apDateCombo()||{}).textContent||'?').trim()+')';}
  function apCourseTime(){var m=deacc(document.body.innerText||'').match(/pour le cours de (\d{1,2})h(\d\d)/);return m?(m[1].length<2?'0':'')+m[1]+':'+m[2]:'';}
- async function apGoCourse(g){var c1=norm(g.cls),c2=norm(g.label);
-  var els=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element,[id*="_cours_"]')).filter(function(e){if(!e.getClientRects().length||e.closest('#scfill'))return false;var t=' '+deacc((e.getAttribute('aria-label')||'')+' '+e.textContent).replace(/[^a-z0-9]+/g,' ')+' ';var w1=' '+deacc(g.cls).replace(/[^a-z0-9]+/g,' ').trim()+' ',w2=' '+deacc(g.label).replace(/[^a-z0-9]+/g,' ').trim()+' ';return t.indexOf(w1)>=0||t.indexOf(w2)>=0;});
+ function apCourseEls(g){var w1=' '+deacc(g.cls).replace(/[^a-z0-9]+/g,' ').trim()+' ',w2=' '+deacc(g.label).replace(/[^a-z0-9]+/g,' ').trim()+' ';
+  return [].slice.call(document.querySelectorAll('.EmploiDuTemps_Element,[id*="_cours_"]')).filter(function(e){if(!e.getClientRects().length||e.closest('#scfill'))return false;var raw=deacc((e.getAttribute('aria-label')||'')+' '+e.textContent);if(/cours annule/.test(raw.replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ')))return false;var t=' '+raw.replace(/[^a-z0-9]+/g,' ')+' ';return t.indexOf(w1)>=0||t.indexOf(w2)>=0;})
+   .filter(function(e,_,a){return !a.some(function(o){return o!==e&&e.contains(o);});});}
+ async function apSelect(el){var before=apCourseTime()+'|'+deacc((document.body.innerText||'').slice(0,0));var b0=apCourseTime();
+  var inner=[].slice.call(el.querySelectorAll('div,span')).filter(function(x){return x.getClientRects().length&&!/details/i.test(x.getAttribute('aria-label')||'')&&(x.textContent||'').trim().length>3;}).pop();
+  var tries=[function(){press(el);},function(){el.click();},function(){if(inner)press(inner);},function(){try{el.focus();}catch(e){}['keydown','keyup'].forEach(function(t){el.dispatchEvent(new KeyboardEvent(t,{key:'Enter',keyCode:13,bubbles:true}));});},function(){var r=el.getBoundingClientRect();var x=document.elementFromPoint(r.left+r.width*0.3,r.top+r.height*0.7);if(x&&!x.closest('#scfill'))press(x);}];
+  var order=[0,1,2,3,4];if(window.__apSel!=null){order=[window.__apSel].concat(order.filter(function(x){return x!==window.__apSel;}));}
+  for(var n=0;n<order.length;n++){var k=order[n];tries[k]();await sleep(500);await pnConfirmDialogs();var ch=await waitFor(function(){var t=apCourseTime();return t&&t!==b0?t:null;},2200);if(ch){window.__apSel=k;return ch;}}
+  return null;}
+ async function apGoCourse(g){var els=apCourseEls(g);
   if(!els.length)return 'cours de '+g.label+' introuvable ce jour-là';
-  for(var i=0;i<els.length;i++){if(apCourseTime()===g.start&&i===0){/* déjà affiché ? on vérifie quand même la classe */}
-   press(els[i]);await sleep(600);await pnConfirmDialogs();var t=await waitFor(function(){return apCourseTime()===g.start?1:null;},3000);if(t){await sleep(600);return '';}}
-  var best=null,bd=1e9;for(var q=0;q<els.length;q++){press(els[q]);await sleep(700);await pnConfirmDialogs();await waitFor(function(){return apCourseTime()?1:null;},2500);var tm=apCourseTime();if(!tm)continue;var dd=Math.abs(toMinF(tm)-toMinF(g.start));if(dd<bd){bd=dd;best=q;}}
-  if(best!==null){press(els[best]);await sleep(700);await pnConfirmDialogs();await waitFor(function(){return apCourseTime()?1:null;},2500);window.__apMoved=apCourseTime();await sleep(500);return '';}
-  return 'cours de '+g.label+' à '+g.start.replace(':','h')+' introuvable (affiché : '+(apCourseTime()||'?')+')';}
+  var cur=apCourseTime();
+  var times=[];
+  for(var i=0;i<els.length;i++){var tm=(cur===g.start&&els.length===1)?cur:await apSelect(els[i]);els=apCourseEls(g).length===els.length?apCourseEls(g):els;
+   if(!tm&&els.length===1&&cur)tm=null;times.push(tm);if(tm===g.start){await sleep(700);return '';}}
+  var best=-1,bd=1e9;times.forEach(function(tm,q){if(!tm)return;var d=Math.abs(toMinF(tm)-toMinF(g.start));if(d<bd){bd=d;best=q;}});
+  if(best<0)return 'impossible de sélectionner le cours de '+g.label+' (le toucher ne change pas le cours affiché, resté à '+(apCourseTime()||'?')+')';
+  if(apCourseTime()!==times[best]){var e2=apCourseEls(g)[best];if(e2)await apSelect(e2);}
+  window.__apMoved=apCourseTime();await sleep(600);return apCourseTime()===times[best]?'':'cours de '+g.label+' non sélectionné';}
  function toMinF(t){var p=String(t).split(':');return (+p[0])*60+(+p[1]||0);}
  function apObsHeader(){return [].slice.call(document.querySelectorAll('body *')).filter(function(e){return !e.closest('#scfill')&&e.getClientRects().length&&e.children.length<3&&/^\s*observations\s*$/i.test(e.textContent||'');}).pop()||null;}
  function apToks(n){return deacc(n).replace(/[^a-z.\s'-]/g,' ').split(/[\s'-]+/).map(function(w){return w.replace(/\./g,'');}).filter(Boolean);}
@@ -1854,11 +1865,11 @@ function cdtFill(){
     ls(D,JSON.stringify(done));}
   }finally{boxAside(false);}
   msg((ko?'⚠️ ':'✅ ')+ok+' malus reporté(s), '+sk+' déjà noté(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Vayrac : tout est reporté ».'),ko?'#b45309':'#15803d');}
- async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v55 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
+ async function apEnquete(){var p=load();var g=p&&p.malus&&p.malus[0];var out=['AP-ENQ v56 '+new Date().toISOString()+' site='+location.host];var log=document.getElementById('scfilllog');boxAside(true);
   function clean(h){return strip(h).replace(/ style="[^"]*"/g,'');}
   try{out.push('PAGE APPEL: '+apIsAppel());var cb=apDateCombo();out.push('COMBO DATE: '+(cb?clean(cb.outerHTML).slice(0,400):'introuvable'));
    if(g){var e1=await apGoDate(g.date);out.push('ALLER AU '+g.date+': '+(e1||'ok')+(e1?' | options vues: '+[].slice.call(document.querySelectorAll('[role=option]')).filter(function(o){return o.getClientRects().length;}).slice(0,12).map(function(o){return (o.textContent||'').trim().slice(0,20);}).join(' / '):''));
-    if(!e1){var e2=await apGoCourse(g);out.push('COURS '+g.label+' '+g.start+': '+(e2||'ok'));}}
+    if(!e1){var ce=apCourseEls(g);out.push('ELEMENT COURS: '+(ce[0]?strip(ce[0].outerHTML).replace(/ style="[^"]*"/g,'').slice(0,900):'aucun'));var e2=await apGoCourse(g);out.push('COURS '+g.label+' '+g.start+': '+(e2||'ok')+' -> affiché '+apCourseTime());}}
    var els=[].slice.call(document.querySelectorAll('.EmploiDuTemps_Element,[id*="_cours_"]')).filter(function(e){return e.getClientRects().length;});out.push('COURS ('+els.length+'): '+els.slice(0,6).map(function(e){return norm((e.getAttribute('aria-label')||'')+' '+e.textContent).slice(0,70);}).join(' | '));
    out.push('COURS AFFICHE: '+apCourseTime());var h=apObsHeader();out.push('ENTETE OBS: '+(h?clean(h.outerHTML).slice(0,300):'introuvable'));
    var first=g&&g.rows[0];var ne=first?apStudentCell(first.eleve):null;if(ne==='AMB')ne=null;if(!ne){var nm=[].slice.call(document.querySelectorAll('[role=gridcell],.liste_celluleGrid')).filter(function(e){return e.getClientRects().length&&/^[A-ZÉÈ' -]{2,}\s+\S/.test((e.textContent||'').trim());})[0];ne=nm;}
@@ -1886,7 +1897,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v55</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v56</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
