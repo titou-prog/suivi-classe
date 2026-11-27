@@ -1,3 +1,4 @@
+/* © 2026 Tristan Zanchi. Tous droits réservés. Voir LICENCE.txt */
 /* =====================================================================
    VERROU — mot de passe de Suivi de classe (partagé avec progression.html)
    - Écran de mot de passe à l'ouverture de l'appli (et au retour après X minutes hors de l'appli)

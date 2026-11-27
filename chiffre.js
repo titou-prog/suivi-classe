@@ -1,3 +1,4 @@
+/* © 2026 Tristan Zanchi. Tous droits réservés. Voir LICENCE.txt */
 /* Chiffrement des sauvegardes — Suivi de classe
    AES-GCM 256 bits, clé dérivée du mot de passe par PBKDF2-SHA-256 (600 000 itérations, sel aléatoire).
    Le fichier produit ne contient ni le mot de passe ni rien de lisible : sans le mot de passe, impossible de l'ouvrir.

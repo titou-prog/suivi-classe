@@ -1,3 +1,5 @@
+© 2026 Tristan Zanchi — tous droits réservés (voir LICENCE.txt).
+
 Suivi de classe — PWA iPad V33
 
 V33 : Progression › QCM › onglet « 📄 Fiche (PDF / Word) » — créer un QCM à partir d'une fiche de cours.

@@ -1,3 +1,4 @@
+/* Suivi de classe — © 2026 Tristan Zanchi. Tous droits réservés. Voir LICENCE.txt */
 const KEY='suivi-classe-v1';
 const DEFAULT_BEHAVIORS=[
  {id:crypto.randomUUID(),type:'bonus',emoji:'🙋',label:"Participe à l'oral"},{id:crypto.randomUUID(),type:'bonus',emoji:'🤝',label:'Aide un camarade'},{id:crypto.randomUUID(),type:'bonus',emoji:'🎵',label:'Très bon travail'},{id:crypto.randomUUID(),type:'bonus',emoji:'✅',label:'Matériel prêt'},
@@ -646,7 +647,7 @@ function menuHTML(){
  ${mi('🔐','Mot de passe & mode classe','openLockSettings()',L)}
  ${mi('🔊','Sons & réglages','openSettings()',L)}
  ${mi('🔄','Rechercher une mise à jour','checkUpdate(true)')}
- <div class="mfoot">Suivi de classe · ${APP_VERSION}${locked()?' · 🔒 mode classe':''}</div>`;
+ <div class="mfoot">Suivi de classe · ${APP_VERSION}${locked()?' · 🔒 mode classe':''}<br>© 2026 Tristan Zanchi — tous droits réservés</div>`;
 }
 function openMenu(){const w=document.getElementById('menuWrap'),p=document.getElementById('menuPanel');if(!w)return;p.innerHTML=menuHTML();w.classList.add('show')}
 function closeMenu(){document.getElementById('menuWrap')?.classList.remove('show')}
@@ -714,7 +715,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V35';
+const APP_VERSION='V36';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;

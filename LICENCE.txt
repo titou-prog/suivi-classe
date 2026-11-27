@@ -1,0 +1,16 @@
+Suivi de classe — Progression — Trace écrite — QCM en direct
+Copyright © 2026 Tristan Zanchi. Tous droits réservés.
+
+Ce logiciel (code source, interface, textes et documentation) est protégé par le
+Code de la propriété intellectuelle.
+
+Le code est consultable publiquement sur GitHub, mais aucune licence n'est accordée.
+Sauf autorisation écrite préalable de l'auteur, il est interdit de :
+  - copier ou reproduire tout ou partie du logiciel ;
+  - le modifier, l'adapter ou en créer des versions dérivées ;
+  - le diffuser, le publier ailleurs, le vendre ou le louer.
+
+L'utilisation de l'application en ligne par son auteur, et par les personnes à qui
+il en donne l'accès, reste libre dans ce cadre.
+
+Pour toute demande d'autorisation : contacter l'auteur via son compte GitHub (titou-prog).
