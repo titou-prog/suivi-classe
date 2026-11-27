@@ -177,9 +177,11 @@ function cdtFill(){
    msg('⏳ '+(i+1)+'/'+todo.length+' : '+lab,'#4f46e5');
    var cl=matchSeances(it,cands);if(!cl.length){line('❓ '+lab+' : séance introuvable dans l’ENT','#b45309');miss.push(it);ko++;continue;}
    try{var r=null,errs=[];for(var q=0;q<cl.length&&q<5;q++){try{r=await entSaveSeance(it,cl[q].id,{force:!!force});}catch(ee){r={status:'err',msg:ee.message};}if(r.status!=='err')break;errs.push('#'+cl[q].id+' '+r.msg);}
-    if(r.status==='err'&&errs.length>1)r.msg='aucune des '+errs.length+' séances possibles n’est modifiable ('+errs.join(' ; ').slice(0,220)+')';else if(r.status==='err'&&/403/.test(r.msg))r.msg='l’ENT refuse la modification (403) : cette séance n’est sans doute pas modifiable par toi (groupe ou cours partagé géré par un autre compte ?)';
+    if(r.status==='err'&&errs.length&&errs.every(function(e){return /403|rien enregistr/.test(e);})){r={status:'rights',msg:'pas de droits de modification dans l’ENT pour cette séance (en attente d’accès) — rien n’a été écrit, elle sera retentée au prochain envoi'};}
+    else if(r.status==='err'&&errs.length>1)r.msg='aucune des '+errs.length+' séances possibles n’est modifiable ('+errs.join(' ; ').slice(0,220)+')';else if(r.status==='err'&&/403/.test(r.msg))r.msg='l’ENT refuse la modification (403) : cette séance n’est sans doute pas modifiable par toi (groupe ou cours partagé géré par un autre compte ?)';
     if(r.status==='ok'){ok++;done[dkey(it)]=Date.now();ls(D,JSON.stringify(done));line('✅ '+lab+' : '+r.msg,'#15803d');if(it.files&&it.files.length)line('   📎 à joindre toi-même : '+it.files.join(', '),'#b45309');}
     else if(r.status==='skip'){sk++;done[dkey(it)]=Date.now();ls(D,JSON.stringify(done));line('⏭️ '+lab+' : '+r.msg,'#555');}
+    else if(r.status==='rights'){line('🔒 '+lab+' : '+r.msg,'#b45309');}
     else{ko++;line('⚠️ '+lab+' : '+r.msg,'#dc2626');}}catch(e){ko++;line('⚠️ '+lab+' : '+e.message,'#dc2626');}
   }
   msg((ko?'⚠️ ':'✅ ')+ok+' reportée(s), '+sk+' déjà faite(s), '+ko+' problème(s).'+(ko?'':' Dans Suivi de classe, touche « ✅ Vayrac : tout est reporté ».'),ko?'#b45309':'#15803d');
@@ -533,7 +535,7 @@ function cdtFill(){
  }
  function render(){
   var p=load();box.innerHTML='';
-  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v58</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
+  var h=document.createElement('div');h.innerHTML='<b style="font-size:17px">📒 Remplir le cahier de textes</b> <span style="font-size:11px;color:#999">favori v59</span>'+(p?'<div style="font-size:14px;margin-top:2px">Envoi <b>'+esc(({martel:'Martel',vayrac:'Vayrac'})[p.etab]||p.etab||'')+'</b> · <b>'+p.items.length+' séance(s)</b> · préparé le <b>'+esc(p.at||'?')+'</b></div>'+((PRONOTE&&p.etab==='vayrac'&&!(p.malus&&p.malus.length))||(!PRONOTE&&p.etab==='martel')?'<div style="color:#dc2626;font-weight:700;font-size:13px">⚠️ Cet envoi est celui de '+(p.etab==='vayrac'?'Vayrac (ENT)':'Martel (Pronote)')+' : prépare l’envoi '+(PRONOTE?'Martel':'Vayrac')+' dans l’appli puis rouvre le favori.</div>':''):'');box.appendChild(h);
   var m=document.createElement('div');m.id='scfillmsg';m.style.cssText='font-weight:700;margin:6px 0;min-height:18px';box.appendChild(m);
   var z=document.createElement('textarea');z.id='scfillzone';z.placeholder='Colle ici l’envoi de Suivi de classe';z.style.cssText='display:none;width:100%;height:70px;margin:6px 0;font-size:14px';z.oninput=function(){take(z.value);};box.appendChild(z);
   if(!p||!window.__scLoaded){var st=document.createElement('div');st.style.cssText='background:#ecfdf5;border:2px solid #15803d;border-radius:12px;padding:10px;margin:6px 0';
