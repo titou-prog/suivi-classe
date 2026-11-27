@@ -73,7 +73,9 @@ async function init(){
   catch(e){console.error('Données locales illisibles :',e);data=emptyData();blockSave=true;readFailed=true}
  }
  currentClassId=data.classes[0]?.id||null;
- try{await edtAutoSelect('start')}catch(e){console.warn('Emploi du temps :',e)}
+ try{await SCTools.init()}catch(e){console.warn('Outils :',e)}
+ try{if(!localStorage.getItem('sc_ai')){const pg=await progIdb('get');const a=pg&&pg.config&&pg.config.ai;if(a&&(a.geminiKey||a.key))SCTools.setAi({provider:a.provider||'gemini',geminiKey:a.geminiKey||SCTools.ai().geminiKey,claudeKey:a.key||'',geminiModel:a.geminiModel,claudeModel:a.model});}}catch(_){}
+ if(SCTools.on('edt')){try{await edtAutoSelect('start')}catch(e){console.warn('Emploi du temps :',e)}}
  applyTheme();render();
  if(readFailed)toast('Données locales illisibles : rien n’a été écrasé. Importe une sauvegarde pour repartir.',7000);
  // Migration automatique depuis l'ancien stockage localStorage (versions ≤ V14)
@@ -190,7 +192,7 @@ function isToday(d){const a=new Date(d),b=new Date();return a.toDateString()===b
 function eventsFor(id){return data.events.filter(e=>e.studentId===id && !e.cleared && (!todayOnly||isToday(e.date)))}
 function counts(id){return eventsFor(id).reduce((r,e)=>(e.type==='bonus'?r.bonus++:r.malus++,r),{bonus:0,malus:0})}
 function setTab(t){tab=t;render();window.scrollTo(0,0)}
-function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=(tab==='class'?'':'<div class="row noprint" style="margin-bottom:12px"><button class="primary" onclick="setTab(\'class\')">← Retour à l’accueil</button></div>')+(tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():tab==='recap'?recapView():dataView());if(tab==='data')updateStorageInfo();}
+function render(){applyTheme();document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));document.getElementById('nav-'+tab)?.classList.add('active');document.getElementById('view').innerHTML=(tab==='class'?'':'<div class="row noprint" style="margin-bottom:12px"><button class="primary" onclick="setTab(\'class\')">← Retour à l’accueil</button></div>')+(tab==='class'?classView():tab==='behaviors'?behaviorView():tab==='reports'?reportsView():tab==='recap'?recapView():settingsView());if(tab==='data'||tab==='settings')updateStorageInfo();}
 function sizeKey(){return ['s','m','l'].includes(data.cardSize)?data.cardSize:'s'}
 function filteredStudents(c){
  const q=search.toLowerCase();
@@ -217,7 +219,41 @@ function studentCard(s){
  return `<article class="student compact"><div class="top" title="Appui long pour gérer l’élève" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false"><div class="avatar" style="background:${avatarColor(s.name)}">${s.photo?`<img src="${s.photo}" alt="" loading="lazy" decoding="async">`:initials(s.name)}</div><div class="info"><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">−${k.malus}</span></div></div></div><div class="actions"><button class="bplus" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button class="bminus" onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function studentCardLarge(s){const k=counts(s.id);return `<article class="student"><div class="avatar" title="Appui long pour gérer l’élève" style="background:${avatarColor(s.name)}" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false">${s.photo?`<img src="${s.photo}" alt="">`:initials(s.name)}</div><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">-${k.malus}</span></div><div class="balance">Solde ${k.bonus-k.malus}</div><div class="actions"><button class="primary" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function behaviorView(){return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">Comportements</div><div class="small">Crée autant de catégories de bonus et de malus que nécessaire.</div></div><button class="primary" onclick="behaviorForm()">➕ Ajouter</button></div><div class="row" style="margin-top:10px"><button onclick="behaviorForm();document.getElementById('bType').value='bonus'">➕ Nouveau bonus</button><button onclick="behaviorForm();document.getElementById('bType').value='malus'">➖ Nouveau malus</button></div></div>${['bonus','malus'].map(type=>`<div class="panel"><div class="section-title">${type==='bonus'?'🟢 Bonus':'🔴 Malus'}</div>${data.behaviors.filter(b=>b.type===type).map(b=>`<div class="behavior ${type}"><span class="emoji">${b.emoji}</span><span class="grow">${esc(b.label)}</span><button onclick="behaviorForm('${b.id}')">✏️</button><button class="danger" onclick="deleteBehavior('${b.id}')">🗑️</button></div>`).join('')}</div>`).join('')}`}
-function dataView(){const c=currentClass();return `<div class="panel"><div class="section-title">🔐 Mot de passe & mode classe</div><p class="small">${data.lock&&data.lock.hash?"Mot de passe activé.":"Aucun mot de passe : l’appli s’ouvre sans protection."}</p><div class="row"><button class="primary" onclick="lockSettings()">🔐 ${data.lock&&data.lock.hash?"Gérer le mot de passe":"Créer un mot de passe"}</button><button onclick="openSettings()">⚙️ Autres réglages</button></div></div><div class="panel"><div class="section-title">💾 Base de données</div><p class="small">🔒 La sauvegarde est <b>chiffrée</b> avec un mot de passe que tu choisis : tu peux la ranger sur ton cloud, elle reste illisible sans ce mot de passe. Elle contient tout : élèves, bonus/malus, séances du module Progression, fichiers joints, Trace écrite (avec les enregistrements audio) et QCM.</p><div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder la base</button><button onclick="importDatabase()">📥 Importer une base</button><button onclick="copyCSV()">📋 Copier CSV</button><button onclick="window.print()">🖨️ Imprimer</button></div></div><div class="panel"><div class="section-title">🗄️ Stockage</div><p class="small" id="storageInfo">Calcul…</p></div><div class="panel"><div class="section-title">📊 Classe active</div>${c?`<p><b>${esc(c.name)}</b> · ${c.students.length} élèves</p>`:'<p class="small">Aucune classe active.</p>'}</div><div class="panel"><div class="section-title">🚨 Alertes vie scolaire</div>${data.alerts.length?data.alerts.slice().reverse().slice(0,20).map(a=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${new Date(a.date).toLocaleString('fr-FR')}</span></span><button onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">Voir</button></div>`).join(''):`<p class="small">Aucune alerte pour le moment.</p>`}</div><div class="panel"><div class="section-title">📱 Installation sur iPad</div><p>Dans Safari : <b>Partager → Sur l’écran d’accueil</b>. Une fois installée, l’application peut continuer à fonctionner hors connexion après son premier chargement.</p><p class="small">Pour une vraie installation PWA, l’adresse du site doit être en HTTPS.</p></div><div class="panel danger-zone"><div class="section-title">⚠️ Zone sensible</div><button class="danger" onclick="wipe()">Tout effacer</button></div>`}
+function toolToggle(id,val){const m=SCTools.set(id,val);if(m.length)toast((val?'Activé aussi : ':'Désactivé aussi : ')+m.join(', '),3500);else toast(val?'Outil activé ✅':'Outil masqué (données conservées)');if(id==='edt'&&val){edtAutoSelect('start').then(render).catch(()=>render())}else render()}
+function aiSave(k,v){SCTools.setAi({[k]:v});if(k==='provider')render();else toast('Enregistré ✅')}
+async function aiTest(){const a=SCTools.ai(),out=document.getElementById('aiTestOut');if(!out)return;out.textContent='⏳ Test…';
+ try{if(a.provider==='claude'){if(!a.claudeKey)throw new Error('pas de clé');const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':a.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:a.claudeModel,max_tokens:5,messages:[{role:'user',content:'ok'}]})});if(!r.ok)throw new Error('erreur '+r.status);}
+  else{if(!a.geminiKey)throw new Error('pas de clé');const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models',{headers:{'x-goog-api-key':a.geminiKey}});if(!r.ok)throw new Error('erreur '+r.status);}
+  out.textContent='✅ La clé fonctionne';}catch(e){out.textContent='⚠️ '+e.message;}}
+function setSec(id,html,open){return `<details class="panel set" ${open?'open':''}><summary class="section-title" style="cursor:pointer">${id}</summary><div style="margin-top:10px">${html}</div></details>`}
+function settingsView(){
+ const T=SCTools.state(),a=SCTools.ai(),anyAi=SCTools.LIST.some(t=>t.ai&&T[t.id]);
+ const tools=`<p class="small">Le <b>suivi bonus/malus</b> est toujours actif. Coche les outils que tu veux utiliser : ils apparaissent dans le menu ☰. Décocher un outil le cache seulement, <b>sans effacer ses données</b>.</p>
+ <div>${SCTools.LIST.map(t=>`<label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:10px 0;border-top:1px solid var(--line)"><input type="checkbox" style="width:26px;height:26px;flex:none;margin-top:2px" ${T[t.id]?'checked':''} onchange="toolToggle('${t.id}',this.checked)"><div class="grow"><b>${t.icon} ${esc(t.name)}</b>${t.ai?` <span class="chip" style="font-size:12px">🤖 IA${t.ai==='nécessaire'?'':' (option)'}</span>`:''}<div class="small">${esc(t.desc)}${t.ai&&t.ai!=='nécessaire'?'<br>🤖 '+esc(t.ai)+'.':''}${t.needs?'<br>Nécessite : '+t.needs.map(n=>esc(SCTools.byId(n).name)).join(', ')+'.':''}</div></div></label>`).join('')}</div>`;
+ const ai=`<p class="small">Une seule clé pour tous les outils qui utilisent l’IA. Elle reste uniquement sur cet iPad.</p>
+ <label class="lbl">IA utilisée</label><select onchange="aiSave('provider',this.value)"><option value="gemini" ${a.provider==='gemini'?'selected':''}>Gemini (Google) — offre gratuite possible</option><option value="claude" ${a.provider==='claude'?'selected':''}>Claude (Anthropic) — crédits payants</option></select>
+ ${a.provider==='gemini'?`<label class="lbl">Clé API Gemini</label><input type="password" autocomplete="off" placeholder="AIza…" value="${esc(a.geminiKey)}" onchange="aiSave('geminiKey',this.value.trim())"><div class="small">Gratuite sur <b>aistudio.google.com</b> › Get API key.</div>`
+ :`<label class="lbl">Clé API Claude</label><input type="password" autocomplete="off" placeholder="sk-ant-…" value="${esc(a.claudeKey)}" onchange="aiSave('claudeKey',this.value.trim())"><div class="small">Sur platform.claude.com › API Keys (nécessite des crédits). Trace écrite utilise toujours Gemini.</div>`}
+ <div class="row" style="margin-top:10px"><button onclick="aiTest()">🧪 Tester la clé</button><span class="small grow" id="aiTestOut"></span></div>`;
+ const disp=`<div class="small">Vignettes</div>${seg([['s','Petites'],['m','Moyennes'],['l','Grandes']],sizeKey(),'setSize')}
+ <div class="small" style="margin-top:8px">Tri des élèves</div>${seg([['name','Nom'],['bonus','Bonus'],['malus','Malus']],sort,'setSort')}
+ <div class="small" style="margin-top:8px">Compteurs</div>${seg([['total','Depuis le début'],['today','Aujourd’hui']],todayOnly?'today':'total','setPeriod')}
+ <div class="small" style="margin-top:8px">Thème</div>${seg([['automatic','Auto'],['light','Clair'],['dark','Sombre']],data.theme||'automatic','setThemeV')}
+ <label class="row" style="margin:14px 0 6px"><input type="checkbox" style="width:24px;height:24px" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label>
+ <div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div>
+ <p class="small">Pas de son ? Monte le volume et désactive le mode silencieux.</p>`;
+ const lock=`<p class="small">${data.lock&&data.lock.hash?'Mot de passe activé.':'Aucun mot de passe : l’appli s’ouvre sans protection.'}</p><button class="primary" onclick="lockSettings()">🔐 ${data.lock&&data.lock.hash?'Gérer le mot de passe':'Créer un mot de passe'}</button>`;
+ const bk=`<p class="small">🔒 Sauvegarde <b>chiffrée</b> par un mot de passe que tu choisis : tu peux la ranger sur ton cloud. Elle contient toutes les données (élèves, bonus/malus, séances, fichiers joints, Trace écrite, QCM).</p>
+ <div class="row"><button class="primary" onclick="backup()">💾 Sauvegarder</button><button onclick="importDatabase()">📥 Restaurer</button><button onclick="copyCSV()">📋 Copier le bilan (CSV)</button></div>
+ <p class="small" id="storageInfo" style="margin-top:10px">Calcul…</p>`;
+ const app=`<div class="row"><button onclick="checkUpdate(true)">🔄 Rechercher une mise à jour</button><span class="small grow">Version ${APP_VERSION}</span></div>
+ <div class="danger-zone" style="margin-top:14px"><button class="danger" onclick="wipe()">🗑️ Effacer toutes les classes et l’historique</button></div>`;
+ return setSec('🧰 Outils',tools,true)+(anyAi?setSec('🤖 Clé IA',ai,!SCTools.aiReady()):'')+setSec('🎨 Affichage & sons',disp)+setSec('🔐 Mot de passe & mode classe',lock)+setSec('💾 Sauvegarde',bk)+setSec('ℹ️ Application',app);
+}
+function setSize(v){data.cardSize=v;save();render()}
+function setSort(v){sort=v;render()}
+function setPeriod(v){todayOnly=v==='today';render()}
+function setThemeV(v){data.theme=v;save();render()}
 function reportsView(){
  const reports=data.alerts.slice().reverse();
  return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">📋 Rapports de dépassement de malus</div><div class="small">Tous les rapports restent accessibles ici, même après leur consultation.</div></div><button onclick="setTab('class')">👥 Élèves</button></div></div>${reports.length?reports.map(a=>`<div class="panel"><div class="row"><span style="font-size:28px">🚨</span><span class="grow"><b>${esc(a.studentName)}</b> · ${esc(a.className)}<br><span class="small">${esc(dateFR(a.date))} · 5 malus consécutifs</span></span>${a.viewed?'':'<span class="small">Nouveau</span>'}</div><div class="row" style="margin-top:10px"><button class="primary grow" onclick="showAlert(data.alerts.find(x=>x.id==='${a.id}'))">👁️ Voir le rapport</button><button onclick="copyAlert('${a.id}')">📋 Copier</button><button class="danger" onclick="deleteAlert('${a.id}')">🗑️ Supprimer</button></div></div>`).join(''):`<div class="panel empty"><div style="font-size:42px">📋</div><h2>Aucun rapport</h2><p>Les rapports apparaîtront ici après chaque palier de 5 malus.</p></div>`}`;
@@ -359,7 +395,7 @@ function deleteClass(){if(!confirm('Supprimer définitivement cette classe ?'))r
 function behaviorForm(id){const b=id?data.behaviors.find(x=>x.id===id):null;openModal(`<h2>${b?'Modifier':'Nouveau'} comportement</h2><select id="bType"><option value="bonus" ${b?.type==='bonus'?'selected':''}>Bonus</option><option value="malus" ${b?.type==='malus'?'selected':''}>Malus</option></select><input id="bEmoji" value="${esc(b?.emoji||'⭐')}" placeholder="Emoji"><input id="bLabel" value="${esc(b?.label||'')}" placeholder="Libellé"><button class="primary" style="width:100%;margin-top:8px" onclick="saveBehavior('${id||''}')">Enregistrer</button><button style="width:100%;margin-top:8px" onclick="closeModal()">Annuler</button>`) }
 function saveBehavior(id){const type=document.getElementById('bType').value,emoji=document.getElementById('bEmoji').value.trim()||'⭐',label=document.getElementById('bLabel').value.trim();if(!label)return toast('Indique un libellé');if(id){const b=data.behaviors.find(x=>x.id===id);Object.assign(b,{type,emoji,label})}else data.behaviors.push({id:uid(),type,emoji,label});save();closeModal();render()}
 function deleteBehavior(id){if(!confirm('Supprimer ce comportement ? L’historique déjà enregistré sera conservé.'))return;data.behaviors=data.behaviors.filter(b=>b.id!==id);save();render()}
-function openSettings(){openModal(`<h2>Réglages</h2><select onchange="data.theme=this.value;save();render()"><option value="automatic" ${data.theme==='automatic'?'selected':''}>Automatique</option><option value="light" ${data.theme==='light'?'selected':''}>Clair</option><option value="dark" ${data.theme==='dark'?'selected':''}>Sombre</option></select><label class="row" style="margin:12px 0"><input type="checkbox" style="width:auto" ${data.soundOn===false?'':'checked'} onchange="data.soundOn=this.checked;save()"><span class="grow">🔊 Sons (bonus, malus, alarme)</span></label><div class="row"><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('bonus');data.soundOn=k">▶️ Bonus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('malus');data.soundOn=k">▶️ Malus</button><button onclick="unlockAudio();const k=data.soundOn;data.soundOn=true;playSound('alert');data.soundOn=k">▶️ Alarme</button></div><p class="small">Si tu n’entends rien : monte le volume de l’iPad et vérifie que le mode silencieux est désactivé (centre de contrôle).</p><button style="width:100%;margin:6px 0" onclick="checkUpdate(true)">🔄 Rechercher une mise à jour (version ${APP_VERSION})</button><button style="width:100%;margin:6px 0 10px" onclick="lockSettings()">🔐 Mot de passe & mode classe${data.lock&&data.lock.hash?' (activé)':''}</button><p class="small">Les données sont stockées localement dans le navigateur de l’iPad.</p><button style="width:100%" onclick="closeModal()">Fermer</button>`) }
+function openSettings(){setTab('settings')}
 function toggleTheme(){data.theme=data.theme==='automatic'?'dark':data.theme==='dark'?'light':'automatic';save();render()}
 function progIdb(mode,val){return new Promise(res=>{let r;try{r=indexedDB.open('progression-classe-db')}catch(e){return res(null)}
  r.onupgradeneeded=()=>{try{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')}catch(_){}};
@@ -369,7 +405,7 @@ function progIdb(mode,val){return new Promise(res=>{let r;try{r=indexedDB.open('
  r.onerror=()=>res(null);});}
 /* ---- Sauvegarde complète : bases annexes (fichiers joints, Trace écrite, QCM) ---- */
 const EXTRA_STORES=[{db:'progression-fichiers',store:'files',keyPath:'id',label:'fichiers joints'},{db:'trace_ecrite_audio',store:'audios',keyPath:null,label:'enregistrements audio (Trace écrite)'},{db:'qcmscan',store:'kv',keyPath:null,label:'QCM en direct'}];
-const EXTRA_LS=/^(trace_|qcm|gemini_pro_api_key$)/;
+const EXTRA_LS=/^(trace_|qcm|gemini_pro_api_key$|sc_tools$|sc_ai$)/;
 function _b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
 function _unb64(str){const s=atob(str),b=new Uint8Array(s.length);for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return b}
 async function _pack(v){if(v instanceof Blob)return{__blob:_b64(await v.arrayBuffer()),type:v.type||''};if(v instanceof ArrayBuffer)return{__ab:_b64(v)};if(ArrayBuffer.isView(v))return{__ab:_b64(v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength))};
@@ -617,36 +653,33 @@ function locked(){return Verrou.protectOn()&&!Verrou.isAdmin()}
 function mi(icon,label,action,o={}){return `<button class="mi" ${o.disabled?'disabled':''} onclick="${o.keep?'':'closeMenu();'}${action}"><span class="mi-ic">${icon}</span><span class="grow">${label}</span>${o.lock&&locked()?'<span class="mi-lock">🔒</span>':''}</button>`}
 function seg(items,cur,fn){return `<div class="seg">${items.map(([v,l])=>`<button class="${v===cur?'on':''}" onclick="${fn}('${v}')">${l}</button>`).join('')}</div>`}
 function menuHTML(){
- const L={lock:true};
+ const L={lock:true},T=SCTools.state();
+ const tools=[
+  T.cdt?mi('🎤','Fin de cours : saisir la séance','goEndOfLesson()',L):'',
+  T.edt?mi('🗓️','Emploi du temps',"goProgression('progression.html?tab=week')",L):'',
+  T.cdt?mi('📒','Cahier de textes & progressions',"goProgression('progression.html?tab=classes')",L):'',
+  T.report?mi('📤','Reporter dans Pronote / l’ENT',"goProgression('progression.html#reportPanel')",L):'',
+  T.trace?mi('✍️','Trace écrite <span class="small">🤖 IA</span>','goTrace()',L):'',
+  T.qcm?mi('📷','QCM en direct','goQcmLive()',L):'',
+  T.qcm?mi('🎯','Créer un QCM <span class="small">🤖 IA</span>',"goProgression('progression.html?tab=qcm')",L):''
+ ].join('');
  return `<div class="msec">En classe</div>
  ${mi('👥','Bonus/malus à toute la classe','giveAll()')}
  ${mi('🎲','Élève au hasard','randomStudent()')}
  ${mi('↩️','Annuler la dernière action','undo()',{disabled:!lastEvents.length})}
- <div class="msec">Cours</div>
- ${mi('🎤','Fin de cours : dicter la séance','goEndOfLesson()',L)}
- ${mi('📅','Progression & cahier de textes',"goProgression('progression.html')",L)}
- ${mi('✍️','Trace écrite (fiches, synthèses, QCM)','goTrace()',L)}
- ${mi('📷','QCM en direct (scan des cartes avec l’iPad)','goQcmLive()',L)}
- ${mi('🎯','Créer un QCM (express, évaluation, cartes)',"goProgression('progression.html?tab=qcm')",L)}
- ${mi('📤','Reporter les séances (Pronote / ENT)',"goProgression('progression.html#reportPanel')",L)}
- <div class="msec">Suivi des élèves</div>
+ <div class="msec">Outils</div>
+ ${tools||'<div class="small" style="padding:4px 10px 8px">Aucun outil activé. Ajoute-en dans Réglages › Outils.</div>'}
+ ${mi('🧰','Choisir mes outils',"setTab('settings')",L)}
+ <div class="msec">Élèves & classes</div>
  ${mi('📊','Tableau récapitulatif',"setTab('recap')",L)}
  ${mi('📋','Rapports d’alerte (5 malus)',"setTab('reports')",L)}
  ${mi('⭐','Liste des bonus et malus',"setTab('behaviors')",L)}
- <div class="msec">Classe</div>
  ${mi('➕','Ajouter des élèves','addStudents()',L)}
- ${mi('⚙️','Réglages de la classe (remise à zéro…)','openClassSettings()',L)}
+ ${mi('⚙️','Réglages de la classe','openClassSettings()',L)}
  ${mi('🏫','Nouvelle classe','addClass()',L)}
- <div class="msec">Affichage</div>
- <div class="small" style="padding:2px 10px">Vignettes</div>${seg([['s','Petites'],['m','Moyennes'],['l','Grandes']],sizeKey(),'menuSize')}
- <div class="small" style="padding:2px 10px">Tri</div>${seg([['name','Nom'],['bonus','Bonus'],['malus','Malus']],sort,'menuSort')}
- <div class="small" style="padding:2px 10px">Compteurs</div>${seg([['total','Depuis le début'],['today','Aujourd’hui']],todayOnly?'today':'total','menuPeriod')}
- ${mi('🌓','Thème : '+({automatic:'automatique',dark:'sombre',light:'clair'}[data.theme]||'automatique'),'toggleTheme();openMenu()',{keep:true})}
  <div class="msec">Application</div>
- ${mi('💾','Données & sauvegarde',"setTab('data')",L)}
+ ${mi('⚙️','Réglages (affichage, sons, IA, sauvegarde…)',"setTab('settings')",L)}
  ${mi('🔐','Mot de passe & mode classe','openLockSettings()',L)}
- ${mi('🔊','Sons & réglages','openSettings()',L)}
- ${mi('🔄','Rechercher une mise à jour','checkUpdate(true)')}
  <div class="mfoot">Suivi de classe · ${APP_VERSION}${locked()?' · 🔒 mode classe':''}<br>© 2026 Tristan Zanchi — tous droits réservés</div>`;
 }
 function openMenu(){const w=document.getElementById('menuWrap'),p=document.getElementById('menuPanel');if(!w)return;p.innerHTML=menuHTML();w.classList.add('show')}
@@ -658,7 +691,7 @@ function menuPeriod(v){todayOnly=v==='today';render();openMenu()}
 // Sur la page Élèves, seules les fonctions de cours restent libres. Tout le reste passe par Verrou.requireAdmin().
 const _orig={setTab,openSettings,openMore,addClass,openClassSettings,studentMenu,behaviorForm,addStudents,backup,importDatabase,wipe};
 function guarded(name,label){return function(...a){Verrou.requireAdmin(()=>_orig[name].apply(this,a),label)}}
-setTab=function(t){if(t==='class')return _orig.setTab(t);Verrou.requireAdmin(()=>_orig.setTab(t),({behaviors:'Comportements',recap:'Tableau récap',reports:'Rapports',data:'Données'})[t]||'')};
+setTab=function(t){if(t==='class')return _orig.setTab(t);Verrou.requireAdmin(()=>_orig.setTab(t),({behaviors:'Comportements',recap:'Tableau récap',reports:'Rapports',data:'Réglages',settings:'Réglages'})[t]||'')};
 openSettings=function(){Verrou.requireAdmin(()=>_orig.openSettings(),'Réglages')};
 openMore=guarded('openMore','Plus d’actions');addClass=guarded('addClass','Nouvelle classe');openClassSettings=guarded('openClassSettings','Réglages de la classe');
 studentMenu=guarded('studentMenu','Fiche élève');behaviorForm=guarded('behaviorForm','Comportements');addStudents=guarded('addStudents','Ajouter des élèves');
@@ -678,6 +711,7 @@ function updateLockUI(){
  else if(p)p.remove();
 }
 const _render=render;render=function(){_render();updateLockUI()};
+const _edtBanner=edtBanner;edtBanner=function(){return SCTools.on('edt')?_edtBanner():''};
 // fin d'accès complet (inactivité) : retour automatique en mode classe
 let lastAdmin=null;
 setInterval(()=>{if(!Verrou.protectOn())return;const a=Verrou.isAdmin();if(lastAdmin&&!a){closeModal();if(tab!=='class')_orig.setTab('class');else render();toast('🔒 Mode classe réactivé',3000)}lastAdmin=a;updateLockUI()},5000);
@@ -715,7 +749,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V36';
+const APP_VERSION='V37';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
