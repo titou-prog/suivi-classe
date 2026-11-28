@@ -405,7 +405,7 @@ function progIdb(mode,val){return new Promise(res=>{let r;try{r=indexedDB.open('
  r.onerror=()=>res(null);});}
 /* ---- Sauvegarde complète : bases annexes (fichiers joints, Trace écrite, QCM) ---- */
 const EXTRA_STORES=[{db:'progression-fichiers',store:'files',keyPath:'id',label:'fichiers joints'},{db:'trace_ecrite_audio',store:'audios',keyPath:null,label:'enregistrements audio (Trace écrite)'},{db:'qcmscan',store:'kv',keyPath:null,label:'QCM en direct'}];
-const EXTRA_LS=/^(trace_|qcm|gemini_pro_api_key$|sc_tools$|sc_ai$)/;
+const EXTRA_LS=/^(trace_|qcm|sono_|gemini_pro_api_key$|sc_tools$|sc_ai$)/;
 function _b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
 function _unb64(str){const s=atob(str),b=new Uint8Array(s.length);for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return b}
 async function _pack(v){if(v instanceof Blob)return{__blob:_b64(await v.arrayBuffer()),type:v.type||''};if(v instanceof ArrayBuffer)return{__ab:_b64(v)};if(ArrayBuffer.isView(v))return{__ab:_b64(v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength))};
@@ -647,6 +647,7 @@ classView=function(){
 };
 function goEndOfLesson(){if(edt&&edtFocus){const pc=edtClass(edtFocus.slot.classId);if(pc)return goProgression('progression.html?classe='+encodeURIComponent(pc.id)+'&date='+edtFocus.date+'&saisir=1')}goProgression('progression.html')}
 function goQcmLive(){const c=currentClass();Verrou.requireAdmin(()=>{flushSave();location.href='qcm.html'+(c?'?tab=session&classe='+encodeURIComponent(c.id):'')},'QCM en direct')}
+function goSono(){flushSave();location.href='sonometre.html'}
 function goTrace(){const c=currentClass();Verrou.requireAdmin(()=>{flushSave();location.href='trace.html'+(c?'?classe='+encodeURIComponent(c.name):'')},'Trace écrite')}
 function openLockSettings(){Verrou.requireAdmin(()=>lockSettings(),'Mot de passe')}
 function locked(){return Verrou.protectOn()&&!Verrou.isAdmin()}
@@ -666,6 +667,7 @@ function menuHTML(){
  return `<div class="msec">En classe</div>
  ${T.bm?mi('👥','Bonus/malus à toute la classe','giveAll()'):''}
  ${mi('🎲','Élève au hasard','randomStudent()')}
+ ${T.sono?mi('🔊','Sonomètre','goSono()'):''}
  ${T.bm?mi('↩️','Annuler la dernière action','undo()',{disabled:!lastEvents.length}):''}
  <div class="msec">Outils</div>
  ${tools||'<div class="small" style="padding:4px 10px 8px">Aucun outil activé. Ajoute-en dans Réglages › Outils.</div>'}
@@ -714,7 +716,7 @@ const _render=render;render=function(){_render();updateLockUI()};
 const _edtBanner=edtBanner;edtBanner=function(){return SCTools.on('edt')?_edtBanner():''};
 const _classView=classView;classView=function(){if(SCTools.on('bm'))return _classView();return launcherView()};
 function launcherView(){const T=SCTools.state();
- const tiles=[T.cdt&&['🎤','Fin de cours : saisir la séance','goEndOfLesson()'],T.edt&&['🗓️','Emploi du temps',"goProgression('progression.html?tab=week')"],T.cdt&&['📒','Cahier de textes & progressions',"goProgression('progression.html?tab=classes')"],T.report&&['📤','Reporter dans Pronote / l’ENT',"goProgression('progression.html#reportPanel')"],T.trace&&['✍️','Trace écrite 🤖','goTrace()'],T.qcm&&['📷','QCM en direct','goQcmLive()'],T.qcm&&['🎯','Créer un QCM 🤖',"goProgression('progression.html?tab=qcm')"],['🎲','Élève au hasard','randomStudent()']].filter(Boolean);
+ const tiles=[T.cdt&&['🎤','Fin de cours : saisir la séance','goEndOfLesson()'],T.edt&&['🗓️','Emploi du temps',"goProgression('progression.html?tab=week')"],T.cdt&&['📒','Cahier de textes & progressions',"goProgression('progression.html?tab=classes')"],T.report&&['📤','Reporter dans Pronote / l’ENT',"goProgression('progression.html#reportPanel')"],T.trace&&['✍️','Trace écrite 🤖','goTrace()'],T.qcm&&['📷','QCM en direct','goQcmLive()'],T.qcm&&['🎯','Créer un QCM 🤖',"goProgression('progression.html?tab=qcm')"],T.sono&&['🔊','Sonomètre','goSono()'],['🎲','Élève au hasard','randomStudent()']].filter(Boolean);
  return `${edtBanner()}<div class="panel"><div class="section-title">Mes outils</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:8px">${tiles.map(t=>`<button style="min-height:84px;font-size:17px;font-weight:700;text-align:left;display:flex;gap:12px;align-items:center" onclick="${t[2]}"><span style="font-size:30px">${t[0]}</span><span>${t[1]}</span></button>`).join('')}</div>
  <button style="margin-top:12px" onclick="setTab('settings')">🧰 Choisir mes outils</button></div>`}
 // fin d'accès complet (inactivité) : retour automatique en mode classe
@@ -754,7 +756,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V38';
+const APP_VERSION='V39';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;

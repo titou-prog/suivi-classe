@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta name="copyright" content="© 2026 Tristan Zanchi — tous droits réservés">
+<!-- © 2026 Tristan Zanchi. Tous droits réservés. Voir LICENCE.txt -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Suivi de classe">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#111827">
+<title>Sonomètre — Suivi de classe</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e5e7eb;--accent:#4f46e5;--good:#15803d;--bad:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+body{padding:calc(10px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+button,input,select{font:inherit}
+button{min-height:46px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);padding:8px 16px;cursor:pointer;touch-action:manipulation;font-weight:650;font-size:16px;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:#15803d;border-color:#166534;color:#fff}
+button.stop{background:#fff;color:var(--bad);border-color:rgba(220,38,38,.45)}
+button.violet{background:var(--accent);border-color:var(--accent);color:#fff}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:5;background:var(--bg);padding:4px 0 8px}
+.title{font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px}
+.dot{width:14px;height:14px;border-radius:50%;background:#b4b2a9;flex:none}
+.dot.on{background:#15803d;animation:pulse 1.2s infinite}
+.dot.alert{background:#dc2626;animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.grow{flex:1}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 16px;box-shadow:0 3px 18px rgba(0,0,0,.04)}
+.lbl{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.small{font-size:13px;color:var(--muted)}
+.banner{display:none;align-items:center;justify-content:center;gap:12px;padding:14px 18px;background:#fdecec;border:2px solid #f09595;border-radius:18px;font-size:26px;font-weight:800;color:#7f1d1d;text-align:center}
+.banner.show{display:flex;animation:shake .45s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* Zone principale : thermomètre + chiffres */
+.mainrow{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:12px}
+@media(max-width:720px){.mainrow{grid-template-columns:1fr}}
+.tower{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:440px;position:relative}
+.towerbox{position:relative;width:150px;height:300px;margin-top:110px}
+.track{position:absolute;left:43px;width:64px;height:100%;border-radius:32px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.fill{position:absolute;bottom:0;left:0;width:100%;height:0%;transition:height .12s ease}
+.tline{position:absolute;left:36px;width:78px;height:4px;background:#7f1d1d;border-radius:2px;z-index:3}
+.tlabel{position:absolute;left:118px;font-size:12px;font-weight:800;color:#7f1d1d;transform:translateY(-50%);white-space:nowrap;z-index:3}
+.scale{position:absolute;left:0;top:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;font-size:12px;color:var(--muted)}
+.emoji{position:absolute;left:50%;transform:translateX(-50%);font-size:104px;line-height:1;z-index:4;transition:top .12s ease;pointer-events:none}
+.emoji.bump{animation:bump .5s}
+@keyframes bump{0%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) scale(1.25) rotate(-8deg)}100%{transform:translateX(-50%) scale(1)}}
+.right{display:flex;flex-direction:column;gap:12px;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{border:1px solid var(--line);border-radius:18px;padding:12px 14px;background:var(--card)}
+.big{font-size:46px;font-weight:800;line-height:1}
+.unit{font-size:18px;color:var(--muted);font-weight:650}
+.thr{display:flex;align-items:center;gap:12px}
+.thr input[type=range]{flex:1;height:34px;accent-color:#dc2626}
+.thrval{font-size:24px;font-weight:800;min-width:76px;text-align:right}
+.bars{display:flex;align-items:flex-end;justify-content:center;gap:5px;height:120px}
+.bar{flex:1;max-width:16px;border-radius:7px 7px 0 0;height:4%;transition:height .08s ease}
+#hist{width:100%;height:170px;display:block}
+
+/* Réglages */
+details.panel summary{font-weight:800;font-size:16px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;min-height:30px}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary::after{content:'▾';margin-left:auto;color:var(--muted)}
+details[open].panel summary::after{content:'▴'}
+.set{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px}
+.set .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+select{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:10px 12px;min-height:46px}
+.switch{position:relative;width:52px;height:30px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.sl{position:absolute;inset:0;border-radius:15px;background:#e3e1d8;border:1px solid #d3d1c7;cursor:pointer;transition:background .2s}
+.switch input:checked+.sl{background:#15803d;border-color:#166534}
+.sl::before{content:'';position:absolute;width:24px;height:24px;left:2px;top:2px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked+.sl::before{transform:translateX(22px)}
+.filelbl{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;cursor:pointer;font-weight:650;background:var(--card)}
+#alarmFile{display:none}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111827;color:#fff;padding:11px 18px;border-radius:999px;z-index:100;display:none;font-size:15px;max-width:90vw;text-align:center}
+.toast.show{display:block}
+
+/* Grand affichage (projection) */
+#big{position:fixed;inset:0;z-index:50;background:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2vh;padding:env(safe-area-inset-top) 4vw env(safe-area-inset-bottom);transition:background .25s}
+#big.show{display:flex}
+#big.alert{background:#fdecec}
+#bigEmoji{font-size:min(38vh,38vw);line-height:1}
+#bigEmoji.bump{animation:bigbump .5s}
+@keyframes bigbump{0%{transform:scale(1)}40%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1)}}
+#bigDb{font-size:min(14vh,12vw);font-weight:800;line-height:1}
+#bigBar{position:relative;width:min(86vw,1100px);height:6vh;min-height:28px;border-radius:999px;background:#eceae3;overflow:hidden}
+#bigFill{position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:999px;transition:width .12s ease}
+#bigThr{position:absolute;top:-4px;bottom:-4px;width:6px;background:#7f1d1d;border-radius:3px;z-index:2}
+#bigMsg{font-size:min(7vh,6vw);font-weight:800;color:#7f1d1d;min-height:1.2em;text-align:center}
+#bigClose{position:absolute;top:calc(12px + env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));opacity:.75}
+#pipCanvas{display:none}
+#pipVideo{position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none}
+</style>
+<script src="outils.js"></script>
+<script>window.addEventListener("DOMContentLoaded",function(){window.SCTools&&SCTools.guard("sono")});</script>
+</head>
+<body>
+<div class="wrap">
+ <div class="top">
+  <button onclick="goBack()" title="Retour à Suivi de classe">←<span> Retour</span></button>
+  <div class="title"><span class="dot" id="dot"></span>🔊 Sonomètre de classe</div>
+  <div class="grow"></div>
+  <div class="btns">
+   <button class="primary" id="startBtn" onclick="startMic()">🎙️ Démarrer</button>
+   <button class="stop" id="stopBtn" onclick="stopMic()" style="display:none">⏹ Arrêter</button>
+   <button class="violet" id="bigBtn" onclick="openBig()">📺 Grand affichage</button>
+   <button id="pipBtn" onclick="togglePip()" disabled style="display:none">🪟 Mode flottant</button>
+  </div>
+ </div>
+
+ <div class="banner" id="banner">🤫 Il y a trop de bruit, chut !</div>
+
+ <div class="mainrow">
+  <div class="panel tower">
+   <div class="lbl" style="position:absolute;top:14px;left:16px">Thermomètre sonore</div>
+   <div class="towerbox" id="towerBox">
+    <div class="scale"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="tline" id="tline"></div>
+    <div class="tlabel" id="tlabel">70</div>
+    <div class="emoji" id="emoji">😌</div>
+   </div>
+  </div>
+
+  <div class="right">
+   <div class="stats">
+    <div class="stat"><div class="lbl">Niveau</div><span class="big" id="dbVal">—</span> <span class="unit">dB</span></div>
+    <div class="stat"><div class="lbl">Pic max</div><span class="big" id="peakVal" style="color:#d85a30">—</span> <span class="unit">dB</span></div>
+    <div class="stat"><div class="lbl">Alertes</div><span class="big" id="alertVal" style="color:#dc2626">0</span></div>
+    <div class="stat"><div class="lbl">Calme</div><span class="big" id="calmVal" style="color:#15803d">—</span> <span class="unit">%</span></div>
+   </div>
+   <div class="panel">
+    <div class="lbl">Seuil d’alarme</div>
+    <div class="thr"><input type="range" min="40" max="100" step="1" value="70" id="thr" oninput="setThreshold(this.value)"><span class="thrval" id="thrVal">70 dB</span></div>
+   </div>
+   <div class="panel"><div class="lbl">Spectre en direct</div><div class="bars" id="bars"></div></div>
+   <div class="panel"><div class="lbl">Historique (30 dernières secondes)</div><canvas id="hist"></canvas></div>
+  </div>
+ </div>
+
+ <details class="panel" id="setPanel">
+  <summary>⚙️ Alarme et réglages</summary>
+  <div class="set">
+   <div>
+    <div class="lbl">Alarme sonore</div>
+    <div class="row"><label class="switch"><input type="checkbox" id="alarmOn" checked onchange="saveCfg()"><span class="sl"></span></label><span>Alarme activée</span></div>
+    <div class="row" style="margin-top:10px">
+     <label class="filelbl">🎵 Choisir un son…<input type="file" id="alarmFile" accept="audio/*" onchange="loadAlarm(this)"></label>
+     <button onclick="testAlarm()">🔔 Tester</button>
+    </div>
+    <div class="row" style="margin-top:8px"><span class="small" id="alarmName">Son intégré (bip)</span><button id="alarmReset" onclick="resetAlarm()" style="display:none;min-height:36px;font-size:14px">Revenir au bip</button></div>
+   </div>
+   <div>
+    <div class="lbl">Tolérance</div>
+    <div class="row"><select id="hold" onchange="saveCfg()">
+     <option value="0">Immédiate (le moindre bruit fort)</option>
+     <option value="500">½ seconde au-dessus du seuil</option>
+     <option value="1000">1 seconde au-dessus du seuil</option>
+     <option value="2000">2 secondes au-dessus du seuil</option>
+    </select></div>
+    <p class="small" style="margin-top:6px">Évite qu’une trousse qui tombe déclenche l’alarme.</p>
+   </div>
+   <div>
+    <div class="lbl">Durée de l’alerte</div>
+    <div class="row"><select id="freeze" onchange="saveCfg()">
+     <option value="2000">2 secondes</option>
+     <option value="4000">4 secondes</option>
+     <option value="6000">6 secondes</option>
+     <option value="10000">10 secondes</option>
+    </select></div>
+    <p class="small" style="margin-top:6px">L’affichage reste figé sur l’alerte pendant ce temps.</p>
+   </div>
+   <div>
+    <div class="lbl">Compteurs</div>
+    <div class="row"><button onclick="resetStats()">🔄 Remettre à zéro pic, alertes et historique</button></div>
+    <p class="small" style="margin-top:6px">Les niveaux sont relatifs (le micro de l’iPad n’est pas étalonné) : règle le seuil en classe.</p>
+   </div>
+  </div>
+ </details>
+</div>
+
+<div id="big" onclick="if(event.target===this)closeBig()">
+ <button id="bigClose" onclick="closeBig()">✕ Fermer</button>
+ <div id="bigEmoji">😌</div>
+ <div id="bigDb">— dB</div>
+ <div id="bigBar"><div id="bigFill"></div><div id="bigThr"></div></div>
+ <div id="bigMsg"></div>
+</div>
+
+<canvas id="pipCanvas" width="480" height="270"></canvas>
+<video id="pipVideo" muted playsinline></video>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ===== Réglages mémorisés ===== */
+const CFG_KEY='sono_cfg';
+let cfg={threshold:70,alarm:true,hold:500,freeze:4000};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem(CFG_KEY)||'{}'))}catch(e){}
+function saveCfg(){
+ cfg.alarm=document.getElementById('alarmOn').checked;
+ cfg.hold=+document.getElementById('hold').value;
+ cfg.freeze=+document.getElementById('freeze').value;
+ try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}catch(e){}
+}
+function toast(m,ms){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),ms||2500)}
+function goBack(){stopMic();location.href='index.html'}
+
+/* ===== État ===== */
+let audioCtx=null,analyser=null,source=null,proc=null,mute=null,stream=null,rafId=0,wakeLock=null;
+let running=false,db=0,smooth=0,peak=0,alerts=0,overSince=0,freezeUntil=0,frozenDb=0,emojiNow='😌';
+let calmTicks=0,totalTicks=0,lastHist=0,alarmCooldown=0,customAlarm=null,customAlarmUrl=null;
+const HIST_N=120,HIST_STEP=250; // 120 points × 250 ms = 30 s
+const hist=[];
+
+/* ===== Couleurs et émojis ===== */
+const lerp=(a,b,t)=>a+(b-a)*t;
+function colorFor(p){p=Math.max(0,Math.min(100,p));let r,g,b;
+ if(p<=50){const t=p/50;r=lerp(99,250,t);g=lerp(153,204,t);b=lerp(34,18,t)}
+ else{const t=(p-50)/50;r=lerp(250,226,t);g=lerp(204,60,t);b=lerp(18,60,t)}
+ return `rgb(${r|0},${g|0},${b|0})`}
+function emojiFor(v){const t=cfg.threshold;
+ if(v<Math.min(40,t-20))return '😌';
+ if(v<t-10)return '🙂';
+ if(v<t)return '😬';
+ if(v<t+15)return '😱';
+ return '🙉'}
+
+/* ===== Seuil ===== */
+function setThreshold(v){cfg.threshold=+v;
+ document.getElementById('thrVal').textContent=v+' dB';
+ document.getElementById('thr').value=v;
+ document.getElementById('tline').style.bottom=`calc(${v}% - 2px)`;
+ const tl=document.getElementById('tlabel');tl.style.bottom=v+'%';tl.style.transform='translateY(50%)';tl.textContent=v;
+ document.getElementById('bigThr').style.left=`calc(${v}% - 3px)`;
+ saveCfg();drawHist()}
+
+/* ===== Barres du spectre ===== */
+const N_BARS=24,bars=[];
+(function(){const w=document.getElementById('bars');for(let i=0;i<N_BARS;i++){const b=document.createElement('div');b.className='bar';w.appendChild(b);bars.push(b)}})();
+let freqBuf=null;
+
+/* ===== Mesure (cadencée par le flux audio : continue même si l'onglet est en arrière-plan sur ordinateur) ===== */
+let timeBuf=null;
+function measure(){
+ analyser.getFloatTimeDomainData(timeBuf);
+ let s=0;for(let i=0;i<timeBuf.length;i++)s+=timeBuf[i]*timeBuf[i];
+ const rms=Math.sqrt(s/timeBuf.length);
+ let v=rms<1e-10?0:20*Math.log10(rms)+90;
+ v=Math.max(0,Math.min(100,v));
+ // lissage : montée rapide, descente plus douce (évite le clignotement)
+ smooth=v>smooth?smooth+(v-smooth)*.55:smooth+(v-smooth)*.12;
+ db=Math.round(smooth);
+ const now=Date.now();
+ if(db>peak)peak=db;
+ totalTicks++;if(db<cfg.threshold)calmTicks++;
+ // déclenchement de l'alerte (avec tolérance)
+ if(db>=cfg.threshold){if(!overSince)overSince=now}else overSince=0;
+ if(now>=freezeUntil&&overSince&&now-overSince>=cfg.hold){
+  freezeUntil=now+cfg.freeze;frozenDb=db;alerts++;overSince=0;
+  emojiNow=emojiFor(db);bumpEmoji();triggerAlarm();
+ }
+ if(now>=freezeUntil)emojiNow=emojiFor(db);
+ if(now-lastHist>=HIST_STEP){lastHist=now;hist.push(db);if(hist.length>HIST_N)hist.shift()}
+ if(pipActive)drawPip();
+}
+
+/* ===== Affichage (à chaque image) ===== */
+function render(){
+ rafId=requestAnimationFrame(render);
+ if(!running)return;
+ const now=Date.now(),frozen=now<freezeUntil,shown=frozen?frozenDb:db,col=colorFor(shown);
+ const dv=document.getElementById('dbVal');dv.textContent=db;dv.style.color=colorFor(db);
+ document.getElementById('peakVal').textContent=peak;
+ document.getElementById('alertVal').textContent=alerts;
+ document.getElementById('calmVal').textContent=totalTicks?Math.round(calmTicks*100/totalTicks):'—';
+ document.getElementById('banner').classList.toggle('show',frozen);
+ document.getElementById('dot').className='dot '+(frozen?'alert':'on');
+ // thermomètre (figé pendant l'alerte)
+ const fill=document.getElementById('fill');fill.style.height=shown+'%';
+ fill.style.background=`linear-gradient(180deg,${colorFor(Math.min(100,shown+15))},${colorFor(Math.max(0,shown-15))})`;
+ const em=document.getElementById('emoji');if(em.textContent!==emojiNow)em.textContent=emojiNow;
+ placeEmoji(shown);
+ // spectre réel
+ if(freqBuf){analyser.getByteFrequencyData(freqBuf);const usable=Math.floor(freqBuf.length*.45);
+  for(let i=0;i<N_BARS;i++){const a=Math.floor(Math.pow(i/N_BARS,1.7)*usable),b=Math.max(a+1,Math.floor(Math.pow((i+1)/N_BARS,1.7)*usable));
+   let m=0;for(let k=a;k<b;k++)if(freqBuf[k]>m)m=freqBuf[k];
+   const h=Math.max(4,m/255*100);bars[i].style.height=h+'%';bars[i].style.background=colorFor(h)}}
+ // grand affichage
+ if(bigOpen){const be=document.getElementById('bigEmoji');if(be.textContent!==emojiNow)be.textContent=emojiNow;
+  document.getElementById('bigDb').textContent=shown+' dB';document.getElementById('bigDb').style.color=col;
+  const bf=document.getElementById('bigFill');bf.style.width=shown+'%';bf.style.background=col;
+  document.getElementById('bigMsg').textContent=frozen?'🤫 Il y a trop de bruit, chut !':'';
+  document.getElementById('big').classList.toggle('alert',frozen)}
+ drawHist();
+}
+function placeEmoji(v){const H=document.getElementById('towerBox').clientHeight||300;document.getElementById('emoji').style.top=(H-(v/100)*H-104*.8)+'px'}
+function bumpEmoji(){['emoji','bigEmoji'].forEach(id=>{const e=document.getElementById(id);e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')})}
+
+/* ===== Historique ===== */
+function drawHist(){
+ const c=document.getElementById('hist'),dpr=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(!w)return;
+ if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
+ const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+ const L=30,T=6,B=6,pw=w-L-4,ph=h-T-B,yv=v=>T+ph-(v/100)*ph;
+ x.font='12px -apple-system,system-ui,sans-serif';x.fillStyle='#98a2b3';x.textAlign='right';x.textBaseline='middle';
+ for(let v=0;v<=100;v+=25){x.fillText(v,L-6,yv(v));x.strokeStyle='rgba(152,162,179,.18)';x.lineWidth=1;x.beginPath();x.moveTo(L,yv(v));x.lineTo(L+pw,yv(v));x.stroke()}
+ // seuil
+ x.strokeStyle='#dc2626';x.lineWidth=2;x.setLineDash([6,5]);x.beginPath();x.moveTo(L,yv(cfg.threshold));x.lineTo(L+pw,yv(cfg.threshold));x.stroke();x.setLineDash([]);
+ if(hist.length<2)return;
+ const step=pw/(HIST_N-1),x0=L+pw-(hist.length-1)*step;
+ const g=x.createLinearGradient(0,T,0,T+ph);g.addColorStop(0,'rgba(212,83,126,.35)');g.addColorStop(1,'rgba(212,83,126,.02)');
+ x.beginPath();x.moveTo(x0,yv(0));hist.forEach((v,i)=>x.lineTo(x0+i*step,yv(v)));x.lineTo(x0+(hist.length-1)*step,yv(0));x.closePath();x.fillStyle=g;x.fill();
+ x.beginPath();hist.forEach((v,i)=>i?x.lineTo(x0+i*step,yv(v)):x.moveTo(x0,yv(v)));x.strokeStyle='#d4537e';x.lineWidth=2.5;x.lineJoin='round';x.stroke();
+}
+
+/* ===== Alarme ===== */
+function beep(t0){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);
+ o.type='square';o.frequency.setValueAtTime(880,t0);g.gain.setValueAtTime(.3,t0);g.gain.exponentialRampToValueAtTime(.001,t0+.4);o.start(t0);o.stop(t0+.42)}
+function ensureCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}
+function triggerAlarm(force){
+ if(!force&&!cfg.alarm)return;
+ const now=Date.now();if(!force&&now<alarmCooldown)return;alarmCooldown=now+3000;
+ if(customAlarm){try{customAlarm.currentTime=0;customAlarm.volume=1;customAlarm.play().catch(()=>{})}catch(e){}}
+ else{ensureCtx();const t=audioCtx.currentTime+.02;beep(t);beep(t+.5)}
+}
+function testAlarm(){ensureCtx();if(customAlarm){customAlarm.play().then(()=>{customAlarm.pause();triggerAlarm(true)}).catch(()=>triggerAlarm(true))}else triggerAlarm(true)}
+
+/* Son personnalisé : gardé sur l'appareil (IndexedDB) */
+function soundDb(){return new Promise((res,rej)=>{const r=indexedDB.open('sonometre',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function soundGet(){try{const d=await soundDb();return await new Promise(res=>{const q=d.transaction('kv').objectStore('kv').get('alarm');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}}
+async function soundPut(v){try{const d=await soundDb();await new Promise(res=>{const t=d.transaction('kv','readwrite');v?t.objectStore('kv').put(v,'alarm'):t.objectStore('kv').delete('alarm');t.oncomplete=res;t.onerror=res})}catch(e){}}
+function useSound(blob,name){
+ if(customAlarmUrl)URL.revokeObjectURL(customAlarmUrl);
+ customAlarmUrl=blob?URL.createObjectURL(blob):null;
+ customAlarm=blob?new Audio(customAlarmUrl):null;if(customAlarm){customAlarm.preload='auto';customAlarm.setAttribute('playsinline','')}
+ document.getElementById('alarmName').textContent=blob?('Son : '+name):'Son intégré (bip)';
+ document.getElementById('alarmReset').style.display=blob?'':'none';
+}
+async function loadAlarm(input){const f=input.files[0];if(!f)return;
+ const blob=new Blob([await f.arrayBuffer()],{type:f.type||'audio/mpeg'});
+ useSound(blob,f.name);await soundPut({blob,name:f.name});toast('Son enregistré sur cet appareil ✅');input.value=''}
+async function resetAlarm(){useSound(null);await soundPut(null);toast('Retour au bip')}
+
+/* ===== Micro ===== */
+async function startMic(){
+ try{
+  ensureCtx();
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  analyser=audioCtx.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.6;
+  timeBuf=new Float32Array(analyser.fftSize);freqBuf=new Uint8Array(analyser.frequencyBinCount);
+  source=audioCtx.createMediaStreamSource(stream);source.connect(analyser);
+  // horloge de mesure liée à l'audio
+  proc=audioCtx.createScriptProcessor(2048,1,1);mute=audioCtx.createGain();mute.gain.value=0;
+  source.connect(proc);proc.connect(mute);mute.connect(audioCtx.destination);
+  proc.onaudioprocess=()=>{if(running)measure()};
+  if(customAlarm){customAlarm.muted=true;customAlarm.play().then(()=>{customAlarm.pause();customAlarm.currentTime=0;customAlarm.muted=false}).catch(()=>{customAlarm.muted=false})}
+  running=true;
+  document.getElementById('startBtn').style.display='none';document.getElementById('stopBtn').style.display='';
+  document.getElementById('pipBtn').disabled=false;
+  keepAwake();preparePip();
+  if(!rafId)render();
+ }catch(e){
+  alert("Impossible d’accéder au micro.\n\nSur iPad : Réglages › Safari › Microphone › Autoriser (ou Demander), puis réessaie.");
+ }
+}
+function stopMic(){
+ running=false;
+ try{if(proc){proc.onaudioprocess=null;proc.disconnect()}if(source)source.disconnect();if(mute)mute.disconnect()}catch(e){}
+ if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
+ freezeUntil=0;overSince=0;smooth=0;db=0;
+ document.getElementById('startBtn').style.display='';document.getElementById('stopBtn').style.display='none';
+ document.getElementById('pipBtn').disabled=true;document.getElementById('dot').className='dot';
+ document.getElementById('dbVal').textContent='—';emojiNow='😌';document.getElementById('emoji').textContent=emojiNow;placeEmoji(0);document.getElementById('fill').style.height='0%';document.getElementById('banner').classList.remove('show');
+ if(pipActive)exitPip();
+ if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}
+}
+function resetStats(){peak=0;alerts=0;calmTicks=0;totalTicks=0;hist.length=0;
+ document.getElementById('peakVal').textContent='—';document.getElementById('alertVal').textContent='0';document.getElementById('calmVal').textContent='—';drawHist();toast('Compteurs remis à zéro')}
+
+/* Écran toujours allumé pendant la mesure */
+async function keepAwake(){try{if('wakeLock' in navigator&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null})}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running){keepAwake();ensureCtx()}});
+
+/* ===== Grand affichage ===== */
+let bigOpen=false;
+function openBig(){bigOpen=true;document.getElementById('big').classList.add('show');
+ const el=document.documentElement;try{(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el)}catch(e){}
+ if(!running)toast('Touche « Démarrer » pour lancer la mesure',3000)}
+function closeBig(){bigOpen=false;document.getElementById('big').classList.remove('show');
+ try{if(document.fullscreenElement)document.exitFullscreen();else if(document.webkitFullscreenElement)document.webkitExitFullscreen()}catch(e){}}
+
+/* ===== Mode flottant (Picture-in-Picture, surtout sur ordinateur) ===== */
+const pipCanvas=document.getElementById('pipCanvas'),pipVideo=document.getElementById('pipVideo'),pctx=pipCanvas.getContext('2d');
+let pipActive=false,pipReady=false;
+const pipSupported=!!(pipCanvas.captureStream&&((document.pictureInPictureEnabled&&pipVideo.requestPictureInPicture)||(pipVideo.webkitSupportsPresentationMode&&pipVideo.webkitSupportsPresentationMode('picture-in-picture'))));
+if(pipSupported)document.getElementById('pipBtn').style.display='';
+function drawPip(){
+ const w=pipCanvas.width,h=pipCanvas.height,frozen=Date.now()<freezeUntil,v=frozen?frozenDb:db,col=colorFor(v);
+ pctx.fillStyle=frozen?'#fdecec':'#ffffff';pctx.fillRect(0,0,w,h);
+ pctx.fillStyle='#172033';pctx.font='700 20px -apple-system,sans-serif';pctx.textAlign='left';pctx.textBaseline='alphabetic';pctx.fillText('Sonomètre de classe',16,32);
+ pctx.font='800 64px -apple-system,sans-serif';pctx.fillStyle=col;pctx.textAlign='right';pctx.fillText(v+' dB',w-16,104);
+ pctx.font='76px sans-serif';pctx.textAlign='left';pctx.fillText(emojiNow,16,136);
+ const bx=16,by=154,bw=w-32,bh=28;pctx.fillStyle='#eceae3';pctx.fillRect(bx,by,bw,bh);pctx.fillStyle=col;pctx.fillRect(bx,by,bw*v/100,bh);
+ pctx.fillStyle='#7f1d1d';pctx.fillRect(bx+bw*cfg.threshold/100-1,by-5,3,bh+10);
+ pctx.textAlign='center';
+ if(frozen){pctx.fillStyle='#7f1d1d';pctx.font='800 26px -apple-system,sans-serif';pctx.fillText('🤫 Il y a trop de bruit, chut !',w/2,h-24)}
+ else{pctx.fillStyle='#667085';pctx.font='15px -apple-system,sans-serif';pctx.fillText('Seuil : '+cfg.threshold+' dB · Alertes : '+alerts,w/2,h-20)}
+}
+function preparePip(){if(!pipSupported||pipReady)return;
+ try{drawPip();pipVideo.srcObject=pipCanvas.captureStream(25);pipVideo.play().catch(()=>{});pipReady=true}catch(e){}}
+async function togglePip(){
+ if(pipActive){exitPip();return}
+ try{preparePip();drawPip();pipActive=true;
+  if(pipVideo.paused)await pipVideo.play();
+  if(document.pictureInPictureEnabled&&pipVideo.requestPictureInPicture)await pipVideo.requestPictureInPicture();
+  else pipVideo.webkitSetPresentationMode('picture-in-picture');
+  document.getElementById('pipBtn').textContent='✕ Quitter le mode flottant';
+ }catch(e){pipActive=false;toast('Mode flottant impossible ici : utilise « Grand affichage »',3500)}
+}
+function exitPip(){
+ try{if(document.pictureInPictureElement)document.exitPictureInPicture().catch(()=>{});else if(pipVideo.webkitPresentationMode==='picture-in-picture')pipVideo.webkitSetPresentationMode('inline')}catch(e){}
+ pipLeft()}
+function pipLeft(){pipActive=false;document.getElementById('pipBtn').textContent='🪟 Mode flottant'}
+pipVideo.addEventListener('leavepictureinpicture',pipLeft);
+pipVideo.addEventListener('webkitpresentationmodechanged',()=>{if(pipVideo.webkitPresentationMode!=='picture-in-picture')pipLeft()});
+
+/* ===== Démarrage ===== */
+document.getElementById('alarmOn').checked=cfg.alarm;
+document.getElementById('hold').value=String(cfg.hold);
+document.getElementById('freeze').value=String(cfg.freeze);
+setThreshold(cfg.threshold);placeEmoji(0);
+soundGet().then(s=>{if(s&&s.blob)useSound(s.blob,s.name)});
+window.addEventListener('resize',drawHist);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&bigOpen)closeBig()});
+window.addEventListener('pagehide',()=>{if(running)stopMic()});
+</script>
+</body>
+</html>

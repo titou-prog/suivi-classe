@@ -1,5 +1,16 @@
 © 2026 Tristan Zanchi — tous droits réservés (voir LICENCE.txt).
 
+Suivi de classe — PWA iPad V39
+
+V39 : nouvel outil « 🔊 Sonomètre » (sonometre.html), à cocher dans Réglages › Outils.
+- Menu ☰ › En classe › « Sonomètre » (accessible aussi en mode classe : aucune donnée d'élève).
+- Thermomètre sonore avec émoji, niveau, pic, nombre d'alertes, % de temps calme, spectre réel, historique des 30 dernières secondes.
+- Seuil d'alarme réglable ; au-dessus du seuil : bandeau « chut », bip (ou son choisi, gardé sur l'iPad), affichage figé quelques secondes.
+- Tolérance (½ s, 1 s, 2 s au-dessus du seuil avant l'alarme) et durée de l'alerte réglables ; réglages mémorisés.
+- « 📺 Grand affichage » : émoji géant + niveau en plein écran, pour projeter au tableau. L'écran de l'iPad reste allumé pendant la mesure.
+- « 🪟 Mode flottant » (Picture-in-Picture) proposé seulement si le navigateur le permet (Chrome / Edge sur ordinateur).
+- Fonctionne hors ligne (plus aucune bibliothèque chargée depuis Internet).
+
 Suivi de classe — PWA iPad V33
 
 V33 : Progression › QCM › onglet « 📄 Fiche (PDF / Word) » — créer un QCM à partir d'une fiche de cours.

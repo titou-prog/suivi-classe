@@ -1,13 +1,13 @@
-// Service worker de Suivi de classe — V31 (ajout du module qcm.html « QCM en direct »)
+// Service worker de Suivi de classe — V39 (ajout du module sonometre.html « Sonomètre »)
 // V26
 // - Pages et scripts de l'appli : réseau d'abord (toujours la dernière version), copie de secours hors ligne.
 //   Correctif V26 : sur iPad, fetch(requête de navigation, options) échouait → l'appli restait bloquée sur l'ancienne version.
 //   On redemande maintenant l'adresse (URL) elle-même.
 // - Icônes et manifeste : copie locale d'abord.
 // - Requêtes vers d'autres sites (IA, Pronote…) : jamais interceptées ni mises en cache.
-const CACHE='suivi-classe-ipad-v38';
-const ASSETS=['./','./index.html','./app.js','./progression.html','./trace.html','./qcm.html','./verrou.js','./chiffre.js','./outils.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
-const FRESH=/\/(index\.html|progression\.html|trace\.html|qcm\.html|app\.js|verrou\.js|chiffre\.js|outils\.js|sw\.js|version\.json)?$/;
+const CACHE='suivi-classe-ipad-v39';
+const ASSETS=['./','./index.html','./app.js','./progression.html','./trace.html','./qcm.html','./sonometre.html','./verrou.js','./chiffre.js','./outils.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
+const FRESH=/\/(index\.html|progression\.html|trace\.html|qcm\.html|sonometre\.html|app\.js|verrou\.js|chiffre\.js|outils\.js|sw\.js|version\.json)?$/;
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data==='skip')self.skipWaiting()});

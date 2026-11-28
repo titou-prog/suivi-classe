@@ -11,7 +11,8 @@
   {id:'cdt',icon:'📒',name:'Cahier de textes & progressions',desc:'Séance de fin de cours, devoirs, fichiers joints, séquences, progressions de l’année.',ai:'option : reformulation de la dictée et transcription audio',needs:['edt']},
   {id:'report',icon:'📤',name:'Report Pronote / ENT',desc:'Favori Safari qui reporte les séances et les devoirs, et les malus dans la feuille d’appel (Vayrac).',ai:'',needs:['cdt']},
   {id:'trace',icon:'✍️',name:'Trace écrite',desc:'Photos du tableau → fiche de cours, synthèse Word, flash test.',ai:'nécessaire'},
-  {id:'qcm',icon:'📷',name:'QCM en direct',desc:'QCM projetés, scan des cartes des élèves avec l’iPad, résultats.',ai:'option : créer un QCM à partir d’une séance, d’une fiche ou d’une séquence'}
+  {id:'qcm',icon:'📷',name:'QCM en direct',desc:'QCM projetés, scan des cartes des élèves avec l’iPad, résultats.',ai:'option : créer un QCM à partir d’une séance, d’une fiche ou d’une séquence'},
+  {id:'sono',icon:'🔊',name:'Sonomètre',desc:'Niveau sonore de la classe avec le micro de l’iPad : thermomètre et émojis, seuil d’alarme, grand affichage pour projeter.',ai:''}
  ];
  function read(){try{var v=JSON.parse(localStorage.getItem(KEY)||'null');return v&&typeof v==='object'?v:null;}catch(e){return null;}}
  function write(v){try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}}
@@ -39,7 +40,7 @@
   var prog=await idbHas('progression-classe-db','kv',function(x){return !!(x&&Array.isArray(x.sessions)&&x.sessions.length);});
   var progCfg=await idbHas('progression-classe-db','kv',function(x){return !!(x&&x.config&&x.config.ics&&Object.keys(x.config.ics).length);});
   var qcm=(await idbCount('qcmscan','kv'))>0;var trace=false;try{trace=JSON.parse(localStorage.getItem('trace_sessions')||'[]').length>0;}catch(e){}
-  var s={bm:true,edt:prog||progCfg,cdt:prog,report:prog,trace:trace,qcm:qcm||prog};
+  var s={bm:true,edt:prog||progCfg,cdt:prog,report:prog,trace:trace,qcm:qcm||prog,sono:false};
   write(s);return state();
  }
  /* Clé IA partagée (une seule saisie pour tous les outils) */
