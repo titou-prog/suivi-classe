@@ -1,11 +1,12 @@
 /* © 2026 Tristan Zanchi. Tous droits réservés. Voir LICENCE.txt */
 /* Outils activables de Suivi de classe (partagé par toutes les pages).
-   Le suivi bonus/malus est toujours actif. Les autres outils se cochent dans Réglages › Outils.
+   Tous les outils se cochent dans Réglages › Outils (le suivi bonus/malus est coché par défaut).
    Décocher un outil le cache seulement : aucune donnée n'est effacée. */
 (function(){
  'use strict';
  var KEY='sc_tools',AIKEY='sc_ai';
  var LIST=[
+  {id:'bm',icon:'👥',name:'Suivi bonus/malus',desc:'Bonus et malus des élèves, élève au hasard, tableau récapitulatif, rapports d’alerte (5 malus).',ai:'',def:true},
   {id:'edt',icon:'🗓️',name:'Emploi du temps',desc:'Bandeau « cours en cours », semaine, import de l’emploi du temps Pronote (iCal).',ai:''},
   {id:'cdt',icon:'📒',name:'Cahier de textes & progressions',desc:'Séance de fin de cours, devoirs, fichiers joints, séquences, progressions de l’année.',ai:'option : reformulation de la dictée et transcription audio',needs:['edt']},
   {id:'report',icon:'📤',name:'Report Pronote / ENT',desc:'Favori Safari qui reporte les séances et les devoirs, et les malus dans la feuille d’appel (Vayrac).',ai:'',needs:['cdt']},
@@ -14,7 +15,7 @@
  ];
  function read(){try{var v=JSON.parse(localStorage.getItem(KEY)||'null');return v&&typeof v==='object'?v:null;}catch(e){return null;}}
  function write(v){try{localStorage.setItem(KEY,JSON.stringify(v));}catch(e){}}
- function state(){var v=read()||{};var o={};LIST.forEach(function(t){o[t.id]=!!v[t.id];});return o;}
+ function state(){var v=read()||{};var o={};LIST.forEach(function(t){o[t.id]=(v[t.id]===undefined&&t.def)?true:!!v[t.id];});return o;}
  function on(id){return !!state()[id];}
  function set(id,val){var s=state();s[id]=!!val;var msgs=[];
   function up(x){(byId(x).needs||[]).forEach(function(n){if(!s[n]){s[n]=true;msgs.push(byId(n).name);up(n);}});}
@@ -38,7 +39,7 @@
   var prog=await idbHas('progression-classe-db','kv',function(x){return !!(x&&Array.isArray(x.sessions)&&x.sessions.length);});
   var progCfg=await idbHas('progression-classe-db','kv',function(x){return !!(x&&x.config&&x.config.ics&&Object.keys(x.config.ics).length);});
   var qcm=(await idbCount('qcmscan','kv'))>0;var trace=false;try{trace=JSON.parse(localStorage.getItem('trace_sessions')||'[]').length>0;}catch(e){}
-  var s={edt:prog||progCfg,cdt:prog,report:prog,trace:trace,qcm:qcm||prog};
+  var s={bm:true,edt:prog||progCfg,cdt:prog,report:prog,trace:trace,qcm:qcm||prog};
   write(s);return state();
  }
  /* Clé IA partagée (une seule saisie pour tous les outils) */

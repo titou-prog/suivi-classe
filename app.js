@@ -228,7 +228,7 @@ async function aiTest(){const a=SCTools.ai(),out=document.getElementById('aiTest
 function setSec(id,html,open){return `<details class="panel set" ${open?'open':''}><summary class="section-title" style="cursor:pointer">${id}</summary><div style="margin-top:10px">${html}</div></details>`}
 function settingsView(){
  const T=SCTools.state(),a=SCTools.ai(),anyAi=SCTools.LIST.some(t=>t.ai&&T[t.id]);
- const tools=`<p class="small">Le <b>suivi bonus/malus</b> est toujours actif. Coche les outils que tu veux utiliser : ils apparaissent dans le menu ☰. Décocher un outil le cache seulement, <b>sans effacer ses données</b>.</p>
+ const tools=`<p class="small">Coche les outils que tu veux utiliser : ils apparaissent dans le menu ☰. Décocher un outil le cache seulement, <b>sans effacer ses données</b>.</p>
  <div>${SCTools.LIST.map(t=>`<label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:10px 0;border-top:1px solid var(--line)"><input type="checkbox" style="width:26px;height:26px;flex:none;margin-top:2px" ${T[t.id]?'checked':''} onchange="toolToggle('${t.id}',this.checked)"><div class="grow"><b>${t.icon} ${esc(t.name)}</b>${t.ai?` <span class="chip" style="font-size:12px">🤖 IA${t.ai==='nécessaire'?'':' (option)'}</span>`:''}<div class="small">${esc(t.desc)}${t.ai&&t.ai!=='nécessaire'?'<br>🤖 '+esc(t.ai)+'.':''}${t.needs?'<br>Nécessite : '+t.needs.map(n=>esc(SCTools.byId(n).name)).join(', ')+'.':''}</div></div></label>`).join('')}</div>`;
  const ai=`<p class="small">Une seule clé pour tous les outils qui utilisent l’IA. Elle reste uniquement sur cet iPad.</p>
  <label class="lbl">IA utilisée</label><select onchange="aiSave('provider',this.value)"><option value="gemini" ${a.provider==='gemini'?'selected':''}>Gemini (Google) — offre gratuite possible</option><option value="claude" ${a.provider==='claude'?'selected':''}>Claude (Anthropic) — crédits payants</option></select>
@@ -664,16 +664,16 @@ function menuHTML(){
   T.qcm?mi('🎯','Créer un QCM <span class="small">🤖 IA</span>',"goProgression('progression.html?tab=qcm')",L):''
  ].join('');
  return `<div class="msec">En classe</div>
- ${mi('👥','Bonus/malus à toute la classe','giveAll()')}
+ ${T.bm?mi('👥','Bonus/malus à toute la classe','giveAll()'):''}
  ${mi('🎲','Élève au hasard','randomStudent()')}
- ${mi('↩️','Annuler la dernière action','undo()',{disabled:!lastEvents.length})}
+ ${T.bm?mi('↩️','Annuler la dernière action','undo()',{disabled:!lastEvents.length}):''}
  <div class="msec">Outils</div>
  ${tools||'<div class="small" style="padding:4px 10px 8px">Aucun outil activé. Ajoute-en dans Réglages › Outils.</div>'}
  ${mi('🧰','Choisir mes outils',"setTab('settings')",L)}
  <div class="msec">Élèves & classes</div>
- ${mi('📊','Tableau récapitulatif',"setTab('recap')",L)}
- ${mi('📋','Rapports d’alerte (5 malus)',"setTab('reports')",L)}
- ${mi('⭐','Liste des bonus et malus',"setTab('behaviors')",L)}
+ ${T.bm?mi('📊','Tableau récapitulatif',"setTab('recap')",L):''}
+ ${T.bm?mi('📋','Rapports d’alerte (5 malus)',"setTab('reports')",L):''}
+ ${T.bm?mi('⭐','Liste des bonus et malus',"setTab('behaviors')",L):''}
  ${mi('➕','Ajouter des élèves','addStudents()',L)}
  ${mi('⚙️','Réglages de la classe','openClassSettings()',L)}
  ${mi('🏫','Nouvelle classe','addClass()',L)}
@@ -712,6 +712,11 @@ function updateLockUI(){
 }
 const _render=render;render=function(){_render();updateLockUI()};
 const _edtBanner=edtBanner;edtBanner=function(){return SCTools.on('edt')?_edtBanner():''};
+const _classView=classView;classView=function(){if(SCTools.on('bm'))return _classView();return launcherView()};
+function launcherView(){const T=SCTools.state();
+ const tiles=[T.cdt&&['🎤','Fin de cours : saisir la séance','goEndOfLesson()'],T.edt&&['🗓️','Emploi du temps',"goProgression('progression.html?tab=week')"],T.cdt&&['📒','Cahier de textes & progressions',"goProgression('progression.html?tab=classes')"],T.report&&['📤','Reporter dans Pronote / l’ENT',"goProgression('progression.html#reportPanel')"],T.trace&&['✍️','Trace écrite 🤖','goTrace()'],T.qcm&&['📷','QCM en direct','goQcmLive()'],T.qcm&&['🎯','Créer un QCM 🤖',"goProgression('progression.html?tab=qcm')"],['🎲','Élève au hasard','randomStudent()']].filter(Boolean);
+ return `${edtBanner()}<div class="panel"><div class="section-title">Mes outils</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:8px">${tiles.map(t=>`<button style="min-height:84px;font-size:17px;font-weight:700;text-align:left;display:flex;gap:12px;align-items:center" onclick="${t[2]}"><span style="font-size:30px">${t[0]}</span><span>${t[1]}</span></button>`).join('')}</div>
+ <button style="margin-top:12px" onclick="setTab('settings')">🧰 Choisir mes outils</button></div>`}
 // fin d'accès complet (inactivité) : retour automatique en mode classe
 let lastAdmin=null;
 setInterval(()=>{if(!Verrou.protectOn())return;const a=Verrou.isAdmin();if(lastAdmin&&!a){closeModal();if(tab!=='class')_orig.setTab('class');else render();toast('🔒 Mode classe réactivé',3000)}lastAdmin=a;updateLockUI()},5000);
@@ -749,7 +754,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V37';
+const APP_VERSION='V38';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
