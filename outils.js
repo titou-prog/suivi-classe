@@ -41,6 +41,7 @@
   var progCfg=await idbHas('progression-classe-db','kv',function(x){return !!(x&&x.config&&x.config.ics&&Object.keys(x.config.ics).length);});
   var qcm=(await idbCount('qcmscan','kv'))>0;var trace=false;try{trace=JSON.parse(localStorage.getItem('trace_sessions')||'[]').length>0;}catch(e){}
   var s={bm:true,edt:prog||progCfg,cdt:prog,report:prog,trace:trace,qcm:qcm||prog,sono:false};
+  api.fresh=!(prog||progCfg||trace||qcm);
   write(s);return state();
  }
  /* Clé IA partagée (une seule saisie pour tous les outils) */
@@ -55,5 +56,5 @@
   d.innerHTML='<div style="background:#fff;color:#0f172a;border-radius:16px;max-width:420px;width:100%;padding:20px"><div style="font-size:40px">'+t.icon+'</div><div style="font-size:19px;font-weight:800;margin:6px 0">'+t.name+' n’est pas activé</div><div style="font-size:15px;color:#475569">'+t.desc+(t.ai?'<br><b>🤖 IA</b> : '+t.ai:'')+'</div><div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button id="scgOn" style="font-size:16px;padding:12px 16px;border-radius:10px;border:0;background:#4f46e5;color:#fff;font-weight:700">Activer cet outil</button><button id="scgBack" style="font-size:16px;padding:12px 16px;border-radius:10px;border:1px solid #cbd5e1;background:#fff">← Retour</button></div></div>';
   document.body.appendChild(d);d.querySelector('#scgOn').onclick=function(){set(id,true);location.reload();};d.querySelector('#scgBack').onclick=function(){location.href='index.html';};
   return false;}
- window.SCTools={LIST:LIST,state:state,on:on,set:set,byId:byId,init:init,known:known,ai:ai,setAi:setAi,aiReady:aiReady,guard:guard};
+ var api=window.SCTools={fresh:false,LIST:LIST,state:state,on:on,set:set,byId:byId,init:init,known:known,ai:ai,setAi:setAi,aiReady:aiReady,guard:guard};
 })();

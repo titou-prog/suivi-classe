@@ -74,9 +74,11 @@ async function init(){
  }
  currentClassId=data.classes[0]?.id||null;
  try{await SCTools.init()}catch(e){console.warn('Outils :',e)}
+ const firstRun=SCTools.fresh&&!data.classes.length;
  try{if(!localStorage.getItem('sc_ai')){const pg=await progIdb('get');const a=pg&&pg.config&&pg.config.ai;if(a&&(a.geminiKey||a.key))SCTools.setAi({provider:a.provider||'gemini',geminiKey:a.geminiKey||SCTools.ai().geminiKey,claudeKey:a.key||'',geminiModel:a.geminiModel,claudeModel:a.model});}}catch(_){}
  if(SCTools.on('edt')){try{await edtAutoSelect('start')}catch(e){console.warn('Emploi du temps :',e)}}
  applyTheme();render();
+ if(firstRun)setTimeout(welcomeTools,400);
  if(readFailed)toast('Données locales illisibles : rien n’a été écrasé. Importe une sauvegarde pour repartir.',7000);
  // Migration automatique depuis l'ancien stockage localStorage (versions ≤ V14)
  if(source==='ls'&&storageMode==='idb'&&!blockSave){
@@ -219,6 +221,17 @@ function studentCard(s){
  return `<article class="student compact"><div class="top" title="Appui long pour gérer l’élève" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false"><div class="avatar" style="background:${avatarColor(s.name)}">${s.photo?`<img src="${s.photo}" alt="" loading="lazy" decoding="async">`:initials(s.name)}</div><div class="info"><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">−${k.malus}</span></div></div></div><div class="actions"><button class="bplus" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button class="bminus" onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function studentCardLarge(s){const k=counts(s.id);return `<article class="student"><div class="avatar" title="Appui long pour gérer l’élève" style="background:${avatarColor(s.name)}" onpointerdown="startStudentPress(event,'${s.id}')" onpointerup="endStudentPress(event,'${s.id}')" onpointercancel="cancelStudentPress()" onpointerleave="cancelStudentPress()" oncontextmenu="return false">${s.photo?`<img src="${s.photo}" alt="">`:initials(s.name)}</div><h3>${esc(s.name)}</h3><div class="score"><span class="plus">+${k.bonus}</span><span class="minus">-${k.malus}</span></div><div class="balance">Solde ${k.bonus-k.malus}</div><div class="actions"><button class="primary" onclick="chooseBehavior('${s.id}','bonus')">➕ Bonus</button><button onclick="chooseBehavior('${s.id}','malus')">➖ Malus</button></div></article>`}
 function behaviorView(){return `<div class="panel"><div class="row"><div class="grow"><div class="section-title">Comportements</div><div class="small">Crée autant de catégories de bonus et de malus que nécessaire.</div></div><button class="primary" onclick="behaviorForm()">➕ Ajouter</button></div><div class="row" style="margin-top:10px"><button onclick="behaviorForm();document.getElementById('bType').value='bonus'">➕ Nouveau bonus</button><button onclick="behaviorForm();document.getElementById('bType').value='malus'">➖ Nouveau malus</button></div></div>${['bonus','malus'].map(type=>`<div class="panel"><div class="section-title">${type==='bonus'?'🟢 Bonus':'🔴 Malus'}</div>${data.behaviors.filter(b=>b.type===type).map(b=>`<div class="behavior ${type}"><span class="emoji">${b.emoji}</span><span class="grow">${esc(b.label)}</span><button onclick="behaviorForm('${b.id}')">✏️</button><button class="danger" onclick="deleteBehavior('${b.id}')">🗑️</button></div>`).join('')}</div>`).join('')}`}
+function welcomeTools(){
+ const T=SCTools.state();
+ openModal(`<div style="text-align:center"><div style="font-size:44px">🎵</div><h2 style="margin:4px 0">Bienvenue dans Suivi de classe</h2><p class="small">Quels outils veux-tu utiliser ? Tu pourras en ajouter ou en retirer quand tu veux dans <b>Réglages › Outils</b>.</p></div>
+ <div style="margin:10px 0">${SCTools.LIST.map(t=>`<label style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);cursor:pointer"><input type="checkbox" class="wtool" value="${t.id}" ${T[t.id]?'checked':''} style="width:26px;height:26px;flex:none;margin-top:2px"><div><b>${t.icon} ${esc(t.name)}</b>${t.ai?` <span class="chip" style="font-size:12px">🤖 IA${t.ai==='nécessaire'?'':' (option)'}</span>`:''}<div class="small">${esc(t.desc)}</div></div></label>`).join('')}</div>
+ <button class="primary" style="width:100%;min-height:52px;font-size:18px" onclick="welcomeDone()">Commencer</button>`);
+}
+function welcomeDone(){const want={};document.querySelectorAll('.wtool').forEach(c=>want[c.value]=c.checked);
+ SCTools.LIST.forEach(t=>{if(!want[t.id]&&SCTools.on(t.id))SCTools.set(t.id,false)});
+ SCTools.LIST.forEach(t=>{if(want[t.id]&&!SCTools.on(t.id))SCTools.set(t.id,true)});
+ closeModal();render();const n=SCTools.LIST.filter(t=>SCTools.on(t.id)).length;toast(n?'C’est prêt ✅ ('+n+' outil'+(n>1?'s':'')+')':'Aucun outil : choisis-en dans Réglages › Outils',3500);
+ if(SCTools.on('bm')&&!data.classes.length)setTimeout(()=>addClass(),600);}
 function toolToggle(id,val){const m=SCTools.set(id,val);if(m.length)toast((val?'Activé aussi : ':'Désactivé aussi : ')+m.join(', '),3500);else toast(val?'Outil activé ✅':'Outil masqué (données conservées)');if(id==='edt'&&val){edtAutoSelect('start').then(render).catch(()=>render())}else render()}
 function aiSave(k,v){SCTools.setAi({[k]:v});if(k==='provider')render();else toast('Enregistré ✅')}
 async function aiTest(){const a=SCTools.ai(),out=document.getElementById('aiTestOut');if(!out)return;out.textContent='⏳ Test…';
@@ -756,7 +769,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V39';
+const APP_VERSION='V40';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
