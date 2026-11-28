@@ -224,6 +224,8 @@ function behaviorView(){return `<div class="panel"><div class="row"><div class="
 function welcomeTools(){
  const T=SCTools.state();
  openModal(`<div style="text-align:center"><div style="font-size:44px">🎵</div><h2 style="margin:4px 0">Bienvenue dans Suivi de classe</h2><p class="small">Quels outils veux-tu utiliser ? Tu pourras en ajouter ou en retirer quand tu veux dans <b>Réglages › Outils</b>.</p></div>
+ <div style="background:rgba(21,128,61,.08);border:1px solid rgba(21,128,61,.35);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45">🔒 <b>Données personnelles (RGPD)</b> : l’appli est conçue pour respecter le RGPD. <b>Aucune donnée n’est stockée en ligne</b> : pas de compte, pas de serveur. Toutes les données (élèves, bonus/malus, séances…) restent <b>uniquement sur cet appareil</b>. Pour les conserver ou les transférer, utilise la sauvegarde chiffrée (Réglages › Sauvegarde).</div>
+ <div style="background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.35);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45">🤖 <b>Outils avec IA</b> : ils nécessitent de configurer ta propre <b>clé API</b> (Gemini ou Claude) dans Réglages › Clé IA. Le texte que tu leur confies est envoyé au service d’IA choisi : <b>n’y saisis jamais de données personnelles d’élèves</b> (noms, prénoms, situations individuelles…).</div>
  <div style="margin:10px 0">${SCTools.LIST.map(t=>`<label style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);cursor:pointer"><input type="checkbox" class="wtool" value="${t.id}" ${T[t.id]?'checked':''} style="width:26px;height:26px;flex:none;margin-top:2px"><div><b>${t.icon} ${esc(t.name)}</b>${t.ai?` <span class="chip" style="font-size:12px">🤖 IA${t.ai==='nécessaire'?'':' (option)'}</span>`:''}<div class="small">${esc(t.desc)}</div></div></label>`).join('')}</div>
  <button class="primary" style="width:100%;min-height:52px;font-size:18px" onclick="welcomeDone()">Commencer</button>`);
 }
@@ -243,7 +245,7 @@ function settingsView(){
  const T=SCTools.state(),a=SCTools.ai(),anyAi=SCTools.LIST.some(t=>t.ai&&T[t.id]);
  const tools=`<p class="small">Coche les outils que tu veux utiliser : ils apparaissent dans le menu ☰. Décocher un outil le cache seulement, <b>sans effacer ses données</b>.</p>
  <div>${SCTools.LIST.map(t=>`<label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:10px 0;border-top:1px solid var(--line)"><input type="checkbox" style="width:26px;height:26px;flex:none;margin-top:2px" ${T[t.id]?'checked':''} onchange="toolToggle('${t.id}',this.checked)"><div class="grow"><b>${t.icon} ${esc(t.name)}</b>${t.ai?` <span class="chip" style="font-size:12px">🤖 IA${t.ai==='nécessaire'?'':' (option)'}</span>`:''}<div class="small">${esc(t.desc)}${t.ai&&t.ai!=='nécessaire'?'<br>🤖 '+esc(t.ai)+'.':''}${t.needs?'<br>Nécessite : '+t.needs.map(n=>esc(SCTools.byId(n).name)).join(', ')+'.':''}</div></div></label>`).join('')}</div>`;
- const ai=`<p class="small">Une seule clé pour tous les outils qui utilisent l’IA. Elle reste uniquement sur cet iPad.</p>
+ const ai=`<p class="small">Une seule clé pour tous les outils qui utilisent l’IA. Elle reste uniquement sur cet iPad.</p><p class="small" style="color:var(--bad,#b91c1c)">⚠️ Le texte confié à l’IA est envoyé au service choisi (Google ou Anthropic) : n’y saisis jamais de données personnelles d’élèves.</p>
  <label class="lbl">IA utilisée</label><select onchange="aiSave('provider',this.value)"><option value="gemini" ${a.provider==='gemini'?'selected':''}>Gemini (Google) — offre gratuite possible</option><option value="claude" ${a.provider==='claude'?'selected':''}>Claude (Anthropic) — crédits payants</option></select>
  ${a.provider==='gemini'?`<label class="lbl">Clé API Gemini</label><input type="password" autocomplete="off" placeholder="AIza…" value="${esc(a.geminiKey)}" onchange="aiSave('geminiKey',this.value.trim())"><div class="small">Gratuite sur <b>aistudio.google.com</b> › Get API key.</div>`
  :`<label class="lbl">Clé API Claude</label><input type="password" autocomplete="off" placeholder="sk-ant-…" value="${esc(a.claudeKey)}" onchange="aiSave('claudeKey',this.value.trim())"><div class="small">Sur platform.claude.com › API Keys (nécessite des crédits). Trace écrite utilise toujours Gemini.</div>`}
@@ -769,7 +771,7 @@ async function removeLock(){if(!confirm('Supprimer le mot de passe ? L’appli s
 // conserve le mot de passe de l'iPad lors d'un import de sauvegarde ou d'un effacement
 const _normImp=normalizeImportedData;normalizeImportedData=function(x){const out=_normImp(x);if(data&&data.lock&&data.lock.hash&&blockSave===false&&data.classes)out.lock=data.lock;return out};
 // ===== V24 : détection des mises à jour =====
-const APP_VERSION='V40';
+const APP_VERSION='V41';
 async function checkUpdate(manual){
  try{
   const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
